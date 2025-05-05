@@ -41,18 +41,23 @@ class CustomBottomNavigation extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: backgroundColor ?? Colors.white,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: elevation,
-            offset: Offset(0, -1),
+            spreadRadius: 1,
+            offset: const Offset(0, -1),
           ),
         ],
       ),
       child: SafeArea(
         child: Container(
-          height: 60,
-          padding: EdgeInsets.symmetric(vertical: 8),
+          height: 65,
+          padding: const EdgeInsets.symmetric(vertical: 8),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: List.generate(items.length, (index) {
@@ -70,8 +75,16 @@ class CustomBottomNavigation extends StatelessWidget {
 
     return InkWell(
       onTap: () => onTap(index),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration:
+            isActive
+                ? BoxDecoration(
+                  color: ColorTheme.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(16),
+                )
+                : null,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -89,7 +102,7 @@ class CustomBottomNavigation extends StatelessWidget {
               ],
             ),
             if (showLabels) ...[
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               Text(
                 navItem.label,
                 style: TextStyle(

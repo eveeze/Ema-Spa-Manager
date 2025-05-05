@@ -13,13 +13,13 @@ class ApiEndpoints {
   static const String staffDetail = '/staff/{id}';
 
   // Services Category
-  static const String serviceCategories = '/service-categories';
-  static const String serviceCategoryDetail = '/service-categories/{id}';
+  static const String serviceCategories = '/service-category';
+  static const String serviceCategoryDetail = '/service-category/{id}';
 
   // Services
-  static const String services = '/services';
-  static const String serviceDetail = '/services/{id}';
-  static const String serviceByCategory = '/services/category/{categoryId}';
+  static const String services = '/service';
+  static const String serviceDetail = '/service/{id}';
+  static const String serviceByCategory = '/service/category/{categoryId}';
 
   // Customers
   static const String customers = '/customers';

@@ -11,7 +11,7 @@ class AppConstants {
   static const String routeLogin = '/login';
   static const String routeRegister = '/register';
   static const String routeForgotPassword = '/forgot-password';
-  static const String routeHome = '/home';
+  static const String routeDashboard = '/dashboard';
   static const String routeProfile = '/profile';
   static const String routeSettings = '/settings';
   static const String routeAppointments = '/appointments';

@@ -33,7 +33,7 @@ class TextConstants {
   static const String resetPasswordSuccess =
       'Password reset link sent to your email.';
 
-  // Home Screen Texts
+  // Dashboard Screen Texts
   static const String welcomeBack = 'Welcome Back';
   static const String upcomingAppointments = 'Upcoming Appointments';
   static const String viewAll = 'View All';

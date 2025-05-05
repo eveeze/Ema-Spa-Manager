@@ -161,7 +161,7 @@ class ServiceProvider {
   Future<dynamic> getServicePriceTier(String serviceId, int babyAge) async {
     try {
       return await _apiClient.getValidated(
-        '${ApiEndpoints.services}/{serviceId}/price-tier',
+        '${ApiEndpoints.services}/{serviceId}/price',
         pathParams: {'serviceId': serviceId},
         queryParameters: {'babyAge': babyAge.toString()},
       );

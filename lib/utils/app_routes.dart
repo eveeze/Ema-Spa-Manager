@@ -5,6 +5,11 @@ import 'package:emababyspa/features/splash/view/splash_view.dart';
 import 'package:emababyspa/features/splash/bindings/splash_bindings.dart';
 import 'package:emababyspa/features/authentication/bindings/auth_bindings.dart';
 import 'package:emababyspa/features/authentication/views/login/login_view.dart';
+import 'package:emababyspa/features/dashboard/views/dashboard_view.dart';
+import 'package:emababyspa/features/dashboard/bindings/dashboard_bindings.dart';
+import 'package:emababyspa/features/service/views/service_view.dart';
+import 'package:emababyspa/features/service/bindings/service_bindings.dart';
+
 // import 'package:emababyspa/features/auth/bindings/auth_binding.dart';
 // import 'package:emababyspa/features/dashboard/views/dashboard_view.dart';
 // import 'package:emababyspa/features/dashboard/bindings/dashboard_binding.dart';
@@ -29,6 +34,7 @@ class AppRoutes {
   static const String login = AppConstants.routeLogin;
   static const String forgotPassword = '/forgotPassword';
   static const String dashboard = '/dashboard';
+  static const String services = '/services';
   static const String staffList = '/staffs';
   static const String staffDetail = '/staffs/:id';
   static const String staffForm = '/staffs/form';
@@ -54,11 +60,17 @@ class AppRoutes {
       binding: SplashBindings(),
     ),
     GetPage(name: login, page: () => LoginView(), binding: AuthBindings()),
-    // GetPage(
-    //   name: dashboard,
-    //   page: () => DashboardView(),
-    //   binding: DashboardBinding(),
-    // ),
+    GetPage(
+      name: dashboard,
+      page: () => DashboardView(),
+      binding: DashboardBinding(),
+    ),
+
+    GetPage(
+      name: services,
+      page: () => ServiceView(),
+      binding: ServiceBindings(),
+    ),
     // GetPage(
     //   name: staffList,
     //   page: () => StaffListView(),

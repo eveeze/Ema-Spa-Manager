@@ -38,7 +38,7 @@ class _LoginViewState extends State<LoginView> {
       final success = await _authController.login(email, password);
 
       if (success) {
-        Get.offAllNamed('/home');
+        Get.offAllNamed('/dashboard');
       }
     }
   }
