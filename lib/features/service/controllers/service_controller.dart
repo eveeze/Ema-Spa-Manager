@@ -1,4 +1,3 @@
-// lib/features/service/controllers/service_controller.dart
 import 'package:get/get.dart';
 import 'package:emababyspa/data/repository/service_repository.dart';
 import 'package:emababyspa/data/models/service.dart';
@@ -42,8 +41,8 @@ class ServiceController extends GetxController {
 
   // Navigate to staff management page
   void navigateToManageStaff() {
-    // This will be implemented to navigate to the staff management page
-    Get.toNamed('/staff/manage');
+    // Navigate to staff management view
+    Get.toNamed('/staffs');
   }
 
   // Navigate to category management page

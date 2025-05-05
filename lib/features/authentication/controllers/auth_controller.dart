@@ -61,10 +61,6 @@ class AuthController extends GetxController {
       await _storage.setOwner(result['owner']);
       isAuthenticated.value = true;
 
-      // Log token expiration date (for debugging)
-      final expirationDate = await _storage.getTokenExpirationDate();
-      print('Token expires at: $expirationDate');
-
       isLoading.value = false;
       return true;
     } catch (e) {

@@ -1,3 +1,4 @@
+// lib/common/layouts/main_layout.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:emababyspa/common/theme/color_theme.dart';
@@ -6,17 +7,8 @@ import 'package:emababyspa/features/dashboard/controllers/dashboard_controller.d
 
 class MainLayout extends GetView<DashboardController> {
   final Widget child;
-  final String title;
-  final bool showBackButton;
-  final List<Widget>? actions;
 
-  const MainLayout({
-    super.key,
-    required this.child,
-    this.title = '',
-    this.showBackButton = false,
-    this.actions,
-  });
+  const MainLayout({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {

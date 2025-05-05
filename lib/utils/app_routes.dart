@@ -9,25 +9,10 @@ import 'package:emababyspa/features/dashboard/views/dashboard_view.dart';
 import 'package:emababyspa/features/dashboard/bindings/dashboard_bindings.dart';
 import 'package:emababyspa/features/service/views/service_view.dart';
 import 'package:emababyspa/features/service/bindings/service_bindings.dart';
-
-// import 'package:emababyspa/features/auth/bindings/auth_binding.dart';
-// import 'package:emababyspa/features/dashboard/views/dashboard_view.dart';
-// import 'package:emababyspa/features/dashboard/bindings/dashboard_binding.dart';
-// import 'package:emababyspa/features/splash/bindings/splash_binding.dart';
-// import 'package:emababyspa/features/staffs/views/staff_list_view.dart';
-// import 'package:emababyspa/features/staffs/bindings/staff_binding.dart';
-// import 'package:emababyspa/features/services/views/service_list_view.dart';
-// import 'package:emababyspa/features/services/bindings/service_binding.dart';
-// import 'package:emababyspa/features/customers/views/customer_list_view.dart';
-// import 'package:emababyspa/features/customers/bindings/customer_binding.dart';
-// import 'package:emababyspa/features/reservations/views/reservation_list_view.dart';
-// import 'package:emababyspa/features/reservations/bindings/reservation_binding.dart';
-// import 'package:emababyspa/features/payments/views/payment_list_view.dart';
-// import 'package:emababyspa/features/payments/bindings/payment_binding.dart';
-// import 'package:emababyspa/features/schedule/views/schedule_view.dart';
-// import 'package:emababyspa/features/schedule/bindings/schedule_binding.dart';
-// import 'package:emababyspa/features/analytics/views/analytics_view.dart';
-// import 'package:emababyspa/features/analytics/bindings/analytics_binding.dart';
+import 'package:emababyspa/features/staff/views/staff_view.dart';
+import 'package:emababyspa/features/staff/views/staff_form_view.dart';
+import 'package:emababyspa/features/staff/views/staff_edit_view.dart';
+import 'package:emababyspa/features/staff/bindings/staff_bindings.dart';
 
 class AppRoutes {
   static const String splash = AppConstants.routeSplash;
@@ -71,41 +56,17 @@ class AppRoutes {
       page: () => ServiceView(),
       binding: ServiceBindings(),
     ),
-    // GetPage(
-    //   name: staffList,
-    //   page: () => StaffListView(),
-    //   binding: StaffBinding(),
-    // ),
-    // GetPage(
-    //   name: serviceList,
-    //   page: () => ServiceListView(),
-    //   binding: ServiceBinding(),
-    // ),
-    // GetPage(
-    //   name: customerList,
-    //   page: () => CustomerListView(),
-    //   binding: CustomerBinding(),
-    // ),
-    // GetPage(
-    //   name: reservationList,
-    //   page: () => ReservationListView(),
-    //   binding: ReservationBinding(),
-    // ),
-    // GetPage(
-    //   name: paymentList,
-    //   page: () => PaymentListView(),
-    //   binding: PaymentBinding(),
-    // ),
-    // GetPage(
-    //   name: schedule,
-    //   page: () => ScheduleView(),
-    //   binding: ScheduleBinding(),
-    // ),
-    // GetPage(
-    //   name: analytics,
-    //   page: () => AnalyticsView(),
-    //   binding: AnalyticsBinding(),
-    // ),
-    // Rute detail dan form akan ditambahkan disini
+    // Staff routes
+    GetPage(name: staffList, page: () => StaffView(), binding: StaffBindings()),
+    GetPage(
+      name: staffForm,
+      page: () => StaffFormView(),
+      binding: StaffBindings(),
+    ),
+    GetPage(
+      name: staffEdit,
+      page: () => StaffEditView(),
+      binding: StaffBindings(),
+    ), // Rute detail dan form akan ditambahkan disini
   ];
 }
