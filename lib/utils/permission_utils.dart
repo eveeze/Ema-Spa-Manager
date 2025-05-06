@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'logger_utils.dart';
 
 /// A utility class to handle permissions in the app
@@ -20,22 +21,37 @@ class PermissionUtils {
       }
     } catch (e) {
       _logger.error('Error opening app settings: $e');
+      showToast('Could not open app settings');
     }
   }
 
   /// Launch app settings based on platform
   Future<void> launchAppSettings() async {
     try {
-      Uri uri;
       if (Platform.isAndroid) {
-        // Android: Open app settings
-        final package = await _getPackageName();
-        uri = Uri.parse('package:$package');
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        // Get the actual package name dynamically
+        final packageInfo = await PackageInfo.fromPlatform();
+        final packageName = packageInfo.packageName;
+
+        final uri = Uri.parse('package:$packageName');
+        final canLaunch = await canLaunchUrl(uri);
+
+        if (canLaunch) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        } else {
+          _logger.error('Cannot launch app settings for package: $packageName');
+          // Fallback to Android settings
+          final settingsUri = Uri.parse('android-app://com.android.settings');
+          await launchUrl(settingsUri, mode: LaunchMode.externalApplication);
+        }
       } else if (Platform.isIOS) {
         // iOS: Open app settings
-        uri = Uri.parse('app-settings:');
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        final uri = Uri.parse('app-settings:');
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        } else {
+          _logger.error('Cannot launch iOS app settings');
+        }
       }
     } catch (e) {
       _logger.error('Error launching app settings: $e');
@@ -84,13 +100,6 @@ class PermissionUtils {
       ),
       barrierDismissible: false,
     );
-  }
-
-  /// Get the package name for Android
-  Future<String> _getPackageName() async {
-    // In a real app, you would use the package_info_plus plugin to get this dynamically
-    // For now, we'll return a placeholder
-    return 'com.example.emababyspa';
   }
 
   /// Show a toast message

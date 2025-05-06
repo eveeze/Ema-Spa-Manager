@@ -1,4 +1,4 @@
-// lib/data/api/api_client.dart
+// lib/data/api/api_client.dart - Fixed path parameter handling
 import 'package:dio/dio.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:emababyspa/data/api/api_endpoints.dart';
@@ -130,6 +130,76 @@ class ApiClient {
     }
   }
 
+  // POST request with multipart form data and validation
+  Future<T?> postMultipartValidated<T>(
+    String path, {
+    required FormData data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    Map<String, dynamic>? pathParams,
+    bool checkInternet = true,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+    String dataField = 'data',
+    String messageField = 'message',
+    bool throwOnError = true,
+  }) async {
+    final responseFuture = post<T>(
+      path,
+      data: data,
+      queryParameters: queryParameters,
+      options: (options ?? Options()).copyWith(
+        contentType: 'multipart/form-data',
+      ),
+      pathParams: pathParams,
+      checkInternet: checkInternet,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    return processResponse<T>(
+      responseFuture,
+      dataField: dataField,
+      messageField: messageField,
+      throwOnError: throwOnError,
+    );
+  }
+
+  // PUT request with multipart form data and validation
+  Future<T?> putMultipartValidated<T>(
+    String path, {
+    required FormData data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    Map<String, dynamic>? pathParams,
+    bool checkInternet = true,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+    String dataField = 'data',
+    String messageField = 'message',
+    bool throwOnError = true,
+  }) async {
+    final responseFuture = put<T>(
+      path,
+      data: data,
+      queryParameters: queryParameters,
+      options: (options ?? Options()).copyWith(
+        contentType: 'multipart/form-data',
+      ),
+      pathParams: pathParams,
+      checkInternet: checkInternet,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    return processResponse<T>(
+      responseFuture,
+      dataField: dataField,
+      messageField: messageField,
+      throwOnError: throwOnError,
+    );
+  }
+
   // GET request with network check
   Future<Response<T>> get<T>(
     String path, {
@@ -155,6 +225,9 @@ class ApiClient {
     }
 
     try {
+      // Log the actual URL being called for debugging
+      _logger.debug('Making GET request to: $resolvedPath');
+
       return await _dio.get<T>(
         resolvedPath,
         queryParameters: queryParameters,

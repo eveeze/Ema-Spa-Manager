@@ -14,7 +14,9 @@ class StaffBindings extends Bindings {
 
     // Register the staff repository
     if (!Get.isRegistered<StaffRepository>()) {
-      Get.lazyPut(() => StaffRepository());
+      Get.lazyPut(
+        () => StaffRepository(staffProvider: Get.find<StaffProvider>()),
+      );
     }
 
     // Register the staff controller

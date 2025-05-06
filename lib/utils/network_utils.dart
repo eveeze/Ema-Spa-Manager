@@ -64,12 +64,15 @@ class NetworkUtils {
   }
 
   /// Replace path parameters in an endpoint URL
-  String replacePathParams(String endpoint, Map<String, dynamic> pathParams) {
-    String result = endpoint;
-    pathParams.forEach((key, value) {
-      result = result.replaceAll('{$key}', value.toString());
+  String replacePathParams(String path, Map<String, dynamic> params) {
+    String resultPath = path;
+
+    params.forEach((key, value) {
+      // Replace {key} pattern with the actual value
+      resultPath = resultPath.replaceAll('{$key}', value.toString());
     });
-    return result;
+
+    return resultPath;
   }
 
   /// Check if the device has internet connection and show an error if not
