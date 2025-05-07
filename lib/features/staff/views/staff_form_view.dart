@@ -120,10 +120,12 @@ class StaffFormView extends GetView<StaffController> {
                                 width: 100,
                                 height: 100,
                                 decoration: BoxDecoration(
-                                  color: ColorTheme.info.withOpacity(0.1),
+                                  color: ColorTheme.info.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(50),
                                   border: Border.all(
-                                    color: ColorTheme.primary.withOpacity(0.3),
+                                    color: ColorTheme.primary.withValues(
+                                      alpha: 0.3,
+                                    ),
                                     width: 2,
                                   ),
                                 ),
@@ -394,7 +396,7 @@ class StaffFormView extends GetView<StaffController> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: ColorTheme.primary.withOpacity(0.1),
+                            color: ColorTheme.primary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(50),
                           ),
                           child: Icon(
@@ -455,7 +457,7 @@ class StaffFormView extends GetView<StaffController> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: ColorTheme.info.withOpacity(0.1),
+                            color: ColorTheme.info.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(50),
                           ),
                           child: Icon(

@@ -1,4 +1,5 @@
 //utils/app_routes.dart
+import 'package:emababyspa/features/service_category/views/service_category_form_view.dart';
 import 'package:get/get.dart';
 import 'package:emababyspa/common/constants/app_constants.dart';
 import 'package:emababyspa/features/splash/views/splash_view.dart';
@@ -15,6 +16,7 @@ import 'package:emababyspa/features/staff/views/staff_edit_view.dart';
 import 'package:emababyspa/features/staff/bindings/staff_bindings.dart';
 import 'package:emababyspa/features/service_category/views/service_category_view.dart';
 import 'package:emababyspa/features/service_category/bindings/service_category_bindings.dart';
+import 'package:emababyspa/features/service_category/views/service_category_edit_view.dart';
 
 class AppRoutes {
   static const String splash = AppConstants.routeSplash;
@@ -28,7 +30,7 @@ class AppRoutes {
   static const String staffEdit = '/staffs/edit/:id';
   static const String serviceCategoryList = '/service-categories';
   static const String serviceCategoryForm = '/service-categories/form';
-  static const String serviceCategoryEdit = '/service-categories/edit/:id';
+  static const String serviceCategoryEdit = '/service-categories/edit/';
   static const String serviceList = '/services';
   static const String serviceDetail = '/services/:id';
   static const String serviceForm = '/services/form';
@@ -81,7 +83,13 @@ class AppRoutes {
     ),
     GetPage(
       name: serviceCategoryForm,
-      page: () => ServiceCategoryView(),
+      page: () => ServiceCategoryFormView(),
+      binding: ServiceCategoryBindings(),
+    ),
+
+    GetPage(
+      name: serviceCategoryEdit,
+      page: () => ServiceCategoryEditView(),
       binding: ServiceCategoryBindings(),
     ),
     // Rute detail dan form akan ditambahkan disini

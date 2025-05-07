@@ -72,7 +72,6 @@ class ServiceCategoryController extends GetxController {
     fetchAllServiceCategories();
   }
 
-  // [TODO]
   // Navigate to add service category screen
   void navigateToAddServiceCategory() {
     Get.toNamed(AppRoutes.serviceCategoryForm);
@@ -80,12 +79,17 @@ class ServiceCategoryController extends GetxController {
 
   // Navigate to edit service category screen
   void navigateToEditServiceCategory(String id) {
-    Get.toNamed('${AppRoutes.serviceCategoryEdit}/$id');
+    Get.toNamed('/service-categories/edit/$id');
   }
 
   // Navigate to view service category details
   void navigateToViewServiceCategory(String id) {
     Get.toNamed('${AppRoutes.serviceCategoryEdit}/$id');
+  }
+
+  // Navigate back to service categories list
+  void navigateBackToServiceCategories() {
+    Get.until((route) => route.settings.name == AppRoutes.serviceCategoryList);
   }
 
   // Add a new service category
@@ -105,7 +109,8 @@ class ServiceCategoryController extends GetxController {
       if (category != null) {
         serviceCategories.add(category);
         _showSuccessSnackbar("Service category added successfully");
-        Get.back();
+        // Use navigateBackToServiceCategories instead of Get.back()
+        navigateBackToServiceCategories();
       }
     } catch (e) {
       _showErrorSnackbar("Failed to add service category");
@@ -137,7 +142,8 @@ class ServiceCategoryController extends GetxController {
           serviceCategories[index] = category;
         }
         _showSuccessSnackbar("Service category updated successfully");
-        Get.back();
+        // Use navigateBackToServiceCategories instead of Get.back()
+        navigateBackToServiceCategories();
       }
     } catch (e) {
       _showErrorSnackbar("Failed to update service category");
@@ -170,6 +176,8 @@ class ServiceCategoryController extends GetxController {
         // Remove from the list if deleted successfully
         serviceCategories.removeWhere((category) => category.id == id);
         _showSuccessSnackbar("Service category deleted successfully");
+        // Navigate back to service categories after deletion
+        navigateBackToServiceCategories();
       } else {
         _showErrorSnackbar("Failed to delete service category");
       }

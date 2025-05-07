@@ -23,7 +23,6 @@ class StaffEditView extends GetView<StaffController> {
     // Create instance of utility classes
     final permissionUtils = PermissionUtils();
 
-    // IMPORTANT FIX: Get the staffId from route parameters properly
     final String staffId = Get.parameters['id'] ?? '';
 
     // Staff data observable - defined at class level and properly initialized
@@ -57,7 +56,7 @@ class StaffEditView extends GetView<StaffController> {
           Get.snackbar(
             'Error',
             'Invalid staff ID',
-            backgroundColor: ColorTheme.error.withOpacity(0.1),
+            backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
             colorText: ColorTheme.error,
           );
           Get.back();
@@ -89,7 +88,7 @@ class StaffEditView extends GetView<StaffController> {
           Get.snackbar(
             'Error',
             'Staff member not found',
-            backgroundColor: ColorTheme.error.withOpacity(0.1),
+            backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
             colorText: ColorTheme.error,
           );
           Get.back();
@@ -98,7 +97,7 @@ class StaffEditView extends GetView<StaffController> {
         Get.snackbar(
           'Error',
           'Failed to load staff data: ${e.toString()}',
-          backgroundColor: ColorTheme.error.withOpacity(0.1),
+          backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
           colorText: ColorTheme.error,
         );
         Get.back();
@@ -110,7 +109,6 @@ class StaffEditView extends GetView<StaffController> {
     // Load staff data when view is loaded
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // IMPORTANT: Debug print to check if staffId is received
-      print('StaffEditView - Received staffId: $staffId');
       loadStaffData();
     });
 
@@ -152,7 +150,7 @@ class StaffEditView extends GetView<StaffController> {
           Get.snackbar(
             'Invalid File Type',
             'Please select a JPG, JPEG, or PNG image',
-            backgroundColor: ColorTheme.error.withOpacity(0.1),
+            backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
             colorText: ColorTheme.error,
           );
           return false;
@@ -163,7 +161,7 @@ class StaffEditView extends GetView<StaffController> {
           Get.snackbar(
             'File Too Large',
             'Profile picture should be less than 5MB',
-            backgroundColor: ColorTheme.error.withOpacity(0.1),
+            backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
             colorText: ColorTheme.error,
           );
           return false;
@@ -230,11 +228,13 @@ class StaffEditView extends GetView<StaffController> {
                                   width: 100,
                                   height: 100,
                                   decoration: BoxDecoration(
-                                    color: ColorTheme.info.withOpacity(0.1),
+                                    color: ColorTheme.info.withValues(
+                                      alpha: 0.1,
+                                    ),
                                     borderRadius: BorderRadius.circular(50),
                                     border: Border.all(
-                                      color: ColorTheme.primary.withOpacity(
-                                        0.3,
+                                      color: ColorTheme.primary.withValues(
+                                        alpha: 0.3,
                                       ),
                                       width: 2,
                                     ),
@@ -276,8 +276,9 @@ class StaffEditView extends GetView<StaffController> {
                                                 child,
                                                 loadingProgress,
                                               ) {
-                                                if (loadingProgress == null)
+                                                if (loadingProgress == null) {
                                                   return child;
+                                                }
                                                 return Center(
                                                   child: CircularProgressIndicator(
                                                     value:
@@ -525,8 +526,8 @@ class StaffEditView extends GetView<StaffController> {
                               Get.snackbar(
                                 'Validation Error',
                                 'Please check the form fields',
-                                backgroundColor: ColorTheme.error.withOpacity(
-                                  0.1,
+                                backgroundColor: ColorTheme.error.withValues(
+                                  alpha: 0.1,
                                 ),
                                 colorText: ColorTheme.error,
                               );
@@ -616,7 +617,7 @@ class StaffEditView extends GetView<StaffController> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: ColorTheme.primary.withOpacity(0.1),
+                            color: ColorTheme.primary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(50),
                           ),
                           child: Icon(
@@ -677,7 +678,7 @@ class StaffEditView extends GetView<StaffController> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: ColorTheme.info.withOpacity(0.1),
+                            color: ColorTheme.info.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(50),
                           ),
                           child: Icon(
