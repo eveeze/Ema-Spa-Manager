@@ -1,7 +1,7 @@
 //utils/app_routes.dart
 import 'package:get/get.dart';
 import 'package:emababyspa/common/constants/app_constants.dart';
-import 'package:emababyspa/features/splash/view/splash_view.dart';
+import 'package:emababyspa/features/splash/views/splash_view.dart';
 import 'package:emababyspa/features/splash/bindings/splash_bindings.dart';
 import 'package:emababyspa/features/authentication/bindings/auth_bindings.dart';
 import 'package:emababyspa/features/authentication/views/login/login_view.dart';
@@ -13,6 +13,8 @@ import 'package:emababyspa/features/staff/views/staff_view.dart';
 import 'package:emababyspa/features/staff/views/staff_form_view.dart';
 import 'package:emababyspa/features/staff/views/staff_edit_view.dart';
 import 'package:emababyspa/features/staff/bindings/staff_bindings.dart';
+import 'package:emababyspa/features/service_category/views/service_category_view.dart';
+import 'package:emababyspa/features/service_category/bindings/service_category_bindings.dart';
 
 class AppRoutes {
   static const String splash = AppConstants.routeSplash;
@@ -24,6 +26,9 @@ class AppRoutes {
   static const String staffDetail = '/staffs/:id';
   static const String staffForm = '/staffs/form';
   static const String staffEdit = '/staffs/edit/:id';
+  static const String serviceCategoryList = '/service-categories';
+  static const String serviceCategoryForm = '/service-categories/form';
+  static const String serviceCategoryEdit = '/service-categories/edit/:id';
   static const String serviceList = '/services';
   static const String serviceDetail = '/services/:id';
   static const String serviceForm = '/services/form';
@@ -67,6 +72,18 @@ class AppRoutes {
       name: staffEdit,
       page: () => StaffEditView(),
       binding: StaffBindings(),
-    ), // Rute detail dan form akan ditambahkan disini
+    ),
+
+    GetPage(
+      name: serviceCategoryList,
+      page: () => ServiceCategoryView(),
+      binding: ServiceCategoryBindings(),
+    ),
+    GetPage(
+      name: serviceCategoryForm,
+      page: () => ServiceCategoryView(),
+      binding: ServiceCategoryBindings(),
+    ),
+    // Rute detail dan form akan ditambahkan disini
   ];
 }

@@ -48,7 +48,7 @@ class ServiceController extends GetxController {
   // Navigate to category management page
   void navigateToManageCategories() {
     // This will be implemented to navigate to the category management page
-    Get.toNamed('/categories/manage');
+    Get.toNamed('/service-categories');
   }
 
   // Fetch services
@@ -69,6 +69,8 @@ class ServiceController extends GetxController {
       isLoading.value = false;
     }
   }
+
+  // Fetch Staff
 
   // Refresh the dashboard data
   void refreshData() {

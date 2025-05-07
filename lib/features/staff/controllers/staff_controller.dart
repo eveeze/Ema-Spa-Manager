@@ -52,11 +52,7 @@ class StaffController extends GetxController {
 
   // Navigate to edit staff screen
   void navigateToEditStaff(String id) {
-    // FIXED: Proper parameter handling for dynamic route
     Get.toNamed('/staffs/edit/$id');
-
-    // Debug log to verify the ID is being passed
-    print('Navigating to edit staff with ID: $id');
   }
 
   // Add new staff member
@@ -86,7 +82,7 @@ class StaffController extends GetxController {
         Get.snackbar(
           'Success',
           'Staff member added successfully',
-          backgroundColor: ColorTheme.success.withOpacity(0.1),
+          backgroundColor: ColorTheme.success.withValues(alpha: 0.1),
           colorText: ColorTheme.success,
         );
 
@@ -98,7 +94,7 @@ class StaffController extends GetxController {
       Get.snackbar(
         'Error',
         'Failed to add staff member',
-        backgroundColor: ColorTheme.error.withOpacity(0.1),
+        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
         colorText: ColorTheme.error,
       );
       _logger.error('Error adding staff: $e');
@@ -142,7 +138,7 @@ class StaffController extends GetxController {
         Get.snackbar(
           'Success',
           'Staff member updated successfully',
-          backgroundColor: ColorTheme.success.withOpacity(0.1),
+          backgroundColor: ColorTheme.success.withValues(alpha: 0.1),
           colorText: ColorTheme.success,
         );
 
@@ -154,7 +150,7 @@ class StaffController extends GetxController {
       Get.snackbar(
         'Error',
         'Failed to update staff member',
-        backgroundColor: ColorTheme.error.withOpacity(0.1),
+        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
         colorText: ColorTheme.error,
       );
       _logger.error('Error updating staff: $e');
@@ -183,7 +179,7 @@ class StaffController extends GetxController {
         Get.snackbar(
           'Success',
           'Staff status updated successfully',
-          backgroundColor: ColorTheme.success.withOpacity(0.1),
+          backgroundColor: ColorTheme.success.withValues(alpha: 0.1),
           colorText: ColorTheme.success,
         );
       }
@@ -192,7 +188,7 @@ class StaffController extends GetxController {
       Get.snackbar(
         'Error',
         'Failed to update staff status',
-        backgroundColor: ColorTheme.error.withOpacity(0.1),
+        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
         colorText: ColorTheme.error,
       );
       _logger.error('Error toggling staff status: $e');
@@ -212,7 +208,7 @@ class StaffController extends GetxController {
         Get.snackbar(
           'Success',
           'Staff member deleted successfully',
-          backgroundColor: ColorTheme.success.withOpacity(0.1),
+          backgroundColor: ColorTheme.success.withValues(alpha: 0.1),
           colorText: ColorTheme.success,
         );
       }
@@ -221,7 +217,7 @@ class StaffController extends GetxController {
       Get.snackbar(
         'Error',
         'Failed to delete staff member',
-        backgroundColor: ColorTheme.error.withOpacity(0.1),
+        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
         colorText: ColorTheme.error,
       );
       _logger.error('Error deleting staff: $e');
@@ -239,9 +235,6 @@ class StaffController extends GetxController {
 
       // Example API call to fetch staff by ID
       final response = await _staffRepository.getStaffById(id);
-
-      // Debug log
-      print('Fetched staff with ID: $id - ${response?.name ?? "Not found"}');
 
       return response;
     } catch (e) {
