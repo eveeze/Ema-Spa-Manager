@@ -30,7 +30,7 @@ class AppRoutes {
   static const String staffEdit = '/staffs/edit/:id';
   static const String serviceCategoryList = '/service-categories';
   static const String serviceCategoryForm = '/service-categories/form';
-  static const String serviceCategoryEdit = '/service-categories/edit/';
+  static const String serviceCategoryEdit = '/service-categories/edit/:id';
   static const String serviceList = '/services';
   static const String serviceDetail = '/services/:id';
   static const String serviceForm = '/services/form';

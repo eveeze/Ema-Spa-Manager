@@ -22,8 +22,6 @@ class ServiceCategoryEditView extends GetView<ServiceCategoryController> {
     final descriptionController = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
-    // Initialize data loading when view is created
-    // This happens after controller is fully initialized
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadCategoryData(categoryId, nameController, descriptionController);
     });

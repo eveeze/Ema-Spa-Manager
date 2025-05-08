@@ -43,19 +43,6 @@ class ApiClient {
     );
   }
 
-  /// Validates API response and extracts data
-  ///
-  /// This method checks if the response contains {'success': true}
-  /// - If successful: returns the data field from the response
-  /// - If not successful: throws a DioException with the error message
-  ///
-  /// Parameters:
-  /// - [response]: The Response object returned from Dio
-  /// - [dataField]: The field name to extract from response (defaults to 'data')
-  /// - [messageField]: The field name for error message (defaults to 'message')
-  ///
-  /// Returns: The data from the response
-  /// Throws: DioException if the response is not successful
   dynamic validateResponse(
     Response response, {
     String dataField = 'data',
@@ -63,41 +50,51 @@ class ApiClient {
     bool throwOnError = true,
   }) {
     try {
-      // Check if response has data and is a Map
-      if (response.data == null || response.data is! Map) {
+      // Handle if response is null
+      if (response.data == null) {
         if (throwOnError) {
           throw DioException(
             requestOptions: response.requestOptions,
-            error: 'Invalid response format',
+            error: 'Empty response',
             type: DioExceptionType.badResponse,
           );
         }
         return null;
       }
 
-      // Check if response has success field and is true
-      final Map responseMap = response.data as Map;
-      final bool isSuccess = responseMap['success'] == true;
-
-      if (!isSuccess) {
-        final String errorMessage =
-            responseMap[messageField]?.toString() ?? 'Unknown error occurred';
-
-        if (throwOnError) {
-          throw DioException(
-            requestOptions: response.requestOptions,
-            error: errorMessage,
-            response: response,
-            type: DioExceptionType.badResponse,
-          );
-        }
-        return null;
+      // Handle List response directly - important for endpoints that return arrays
+      if (response.data is List) {
+        return response.data;
       }
 
-      // Return data field if it exists
-      return responseMap.containsKey(dataField)
-          ? responseMap[dataField]
-          : responseMap;
+      // Handle Map response (standard API response format)
+      if (response.data is Map) {
+        final Map responseMap = response.data as Map;
+        final bool isSuccess = responseMap['success'] == true;
+
+        if (!isSuccess) {
+          final String errorMessage =
+              responseMap[messageField]?.toString() ?? 'Unknown error occurred';
+
+          if (throwOnError) {
+            throw DioException(
+              requestOptions: response.requestOptions,
+              error: errorMessage,
+              response: response,
+              type: DioExceptionType.badResponse,
+            );
+          }
+          return null;
+        }
+
+        // Return data field if it exists
+        return responseMap.containsKey(dataField)
+            ? responseMap[dataField]
+            : responseMap;
+      }
+
+      // For any other data type, return as is
+      return response.data;
     } catch (e) {
       _logger.error('Response validation failed: $e');
       if (throwOnError) rethrow;

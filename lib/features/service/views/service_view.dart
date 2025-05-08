@@ -1,4 +1,3 @@
-// lib/features/service/views/service_view.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:emababyspa/common/theme/color_theme.dart';
@@ -21,19 +20,27 @@ class ServiceView extends GetView<ServiceController> {
         body: SafeArea(
           child: RefreshIndicator(
             onRefresh: () async {
-              controller.refreshData();
+              await controller.refreshData();
             },
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Obx(() {
-                if (controller.isLoading.value) {
+                // Only show loading spinner when initially loading everything
+                if (controller.isLoading.value &&
+                    controller.services.isEmpty &&
+                    controller.serviceCategories.isEmpty &&
+                    controller.staff.isEmpty) {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                if (controller.errorMessage.isNotEmpty) {
+                // Show error state only if all three parts failed
+                if (controller.serviceError.isNotEmpty &&
+                    controller.categoryError.isNotEmpty &&
+                    controller.staffError.isNotEmpty) {
                   return EmptyStateWidget(
-                    title: 'Oops!',
-                    message: controller.errorMessage.value,
+                    title: 'Connection Error',
+                    message:
+                        'Unable to load data. Please check your connection and try again.',
                     icon: Icons.error_outline_rounded,
                     buttonLabel: 'Refresh',
                     onButtonPressed: controller.refreshData,
@@ -82,33 +89,48 @@ class ServiceView extends GetView<ServiceController> {
             children: [
               // Services Card
               Expanded(
-                child: _buildStatCard(
-                  title: 'Services',
-                  count: controller.serviceCount.toString(),
-                  icon: Icons.spa_rounded,
-                  color: ColorTheme.primary,
+                child: Obx(
+                  () => _buildStatCard(
+                    title: 'Services',
+                    count: controller.serviceCount.toString(),
+                    icon: Icons.spa_rounded,
+                    color: ColorTheme.primary,
+                    isLoading: controller.isLoadingServices.value,
+                    hasError: controller.serviceError.isNotEmpty,
+                    onRetry: controller.refreshServices,
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
 
               // Staff Card
               Expanded(
-                child: _buildStatCard(
-                  title: 'Staff',
-                  count: controller.staffCount.toString(),
-                  icon: Icons.people_rounded,
-                  color: ColorTheme.info,
+                child: Obx(
+                  () => _buildStatCard(
+                    title: 'Staff',
+                    count: controller.staffCount.toString(),
+                    icon: Icons.people_rounded,
+                    color: ColorTheme.info,
+                    isLoading: controller.isLoadingStaff.value,
+                    hasError: controller.staffError.isNotEmpty,
+                    onRetry: controller.refreshStaff,
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
 
               // Categories Card
               Expanded(
-                child: _buildStatCard(
-                  title: 'Categories',
-                  count: controller.categoryCount.toString(),
-                  icon: Icons.category_rounded,
-                  color: ColorTheme.success,
+                child: Obx(
+                  () => _buildStatCard(
+                    title: 'Categories',
+                    count: controller.categoryCount.toString(),
+                    icon: Icons.category_rounded,
+                    color: ColorTheme.success,
+                    isLoading: controller.isLoadingCategories.value,
+                    hasError: controller.categoryError.isNotEmpty,
+                    onRetry: controller.refreshCategories,
+                  ),
                 ),
               ),
             ],
@@ -160,12 +182,15 @@ class ServiceView extends GetView<ServiceController> {
     );
   }
 
-  // Widget for stats cards (services, staff, categories count)
+  // Widget for stats cards with loading and error states
   Widget _buildStatCard({
     required String title,
     required String count,
     required IconData icon,
     required Color color,
+    required bool isLoading,
+    required bool hasError,
+    required VoidCallback onRetry,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
@@ -192,15 +217,42 @@ class ServiceView extends GetView<ServiceController> {
             child: Icon(icon, color: color, size: 20),
           ),
           const SizedBox(height: 12),
-          Text(
-            count,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: ColorTheme.textPrimary,
-              fontFamily: 'JosefinSans',
+
+          if (isLoading)
+            SizedBox(
+              height: 24,
+              width: 24,
+              child: CircularProgressIndicator(strokeWidth: 2, color: color),
+            )
+          else if (hasError)
+            GestureDetector(
+              onTap: onRetry,
+              child: Row(
+                children: [
+                  Icon(Icons.refresh, color: ColorTheme.error, size: 16),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Retry',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: ColorTheme.error,
+                      fontFamily: 'JosefinSans',
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            Text(
+              count,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: ColorTheme.textPrimary,
+                fontFamily: 'JosefinSans',
+              ),
             ),
-          ),
+
           const SizedBox(height: 4),
           Text(
             title,
