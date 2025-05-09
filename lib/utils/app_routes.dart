@@ -4,7 +4,6 @@ import 'package:emababyspa/features/service/views/service_form_view.dart';
 import 'package:emababyspa/features/service/views/service_manage_view.dart';
 import 'package:emababyspa/features/service_category/views/service_category_form_view.dart';
 import 'package:get/get.dart';
-import 'package:emababyspa/common/constants/app_constants.dart';
 import 'package:emababyspa/features/splash/views/splash_view.dart';
 import 'package:emababyspa/features/splash/bindings/splash_bindings.dart';
 import 'package:emababyspa/features/authentication/bindings/auth_bindings.dart';
@@ -22,8 +21,8 @@ import 'package:emababyspa/features/service_category/bindings/service_category_b
 import 'package:emababyspa/features/service_category/views/service_category_edit_view.dart';
 
 class AppRoutes {
-  static const String splash = AppConstants.routeSplash;
-  static const String login = AppConstants.routeLogin;
+  static const String splash = '/splash';
+  static const String login = '/login';
   static const String forgotPassword = '/forgotPassword';
   static const String dashboard = '/dashboard';
   static const String services = '/services';

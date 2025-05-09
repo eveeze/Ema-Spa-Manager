@@ -5,21 +5,6 @@ class AppConstants {
   static const String appBuildNumber = '1';
   static const String appPackageName = 'com.emababyspa.app';
 
-  // Navigation Routes
-  static const String routeSplash = '/splash';
-  static const String routeOnboarding = '/onboarding';
-  static const String routeLogin = '/login';
-  static const String routeRegister = '/register';
-  static const String routeForgotPassword = '/forgot-password';
-  static const String routeDashboard = '/dashboard';
-  static const String routeProfile = '/profile';
-  static const String routeSettings = '/settings';
-  static const String routeAppointments = '/appointments';
-  static const String routeServices = '/services';
-  static const String routeServiceDetails = '/service-details';
-  static const String routeBooking = '/booking';
-  static const String routeNotifications = '/notifications';
-
   // Animation Durations
   static const int splashDuration = 2000; // milliseconds
   static const int shortAnimationDuration = 300; // milliseconds
