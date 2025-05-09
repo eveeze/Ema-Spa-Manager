@@ -81,7 +81,7 @@ class ServiceCategoryController extends GetxController {
   void navigateToEditServiceCategory(String id) {
     Get.toNamed('/service-categories/edit/$id');
   }
-
+  
   // Navigate to view service category details
   void navigateToViewServiceCategory(String id) {
     Get.toNamed('${AppRoutes.serviceCategoryEdit}/$id');

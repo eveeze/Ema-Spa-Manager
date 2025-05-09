@@ -32,6 +32,8 @@ class AppTextField extends StatelessWidget {
   final Function(String)? onSubmitted;
   final bool autocorrect;
   final bool enableSuggestions;
+  // Add validator parameter
+  final String? Function(String?)? validator;
 
   const AppTextField({
     super.key,
@@ -61,6 +63,7 @@ class AppTextField extends StatelessWidget {
     this.onSubmitted,
     this.autocorrect = true,
     this.enableSuggestions = true,
+    this.validator, // Add validator to constructor
   });
 
   @override
@@ -68,8 +71,9 @@ class AppTextField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (label != null) ...[_buildLabel(), SizedBox(height: 6)],
-        TextField(
+        if (label != null) ...[_buildLabel(), const SizedBox(height: 6)],
+        // Use TextFormField instead of TextField to support validation
+        TextFormField(
           controller: controller,
           obscureText: obscureText,
           keyboardType: keyboardType,
@@ -84,10 +88,11 @@ class AppTextField extends StatelessWidget {
           focusNode: focusNode,
           textCapitalization: textCapitalization,
           textInputAction: textInputAction,
-          onSubmitted: onSubmitted,
+          onFieldSubmitted: onSubmitted,
           autocorrect: autocorrect,
           enableSuggestions: enableSuggestions,
           inputFormatters: inputFormatters,
+          validator: validator, // Add the validator
           decoration: InputDecoration(
             hintText: placeholder,
             hintStyle: TextStyle(color: ColorTheme.textTertiary),
@@ -98,7 +103,9 @@ class AppTextField extends StatelessWidget {
             fillColor:
                 enabled
                     ? Colors.white
-                    : ColorTheme.border.withValues(alpha: 0.5),
+                    : ColorTheme.border.withValues(
+                      alpha: 0.5,
+                    ), // Fixed withValues to withOpacity
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(color: ColorTheme.border),
@@ -162,11 +169,11 @@ class AppTextField extends StatelessWidget {
   EdgeInsets _getContentPadding() {
     switch (size) {
       case TextFieldSize.small:
-        return EdgeInsets.symmetric(horizontal: 12, vertical: 8);
+        return const EdgeInsets.symmetric(horizontal: 12, vertical: 8);
       case TextFieldSize.medium:
-        return EdgeInsets.symmetric(horizontal: 16, vertical: 12);
+        return const EdgeInsets.symmetric(horizontal: 16, vertical: 12);
       case TextFieldSize.large:
-        return EdgeInsets.symmetric(horizontal: 16, vertical: 16);
+        return const EdgeInsets.symmetric(horizontal: 16, vertical: 16);
     }
   }
 

@@ -1,4 +1,7 @@
 //utils/app_routes.dart
+import 'package:emababyspa/features/service/views/service_edit_view.dart';
+import 'package:emababyspa/features/service/views/service_form_view.dart';
+import 'package:emababyspa/features/service/views/service_manage_view.dart';
 import 'package:emababyspa/features/service_category/views/service_category_form_view.dart';
 import 'package:get/get.dart';
 import 'package:emababyspa/common/constants/app_constants.dart';
@@ -32,6 +35,7 @@ class AppRoutes {
   static const String serviceCategoryForm = '/service-categories/form';
   static const String serviceCategoryEdit = '/service-categories/edit/:id';
   static const String serviceList = '/services';
+  static const String serviceManage = '/services/manage';
   static const String serviceDetail = '/services/:id';
   static const String serviceForm = '/services/form';
   static const String serviceEdit = '/services/edit/:id';
@@ -63,6 +67,23 @@ class AppRoutes {
       page: () => ServiceView(),
       binding: ServiceBindings(),
     ),
+
+    GetPage(
+      name: serviceManage,
+      page: () => ServiceManageView(),
+      binding: ServiceBindings(),
+    ),
+    GetPage(
+      name: serviceForm,
+      page: () => ServiceFormView(),
+      binding: ServiceBindings(),
+    ),
+    GetPage(
+      name: serviceEdit,
+      page: () => ServiceEditView(),
+      binding: ServiceBindings(),
+    ),
+
     // Staff routes
     GetPage(name: staffList, page: () => StaffView(), binding: StaffBindings()),
     GetPage(
