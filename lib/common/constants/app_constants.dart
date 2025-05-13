@@ -26,4 +26,7 @@ class AppConstants {
   static const String dateFormatApi = 'yyyy-MM-dd';
   static const String timeFormatApi = 'HH:mm:ss';
   static const String dateTimeFormatApi = 'yyyy-MM-dd\'T\'HH:mm:ss';
+
+  // secret
+  static const String schedulerSecret = 'shutupnigga';
 }

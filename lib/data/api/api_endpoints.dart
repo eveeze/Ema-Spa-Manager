@@ -44,7 +44,11 @@ class ApiEndpoints {
   // Time Slots
   static const String timeSlots = '/time-slots';
   static const String sessions = '/sessions';
-
+  // scheduler
+  static const String scheduleGenerate = '/scheduler/generate';
+  static const String scheduleGenerateComponents =
+      '/scheduler/generate/components';
+  static const String scheduleCron = '/scheduler/cron';
   // Analytics
   static const String analytics = '/analytics';
   static const String dailyAnalytics = '/analytics/daily';

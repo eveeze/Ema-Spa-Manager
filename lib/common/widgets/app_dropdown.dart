@@ -42,43 +42,83 @@ class AppDropdown<T> extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (label != null) ...[_buildLabel(), SizedBox(height: 6)],
-          Container(
+          if (label != null) ...[_buildLabel(), SizedBox(height: 8)],
+          AnimatedContainer(
+            duration: Duration(milliseconds: 200),
             decoration: BoxDecoration(
               color:
                   enabled
-                      ? Colors.white
+                      ? ColorTheme.inputBackground
                       : ColorTheme.border.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: errorText != null ? ColorTheme.error : ColorTheme.border,
+                color:
+                    errorText != null
+                        ? ColorTheme.error
+                        : onChanged != null && value != null
+                        ? ColorTheme.inputFocus
+                        : ColorTheme.border,
+                width:
+                    errorText != null || (onChanged != null && value != null)
+                        ? 1.5
+                        : 1.0,
               ),
+              boxShadow: [
+                if (enabled && errorText == null)
+                  BoxShadow(
+                    color: ColorTheme.cardShadow,
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
+              ],
             ),
             child: DropdownButtonHideUnderline(
               child: ButtonTheme(
                 alignedDropdown: true,
                 child: DropdownButton<T>(
                   value: value,
-                  icon: Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    color: ColorTheme.textSecondary,
+                  icon: Container(
+                    padding: EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color:
+                          enabled
+                              ? ColorTheme.primaryLight
+                              : Colors.transparent,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color:
+                          enabled
+                              ? ColorTheme.primary
+                              : ColorTheme.textSecondary,
+                      size: 20,
+                    ),
                   ),
                   iconSize: 24,
-                  elevation: 4,
+                  elevation: 8,
                   isDense: false,
                   isExpanded: true,
-                  hint: Text(
-                    placeholder ?? 'Select an option',
-                    style: TextStyle(
-                      color: ColorTheme.textTertiary,
-                      fontSize: 14,
-                      fontFamily: 'JosefinSans',
-                    ),
+                  borderRadius: BorderRadius.circular(10),
+                  hint: Row(
+                    children: [
+                      if (prefix != null) ...[prefix!, SizedBox(width: 8)],
+                      Text(
+                        placeholder ?? 'Select an option',
+                        style: TextStyle(
+                          color: ColorTheme.textTertiary,
+                          fontSize: 14,
+                          fontFamily: 'JosefinSans',
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
                   ),
                   style: TextStyle(
                     color: ColorTheme.textPrimary,
                     fontSize: 14,
                     fontFamily: 'JosefinSans',
+                    fontWeight: FontWeight.w500,
                   ),
                   dropdownColor: Colors.white,
                   onChanged: enabled ? onChanged : null,
@@ -86,29 +126,55 @@ class AppDropdown<T> extends StatelessWidget {
                       items.map<DropdownMenuItem<T>>((DropdownItem<T> item) {
                         return DropdownMenuItem<T>(
                           value: item.value,
-                          child: Text(
-                            item.label,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontFamily: 'JosefinSans',
-                            ),
+                          child: Row(
+                            children: [
+                              if (prefix != null && item.value == value) ...[
+                                prefix!,
+                                SizedBox(width: 8),
+                              ],
+                              Text(
+                                item.label,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontFamily: 'JosefinSans',
+                                  fontWeight:
+                                      item.value == value
+                                          ? FontWeight.w600
+                                          : FontWeight.w400,
+                                  color:
+                                      item.value == value
+                                          ? ColorTheme.primary
+                                          : ColorTheme.textPrimary,
+                                ),
+                              ),
+                            ],
                           ),
                         );
                       }).toList(),
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  menuMaxHeight: 300,
                 ),
               ),
             ),
           ),
           if (errorText != null) ...[
-            SizedBox(height: 4),
-            Text(
-              errorText!,
-              style: TextStyle(
-                color: ColorTheme.error,
-                fontSize: 12,
-                fontFamily: 'JosefinSans',
-              ),
+            SizedBox(height: 6),
+            Row(
+              children: [
+                Icon(Icons.error_outline, size: 14, color: ColorTheme.error),
+                SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    errorText!,
+                    style: TextStyle(
+                      color: ColorTheme.error,
+                      fontSize: 12,
+                      fontFamily: 'JosefinSans',
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ],
@@ -123,9 +189,10 @@ class AppDropdown<T> extends StatelessWidget {
           label!,
           style: TextStyle(
             fontSize: 14,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
             color: ColorTheme.textPrimary,
             fontFamily: 'JosefinSans',
+            letterSpacing: 0.1,
           ),
         ),
         if (isRequired)
@@ -133,7 +200,7 @@ class AppDropdown<T> extends StatelessWidget {
             " *",
             style: TextStyle(
               fontSize: 14,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600,
               color: ColorTheme.error,
               fontFamily: 'JosefinSans',
             ),

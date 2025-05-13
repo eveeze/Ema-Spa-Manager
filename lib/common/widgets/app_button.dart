@@ -56,7 +56,11 @@ class AppButton extends StatelessWidget {
           backgroundColor: ColorTheme.primary,
           foregroundColor: Colors.white,
           padding: _getPadding(),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          elevation: 2,
+          shadowColor: ColorTheme.primary.withValues(alpha: 0.4),
         ),
         child: _buildButtonContent(Colors.white),
       ),
@@ -73,7 +77,11 @@ class AppButton extends StatelessWidget {
           backgroundColor: ColorTheme.secondary,
           foregroundColor: Colors.white,
           padding: _getPadding(),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          elevation: 2,
+          shadowColor: ColorTheme.secondary.withValues(alpha: 0.4),
         ),
         child: _buildButtonContent(Colors.white),
       ),
@@ -88,9 +96,11 @@ class AppButton extends StatelessWidget {
         onPressed: isLoading ? null : onPressed,
         style: OutlinedButton.styleFrom(
           foregroundColor: ColorTheme.primary,
-          side: BorderSide(color: ColorTheme.primary),
+          side: BorderSide(color: ColorTheme.primary, width: 1.5),
           padding: _getPadding(),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
         child: _buildButtonContent(ColorTheme.primary),
       ),
@@ -106,6 +116,8 @@ class AppButton extends StatelessWidget {
         style: TextButton.styleFrom(
           foregroundColor: ColorTheme.primary,
           padding: _getPadding(),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          overlayColor: ColorTheme.primaryLight.withValues(alpha: 0.2),
         ),
         child: _buildButtonContent(ColorTheme.primary),
       ),
@@ -120,40 +132,47 @@ class AppButton extends StatelessWidget {
     } else {
       return Text(
         text,
-        style: TextStyle(fontSize: _getFontSize(), fontWeight: FontWeight.w600),
+        style: TextStyle(
+          fontSize: _getFontSize(),
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.3,
+        ),
       );
     }
   }
 
   Widget _buildLoadingIndicator(Color color) {
     return SizedBox(
-      height: 20,
-      width: 20,
+      height: size == AppButtonSize.small ? 16 : 20,
+      width: size == AppButtonSize.small ? 16 : 20,
       child: CircularProgressIndicator(
-        strokeWidth: 2,
+        strokeWidth: size == AppButtonSize.small ? 2 : 2.5,
         valueColor: AlwaysStoppedAnimation<Color>(color),
       ),
     );
   }
 
   Widget _buildTextWithIcon(Color color) {
+    final iconGap = size == AppButtonSize.large ? 10.0 : 8.0;
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         if (iconPosition) ...[
           Icon(icon, size: _getIconSize()),
-          SizedBox(width: 8),
+          SizedBox(width: iconGap),
         ],
         Text(
           text,
           style: TextStyle(
             fontSize: _getFontSize(),
             fontWeight: FontWeight.w600,
+            letterSpacing: 0.3,
           ),
         ),
         if (!iconPosition) ...[
-          SizedBox(width: 8),
+          SizedBox(width: iconGap),
           Icon(icon, size: _getIconSize()),
         ],
       ],

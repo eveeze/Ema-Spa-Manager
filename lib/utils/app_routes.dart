@@ -38,6 +38,9 @@ class AppRoutes {
   static const String serviceDetail = '/services/:id';
   static const String serviceForm = '/services/form';
   static const String serviceEdit = '/services/edit/:id';
+  static const String operatingScheduleList = '/operating-schedules';
+  static const String operatingScheduleDetail = '/operating-schedules/:id';
+  static const String operatingScheduleForm = '/operating-schedules/form';
   static const String customerList = '/customers';
   static const String customerDetail = '/customers/:id';
   static const String reservationList = '/reservations';
@@ -95,7 +98,7 @@ class AppRoutes {
       page: () => StaffEditView(),
       binding: StaffBindings(),
     ),
-
+    // service category routes
     GetPage(
       name: serviceCategoryList,
       page: () => ServiceCategoryView(),
@@ -112,6 +115,9 @@ class AppRoutes {
       page: () => ServiceCategoryEditView(),
       binding: ServiceCategoryBindings(),
     ),
+
+    // schedule routes
+
     // Rute detail dan form akan ditambahkan disini
   ];
 }
