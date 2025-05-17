@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:emababyspa/common/theme/color_theme.dart';
-import 'package:emababyspa/common/widgets/custom_appbar.dart';
 import 'package:emababyspa/common/widgets/empty_state_widget.dart';
 import 'package:emababyspa/features/dashboard/controllers/dashboard_controller.dart';
 import 'package:emababyspa/common/layouts/main_layout.dart';
@@ -15,18 +14,6 @@ class DashboardView extends GetView<DashboardController> {
     return MainLayout(
       child: SafeArea(
         child: Scaffold(
-          appBar: CustomAppBar(
-            title: 'Home',
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.notifications_outlined),
-                onPressed: () {
-                  // Navigate to notifications
-                },
-              ),
-            ],
-            showBackButton: false,
-          ),
           body: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Obx(() {

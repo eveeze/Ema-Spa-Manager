@@ -1,4 +1,5 @@
 //utils/app_routes.dart
+
 import 'package:emababyspa/features/service/views/service_edit_view.dart';
 import 'package:emababyspa/features/service/views/service_form_view.dart';
 import 'package:emababyspa/features/service/views/service_manage_view.dart';
@@ -19,6 +20,8 @@ import 'package:emababyspa/features/staff/bindings/staff_bindings.dart';
 import 'package:emababyspa/features/service_category/views/service_category_view.dart';
 import 'package:emababyspa/features/service_category/bindings/service_category_bindings.dart';
 import 'package:emababyspa/features/service_category/views/service_category_edit_view.dart';
+import 'package:emababyspa/features/schedule/views/schedule_view.dart';
+import 'package:emababyspa/features/schedule/bindings/schedule_bindings.dart';
 
 class AppRoutes {
   static const String splash = '/splash';
@@ -49,6 +52,11 @@ class AppRoutes {
   static const String paymentList = '/payments';
   static const String paymentDetail = '/payments/:id';
   static const String schedule = '/schedule';
+  static const String sessionList = '/sessions';
+  static const String sessionDetail = '/sessions/:id';
+  static const String timeSlotList = '/time-slots';
+  static const String timeSlotForm = '/time-slots/form';
+  static const String timeSlotDetail = '/time-slots/:id';
   static const String analytics = '/analytics';
 
   static final List<GetPage> pages = [
@@ -116,6 +124,11 @@ class AppRoutes {
       binding: ServiceCategoryBindings(),
     ),
 
+    GetPage(
+      name: schedule,
+      page: () => ScheduleView(),
+      binding: ScheduleBindings(),
+    ),
     // schedule routes
 
     // Rute detail dan form akan ditambahkan disini

@@ -3,9 +3,18 @@
 import 'package:get/get.dart' hide Response;
 import 'package:emababyspa/data/api/api_client.dart';
 import 'package:emababyspa/data/api/api_endpoints.dart';
+import 'package:emababyspa/data/api/api_exception.dart';
 
 class OperatingScheduleProvider {
   final ApiClient _apiClient = Get.find<ApiClient>();
+
+  /// Helper method to extract data from API response
+  dynamic _extractData(dynamic response) {
+    if (response is Map<String, dynamic> && response.containsKey('data')) {
+      return response['data'];
+    }
+    return response;
+  }
 
   Future<dynamic> createOperatingSchedule({
     required String date,
@@ -13,7 +22,11 @@ class OperatingScheduleProvider {
     String? notes,
   }) async {
     try {
-      Map<String, dynamic> data = {'date': date};
+      // Ensure date is in ISO format (YYYY-MM-DD)
+      final formattedDate =
+          DateTime.parse(date).toIso8601String().split('T')[0];
+
+      Map<String, dynamic> data = {'date': formattedDate};
 
       if (isHoliday != null) {
         data['isHoliday'] = isHoliday;
@@ -23,16 +36,18 @@ class OperatingScheduleProvider {
         data['notes'] = notes;
       }
 
-      return await _apiClient.postValidated(
+      final response = await _apiClient.postValidated(
         ApiEndpoints.operatingSchedules,
         data: data,
       );
+
+      return _extractData(response);
     } catch (e) {
       rethrow;
     }
   }
 
-  Future<dynamic> getAllOperatingSchedules({
+  Future<List<dynamic>> getAllOperatingSchedules({
     String? date,
     bool? isHoliday,
     String? startDate,
@@ -42,7 +57,9 @@ class OperatingScheduleProvider {
       Map<String, dynamic> queryParameters = {};
 
       if (date != null) {
-        queryParameters['date'] = date;
+        // Format date to YYYY-MM-DD
+        queryParameters['date'] =
+            DateTime.parse(date).toIso8601String().split('T')[0];
       }
 
       if (isHoliday != null) {
@@ -50,17 +67,42 @@ class OperatingScheduleProvider {
       }
 
       if (startDate != null) {
-        queryParameters['startDate'] = startDate;
+        queryParameters['startDate'] =
+            DateTime.parse(startDate).toIso8601String().split('T')[0];
       }
 
       if (endDate != null) {
-        queryParameters['endDate'] = endDate;
+        queryParameters['endDate'] =
+            DateTime.parse(endDate).toIso8601String().split('T')[0];
       }
 
-      return await _apiClient.getValidated(
+      final response = await _apiClient.getValidated(
         ApiEndpoints.operatingSchedules,
         queryParameters: queryParameters,
       );
+
+      // Check for the response structure
+      if (response is Map<String, dynamic>) {
+        // Check if it has data field and if it's a list
+        if (response.containsKey('data') && response['data'] is List) {
+          return response['data'] as List<dynamic>;
+        }
+        // If it has success field but unexpected structure
+        else if (response.containsKey('success')) {
+          throw ApiException(
+            message: 'Response format does not contain valid data array',
+          );
+        }
+        // If the response is itself a list item
+        else if (response.containsKey('id')) {
+          return [response];
+        }
+      } else if (response is List) {
+        // If response is already a list
+        return response;
+      }
+
+      throw ApiException(message: 'Unexpected response format from server');
     } catch (e) {
       rethrow;
     }
@@ -68,10 +110,12 @@ class OperatingScheduleProvider {
 
   Future<dynamic> getOperatingScheduleById(String id) async {
     try {
-      return await _apiClient.getValidated(
+      final response = await _apiClient.getValidated(
         ApiEndpoints.operatingScheduleDetail,
         pathParams: {'id': id},
       );
+
+      return _extractData(response);
     } catch (e) {
       rethrow;
     }
@@ -79,10 +123,18 @@ class OperatingScheduleProvider {
 
   Future<dynamic> getOperatingScheduleByDate(String date) async {
     try {
-      return await _apiClient.getValidated(
+      // Format date to YYYY-MM-DD if it's a DateTime object
+      String formattedDate = date;
+      try {
+        formattedDate = DateTime.parse(date).toIso8601String().split('T')[0];
+      } catch (_) {}
+
+      final response = await _apiClient.getValidated(
         ApiEndpoints.operatingScheduleByDate,
-        pathParams: {'date': date},
+        pathParams: {'date': formattedDate},
       );
+
+      return _extractData(response);
     } catch (e) {
       rethrow;
     }
@@ -97,26 +149,39 @@ class OperatingScheduleProvider {
     try {
       Map<String, dynamic> data = {};
 
-      if (date != null) data['date'] = date;
+      if (date != null) {
+        // Format date to YYYY-MM-DD
+        data['date'] = DateTime.parse(date).toIso8601String().split('T')[0];
+      }
+
       if (isHoliday != null) data['isHoliday'] = isHoliday;
       if (notes != null) data['notes'] = notes;
 
-      return await _apiClient.putValidated(
+      final response = await _apiClient.putValidated(
         ApiEndpoints.operatingScheduleDetail,
         data: data,
         pathParams: {'id': id},
       );
+
+      return _extractData(response);
     } catch (e) {
       rethrow;
     }
   }
 
-  Future<dynamic> deleteOperatingSchedule(String id) async {
+  Future<bool> deleteOperatingSchedule(String id) async {
     try {
-      return await _apiClient.deleteValidated(
+      final response = await _apiClient.deleteValidated(
         ApiEndpoints.operatingScheduleDetail,
         pathParams: {'id': id},
       );
+
+      // Check for success field in response
+      if (response is Map<String, dynamic> && response.containsKey('success')) {
+        return response['success'] == true;
+      }
+
+      return true; // Assume success if no specific indicator
     } catch (e) {
       rethrow;
     }
@@ -124,10 +189,12 @@ class OperatingScheduleProvider {
 
   Future<dynamic> toggleHolidayStatus(String id, bool isHoliday) async {
     try {
-      return await _apiClient.patchValidated(
+      final response = await _apiClient.patchValidated(
         '${ApiEndpoints.operatingSchedules}/$id/toggle-holiday',
         data: {'isHoliday': isHoliday},
       );
+
+      return _extractData(response);
     } catch (e) {
       rethrow;
     }

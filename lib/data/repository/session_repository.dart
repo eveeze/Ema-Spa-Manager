@@ -25,7 +25,8 @@ class SessionRepository {
       return Session.fromJson(data);
     } on DioException catch (e) {
       throw ApiException(
-        message: e.error?.toString() ?? 'Failed to create session',
+        message: e.response?.data?['message'] ?? 'Failed to create session',
+        code: e.response?.statusCode,
       );
     } catch (e) {
       throw ApiException(
@@ -39,14 +40,14 @@ class SessionRepository {
     required List<Map<String, dynamic>> sessions,
   }) async {
     try {
-      final List<dynamic> sessionsData = await _provider.createManySessions(
-        sessions: sessions,
-      );
+      final List<Map<String, dynamic>> sessionsData = await _provider
+          .createManySessions(sessions: sessions);
 
       return sessionsData.map((json) => Session.fromJson(json)).toList();
     } on DioException catch (e) {
       throw ApiException(
-        message: e.error?.toString() ?? 'Failed to create sessions',
+        message: e.response?.data?['message'] ?? 'Failed to create sessions',
+        code: e.response?.statusCode,
       );
     } catch (e) {
       throw ApiException(
@@ -63,17 +64,19 @@ class SessionRepository {
     String? date,
   }) async {
     try {
-      final List<dynamic> sessionsData = await _provider.getAllSessions(
-        isBooked: isBooked,
-        staffId: staffId,
-        timeSlotId: timeSlotId,
-        date: date,
-      );
+      final List<Map<String, dynamic>> sessionsData = await _provider
+          .getAllSessions(
+            isBooked: isBooked,
+            staffId: staffId,
+            timeSlotId: timeSlotId,
+            date: date,
+          );
 
       return sessionsData.map((json) => Session.fromJson(json)).toList();
     } on DioException catch (e) {
       throw ApiException(
-        message: e.error?.toString() ?? 'Failed to retrieve sessions',
+        message: e.response?.data?['message'] ?? 'Failed to retrieve sessions',
+        code: e.response?.statusCode,
       );
     } catch (e) {
       throw ApiException(
@@ -89,7 +92,10 @@ class SessionRepository {
 
       return Session.fromJson(data);
     } on DioException catch (e) {
-      throw ApiException(message: e.error?.toString() ?? 'Session not found');
+      throw ApiException(
+        message: e.response?.data?['message'] ?? 'Session not found',
+        code: e.response?.statusCode,
+      );
     } catch (e) {
       throw ApiException(
         message: 'Gagal mengambil detail sesi. Silakan coba lagi nanti.',
@@ -115,7 +121,8 @@ class SessionRepository {
       return Session.fromJson(data);
     } on DioException catch (e) {
       throw ApiException(
-        message: e.error?.toString() ?? 'Failed to update session',
+        message: e.response?.data?['message'] ?? 'Failed to update session',
+        code: e.response?.statusCode,
       );
     } catch (e) {
       throw ApiException(
@@ -127,11 +134,11 @@ class SessionRepository {
   /// Delete a session
   Future<bool> deleteSession(String id) async {
     try {
-      await _provider.deleteSession(id);
-      return true;
+      return await _provider.deleteSession(id);
     } on DioException catch (e) {
       throw ApiException(
-        message: e.error?.toString() ?? 'Failed to delete session',
+        message: e.response?.data?['message'] ?? 'Failed to delete session',
+        code: e.response?.statusCode,
       );
     } catch (e) {
       throw ApiException(
@@ -141,18 +148,21 @@ class SessionRepository {
   }
 
   /// Get available sessions for a specific date and service duration
-  Future<List<dynamic>> getAvailableSessions({
+  Future<List<Session>> getAvailableSessions({
     required String date,
     int? duration,
   }) async {
     try {
-      return await _provider.getAvailableSessions(
-        date: date,
-        duration: duration,
-      );
+      final List<Map<String, dynamic>> availableSessions = await _provider
+          .getAvailableSessions(date: date, duration: duration);
+
+      return availableSessions.map((json) => Session.fromJson(json)).toList();
     } on DioException catch (e) {
       throw ApiException(
-        message: e.error?.toString() ?? 'Failed to retrieve available sessions',
+        message:
+            e.response?.data?['message'] ??
+            'Failed to retrieve available sessions',
+        code: e.response?.statusCode,
       );
     } catch (e) {
       throw ApiException(
@@ -170,7 +180,9 @@ class SessionRepository {
     } on DioException catch (e) {
       throw ApiException(
         message:
-            e.error?.toString() ?? 'Failed to update session booking status',
+            e.response?.data?['message'] ??
+            'Failed to update session booking status',
+        code: e.response?.statusCode,
       );
     } catch (e) {
       throw ApiException(
@@ -181,20 +193,22 @@ class SessionRepository {
   }
 
   /// Get sessions by staff ID with optional date range
-  Future<List<dynamic>> getSessionsByStaff(
+  Future<List<Session>> getSessionsByStaff(
     String staffId, {
     String? startDate,
     String? endDate,
   }) async {
     try {
-      return await _provider.getSessionsByStaff(
-        staffId,
-        startDate: startDate,
-        endDate: endDate,
-      );
+      final List<Map<String, dynamic>> staffSessions = await _provider
+          .getSessionsByStaff(staffId, startDate: startDate, endDate: endDate);
+
+      return staffSessions.map((json) => Session.fromJson(json)).toList();
     } on DioException catch (e) {
       throw ApiException(
-        message: e.error?.toString() ?? 'Failed to retrieve staff sessions',
+        message:
+            e.response?.data?['message'] ?? 'Failed to retrieve staff sessions',
+
+        code: e.response?.statusCode,
       );
     } catch (e) {
       throw ApiException(

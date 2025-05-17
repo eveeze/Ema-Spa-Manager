@@ -37,24 +37,18 @@ class ApiEndpoints {
   static const String updatePaymentStatus = '/payments/{id}/status';
 
   // Operating Schedule
-  static const String operatingSchedules = '/operating-schedules';
-  static const String operatingScheduleDetail = '/operating-schedules/{id}';
+  static const String operatingSchedules = '/operating-schedule';
+  static const String operatingScheduleDetail = '/operating-schedule/{id}';
   static const String operatingScheduleByDate =
       '/operating-schedules/date/{date}';
   // Time Slots
-  static const String timeSlots = '/time-slots';
-  static const String sessions = '/sessions';
-  // scheduler
-  static const String scheduleGenerate = '/scheduler/generate';
-  static const String scheduleGenerateComponents =
-      '/scheduler/generate/components';
-  static const String scheduleCron = '/scheduler/cron';
-  // Analytics
-  static const String analytics = '/analytics';
-  static const String dailyAnalytics = '/analytics/daily';
-  static const String monthlyAnalytics = '/analytics/monthly';
+  static const String timeSlots = '/time-slot';
+  // session
+  static const String sessions = '/session';
 
-  // Notifications
-  static const String notifications = '/notifications';
-  static const String markNotificationRead = '/notifications/{id}/read';
+  // scheduler
+  static const String generateSchedule = '/api/scheduler/generate';
+  static const String generateScheduleComponents =
+      '/api/scheduler/generate/components';
+  static const String cronScheduleGeneration = '/api/scheduler/cron';
 }

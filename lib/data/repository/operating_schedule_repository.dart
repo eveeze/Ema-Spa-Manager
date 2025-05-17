@@ -1,7 +1,8 @@
 // lib/data/repository/operating_schedule_repository.dart
-import 'package:emababyspa/data/api/api_exception.dart';
+
 import 'package:emababyspa/data/models/operating_schedule.dart';
 import 'package:emababyspa/data/providers/operating_schedule_provider.dart';
+import 'package:emababyspa/data/api/api_exception.dart';
 import 'package:dio/dio.dart';
 
 class OperatingScheduleRepository {
@@ -10,33 +11,6 @@ class OperatingScheduleRepository {
   OperatingScheduleRepository({required OperatingScheduleProvider provider})
     : _provider = provider;
 
-  /// Create a new operating schedule
-  Future<OperatingSchedule> createOperatingSchedule({
-    required String date,
-    bool? isHoliday,
-    String? notes,
-  }) async {
-    try {
-      final data = await _provider.createOperatingSchedule(
-        date: date,
-        isHoliday: isHoliday,
-        notes: notes,
-      );
-
-      return OperatingSchedule.fromJson(data);
-    } on DioException catch (e) {
-      throw ApiException(
-        message: e.error?.toString() ?? 'Failed to create operating schedule',
-      );
-    } catch (e) {
-      throw ApiException(
-        message:
-            'Gagal membuat jadwal operasional baru. Silakan coba lagi nanti.',
-      );
-    }
-  }
-
-  /// Get all operating schedules with optional filtering
   Future<List<OperatingSchedule>> getAllOperatingSchedules({
     String? date,
     bool? isHoliday,
@@ -44,23 +18,26 @@ class OperatingScheduleRepository {
     String? endDate,
   }) async {
     try {
-      final List<dynamic> schedulesJson = await _provider
-          .getAllOperatingSchedules(
-            date: date,
-            isHoliday: isHoliday,
-            startDate: startDate,
-            endDate: endDate,
-          );
+      final response = await _provider.getAllOperatingSchedules(
+        date: date,
+        isHoliday: isHoliday,
+        startDate: startDate,
+        endDate: endDate,
+      );
 
-      return schedulesJson
-          .map((json) => OperatingSchedule.fromJson(json))
-          .toList();
+      // Convert each item in the response list to OperatingSchedule
+      return response.map((item) => OperatingSchedule.fromJson(item)).toList();
     } on DioException catch (e) {
       throw ApiException(
         message:
-            e.error?.toString() ?? 'Failed to retrieve operating schedules',
+            e.message ??
+            'Gagal mengambil data jadwal operasional. Silakan coba lagi nanti.',
+        code: e.response?.statusCode,
       );
     } catch (e) {
+      if (e is ApiException) {
+        rethrow;
+      }
       throw ApiException(
         message:
             'Gagal mengambil data jadwal operasional. Silakan coba lagi nanti.',
@@ -68,41 +45,36 @@ class OperatingScheduleRepository {
     }
   }
 
-  /// Get operating schedule details by ID
-  Future<OperatingSchedule> getOperatingScheduleById(String id) async {
+  Future<OperatingSchedule> createOperatingSchedule({
+    required String date,
+    bool? isHoliday,
+    String? notes,
+  }) async {
     try {
-      final data = await _provider.getOperatingScheduleById(id);
-      return OperatingSchedule.fromJson(data);
+      final response = await _provider.createOperatingSchedule(
+        date: date,
+        isHoliday: isHoliday,
+        notes: notes,
+      );
+
+      return OperatingSchedule.fromJson(response);
     } on DioException catch (e) {
       throw ApiException(
-        message: e.error?.toString() ?? 'Operating schedule not found',
+        message:
+            e.message ??
+            'Gagal membuat jadwal operasional. Silakan coba lagi nanti.',
+        code: e.response?.statusCode,
       );
     } catch (e) {
+      if (e is ApiException) {
+        rethrow;
+      }
       throw ApiException(
-        message:
-            'Gagal mengambil detail jadwal operasional. Silakan coba lagi nanti.',
+        message: 'Gagal membuat jadwal operasional. Silakan coba lagi nanti.',
       );
     }
   }
 
-  /// Get operating schedule by date
-  Future<OperatingSchedule> getOperatingScheduleByDate(String date) async {
-    try {
-      final data = await _provider.getOperatingScheduleByDate(date);
-      return OperatingSchedule.fromJson(data);
-    } on DioException catch (e) {
-      throw ApiException(
-        message: e.error?.toString() ?? 'Operating schedule not found for date',
-      );
-    } catch (e) {
-      throw ApiException(
-        message:
-            'Gagal mengambil jadwal operasional untuk tanggal tersebut. Silakan coba lagi nanti.',
-      );
-    }
-  }
-
-  /// Update an existing operating schedule
   Future<OperatingSchedule> updateOperatingSchedule({
     required String id,
     String? date,
@@ -110,19 +82,25 @@ class OperatingScheduleRepository {
     String? notes,
   }) async {
     try {
-      final data = await _provider.updateOperatingSchedule(
+      final response = await _provider.updateOperatingSchedule(
         id: id,
         date: date,
         isHoliday: isHoliday,
         notes: notes,
       );
 
-      return OperatingSchedule.fromJson(data);
+      return OperatingSchedule.fromJson(response);
     } on DioException catch (e) {
       throw ApiException(
-        message: e.error?.toString() ?? 'Failed to update operating schedule',
+        message:
+            e.message ??
+            'Gagal memperbarui jadwal operasional. Silakan coba lagi nanti.',
+        code: e.response?.statusCode,
       );
     } catch (e) {
+      if (e is ApiException) {
+        rethrow;
+      }
       throw ApiException(
         message:
             'Gagal memperbarui jadwal operasional. Silakan coba lagi nanti.',
@@ -130,40 +108,98 @@ class OperatingScheduleRepository {
     }
   }
 
-  /// Delete an operating schedule
-  Future<bool> deleteOperatingSchedule(String id) async {
+  Future<OperatingSchedule> getOperatingScheduleById(String id) async {
     try {
-      await _provider.deleteOperatingSchedule(id);
-      return true;
+      final response = await _provider.getOperatingScheduleById(id);
+
+      return OperatingSchedule.fromJson(response);
     } on DioException catch (e) {
       throw ApiException(
-        message: e.error?.toString() ?? 'Failed to delete operating schedule',
+        message:
+            e.message ??
+            'Jadwal operasional dengan ID tersebut tidak ditemukan.',
+        code: e.response?.statusCode,
       );
     } catch (e) {
+      if (e is ApiException) {
+        rethrow;
+      }
+      throw ApiException(
+        message: 'Gagal mengambil jadwal operasional. Silakan coba lagi nanti.',
+      );
+    }
+  }
+
+  Future<OperatingSchedule> getOperatingScheduleByDate(String date) async {
+    try {
+      final response = await _provider.getOperatingScheduleByDate(date);
+
+      return OperatingSchedule.fromJson(response);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        throw ApiException(
+          message: 'Jadwal operasional untuk tanggal tersebut tidak ditemukan.',
+          code: 404,
+        );
+      }
+      throw ApiException(
+        message:
+            e.message ??
+            'Gagal mengambil jadwal operasional. Silakan coba lagi nanti.',
+        code: e.response?.statusCode,
+      );
+    } catch (e) {
+      if (e is ApiException) {
+        rethrow;
+      }
+      throw ApiException(
+        message: 'Gagal mengambil jadwal operasional. Silakan coba lagi nanti.',
+      );
+    }
+  }
+
+  Future<bool> deleteOperatingSchedule(String id) async {
+    try {
+      final result = await _provider.deleteOperatingSchedule(id);
+      return result;
+    } on DioException catch (e) {
+      throw ApiException(
+        message:
+            e.message ??
+            'Gagal menghapus jadwal operasional. Silakan coba lagi nanti.',
+        code: e.response?.statusCode,
+      );
+    } catch (e) {
+      if (e is ApiException) {
+        rethrow;
+      }
       throw ApiException(
         message: 'Gagal menghapus jadwal operasional. Silakan coba lagi nanti.',
       );
     }
   }
 
-  /// Toggle holiday status for an operating schedule
   Future<OperatingSchedule> toggleHolidayStatus(
     String id,
     bool isHoliday,
   ) async {
     try {
-      final data = await _provider.toggleHolidayStatus(id, isHoliday);
-      return OperatingSchedule.fromJson(data);
+      final response = await _provider.toggleHolidayStatus(id, isHoliday);
+
+      return OperatingSchedule.fromJson(response);
     } on DioException catch (e) {
       throw ApiException(
         message:
-            e.error?.toString() ??
-            'Failed to update operating schedule holiday status',
+            e.message ??
+            'Gagal mengubah status hari libur. Silakan coba lagi nanti.',
+        code: e.response?.statusCode,
       );
     } catch (e) {
+      if (e is ApiException) {
+        rethrow;
+      }
       throw ApiException(
-        message:
-            'Gagal mengubah status hari libur jadwal operasional. Silakan coba lagi nanti.',
+        message: 'Gagal mengubah status hari libur. Silakan coba lagi nanti.',
       );
     }
   }
