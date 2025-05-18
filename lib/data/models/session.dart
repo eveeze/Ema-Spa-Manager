@@ -30,22 +30,37 @@ class Session extends Equatable {
   });
 
   factory Session.fromJson(Map<String, dynamic> json) {
+    // Handle semua kemungkinan null
     return Session(
-      id: json['id'],
-      timeSlotId: json['timeSlotId'],
-      staffId: json['staffId'],
-      isBooked: json['isBooked'] ?? false,
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
-      // Handle nested objects if they exist in response
+      id: json['id'] as String? ?? 'invalid_id',
+      timeSlotId: json['timeSlotId'] as String? ?? 'invalid_timeSlotId',
+      staffId: json['staffId'] as String? ?? 'invalid_staffId',
+      isBooked: json['isBooked'] as bool? ?? false,
+      createdAt: _parseDateTime(json['createdAt']),
+      updatedAt: _parseDateTime(json['updatedAt']),
       timeSlot:
-          json['timeSlot'] != null ? TimeSlot.fromJson(json['timeSlot']) : null,
-      staff: json['staff'] != null ? Staff.fromJson(json['staff']) : null,
+          json['timeSlot'] != null
+              ? TimeSlot.fromJson(json['timeSlot'] as Map<String, dynamic>)
+              : null,
+      staff:
+          json['staff'] != null
+              ? Staff.fromJson(json['staff'] as Map<String, dynamic>)
+              : null,
       reservation:
           json['reservation'] != null
-              ? Reservation.fromJson(json['reservation'])
+              ? Reservation.fromJson(
+                json['reservation'] as Map<String, dynamic>,
+              )
               : null,
     );
+  }
+  static DateTime _parseDateTime(dynamic date) {
+    if (date == null) return DateTime.now();
+    try {
+      return DateTime.parse(date as String);
+    } catch (_) {
+      return DateTime.now();
+    }
   }
 
   Map<String, dynamic> toJson() {
@@ -82,6 +97,9 @@ class Session extends Equatable {
     TimeSlot? timeSlot,
     Staff? staff,
     Reservation? reservation,
+    bool clearTimeSlot = false,
+    bool clearStaff = false,
+    bool clearReservation = false,
   }) {
     return Session(
       id: id ?? this.id,
@@ -90,9 +108,9 @@ class Session extends Equatable {
       isBooked: isBooked ?? this.isBooked,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      timeSlot: timeSlot ?? this.timeSlot,
-      staff: staff ?? this.staff,
-      reservation: reservation ?? this.reservation,
+      timeSlot: clearTimeSlot ? null : timeSlot ?? this.timeSlot,
+      staff: clearStaff ? null : staff ?? this.staff,
+      reservation: clearReservation ? null : reservation ?? this.reservation,
     );
   }
 
@@ -107,4 +125,11 @@ class Session extends Equatable {
     // Don't include the optional relationship objects in equality comparison
     // since they might not always be loaded
   ];
+
+  @override
+  String toString() {
+    return 'Session{id: $id, timeSlotId: $timeSlotId, staffId: $staffId, '
+        'isBooked: $isBooked, hasTimeSlot: ${timeSlot != null}, '
+        'hasStaff: ${staff != null}, hasReservation: ${reservation != null}}';
+  }
 }

@@ -5,6 +5,7 @@ import 'package:emababyspa/data/models/session.dart';
 import 'package:emababyspa/data/api/api_exception.dart';
 import 'package:emababyspa/utils/logger_utils.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class SessionController extends GetxController {
   final SessionRepository repository;
@@ -16,13 +17,19 @@ class SessionController extends GetxController {
   final RxString errorMessage = ''.obs;
   final RxList<Session> sessions = <Session>[].obs;
   final Rx<Session?> currentSession = Rx<Session?>(null);
-  final RxList<dynamic> availableSessions = <dynamic>[].obs;
+  final RxList<Session> availableSessions = <Session>[].obs;
 
   // Date selection
   final Rx<DateTime> selectedDate = DateTime.now().obs;
 
   // Service duration in minutes (if applicable)
   final RxInt serviceDuration = 0.obs;
+
+  // Staff filter
+  final RxString selectedStaffId = ''.obs;
+
+  // Booking status filter - use Rx<bool?> for nullable boolean
+  final Rx<bool?> filterIsBooked = Rx<bool?>(null);
 
   SessionController({required this.repository});
 
@@ -33,16 +40,37 @@ class SessionController extends GetxController {
     fetchSessions();
   }
 
+  // Format date to ISO string (YYYY-MM-DD)
+  String _formatDate(DateTime date) {
+    return DateFormat('yyyy-MM-dd').format(date);
+  }
+
   // Set selected date
   void setDate(DateTime date) {
     selectedDate.value = date;
+    // Refresh data based on new date
     fetchAvailableSessions();
   }
 
   // Set service duration
   void setServiceDuration(int duration) {
     serviceDuration.value = duration;
+    // Refresh available sessions with new duration
     fetchAvailableSessions();
+  }
+
+  // Set staff filter
+  void setStaffFilter(String staffId) {
+    selectedStaffId.value = staffId;
+    // Reload sessions with staff filter
+    fetchSessions();
+  }
+
+  // Set booking status filter
+  void setBookingStatusFilter(bool? isBooked) {
+    filterIsBooked.value = isBooked;
+    // Reload sessions with booking status filter
+    fetchSessions();
   }
 
   // Clear error message
@@ -50,9 +78,34 @@ class SessionController extends GetxController {
     errorMessage.value = '';
   }
 
+  // Error handling helper
+  void _handleError(dynamic error, String defaultMessage) {
+    if (error is ApiException) {
+      errorMessage.value = error.message;
+      _logger.error('$defaultMessage: ${error.message}');
+      Get.snackbar(
+        'Gagal',
+        error.message,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } else {
+      errorMessage.value = defaultMessage;
+      _logger.error('Unexpected error: $error');
+      Get.snackbar(
+        'Gagal',
+        defaultMessage,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+  }
+
   // CRUD Operations
 
-  // Fetch all sessions
+  // Fetch all sessions with optional filters
   Future<void> fetchSessions({
     bool? isBooked,
     String? staffId,
@@ -61,22 +114,21 @@ class SessionController extends GetxController {
   }) async {
     try {
       isLoading.value = true;
-      clearError();
+      errorMessage.value = '';
 
-      final result = await repository.getAllSessions(
-        isBooked: isBooked,
-        staffId: staffId,
+      // Use filters from parameters or stored filter values
+      final sessionsList = await repository.getAllSessions(
+        isBooked: isBooked ?? filterIsBooked.value,
+        staffId:
+            staffId ??
+            (selectedStaffId.value.isNotEmpty ? selectedStaffId.value : null),
         timeSlotId: timeSlotId,
-        date: date,
+        date: date ?? _formatDate(selectedDate.value),
       );
 
-      sessions.value = result;
-    } on ApiException catch (e) {
-      errorMessage.value = e.message;
-      _logger.error('Failed to fetch sessions: ${e.message}');
+      sessions.value = sessionsList;
     } catch (e) {
-      errorMessage.value = 'Terjadi kesalahan saat mengambil data sesi';
-      _logger.error('Unexpected error fetching sessions: $e');
+      _handleError(e, 'Gagal mengambil data sesi');
     } finally {
       isLoading.value = false;
     }
@@ -98,41 +150,49 @@ class SessionController extends GetxController {
         isBooked: isBooked,
       );
 
-      sessions.add(session);
+      // Add to list if it matches current filters
+      if (_matchesCurrentFilters(session)) {
+        sessions.add(session);
+      }
+
       currentSession.value = session;
-      Get.snackbar(
-        'Berhasil',
-        'Sesi berhasil dibuat',
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      _showSuccessSnackbar('Sesi berhasil dibuat');
       return true;
-    } on ApiException catch (e) {
-      errorMessage.value = e.message;
-      _logger.error('Failed to create session: ${e.message}');
-      Get.snackbar(
-        'Gagal',
-        e.message,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
-      );
-      return false;
     } catch (e) {
-      errorMessage.value = 'Terjadi kesalahan saat membuat sesi';
-      _logger.error('Unexpected error creating session: $e');
-      Get.snackbar(
-        'Gagal',
-        'Terjadi kesalahan saat membuat sesi',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      _handleError(e, 'Terjadi kesalahan saat membuat sesi');
       return false;
     } finally {
       isSubmitting.value = false;
     }
+  }
+
+  // Helper for success messages
+  void _showSuccessSnackbar(String message) {
+    Get.snackbar(
+      'Berhasil',
+      message,
+      backgroundColor: Colors.green,
+      colorText: Colors.white,
+      snackPosition: SnackPosition.BOTTOM,
+    );
+  }
+
+  // Check if session matches current filters
+  bool _matchesCurrentFilters(Session session) {
+    // Check staff filter
+    if (selectedStaffId.value.isNotEmpty &&
+        session.staffId != selectedStaffId.value) {
+      return false;
+    }
+
+    // Check booking status filter
+    if (filterIsBooked.value != null &&
+        session.isBooked != filterIsBooked.value) {
+      return false;
+    }
+
+    // Could add more filters like date, etc.
+    return true;
   }
 
   // Create multiple sessions at once
@@ -147,36 +207,17 @@ class SessionController extends GetxController {
         sessions: sessionsList,
       );
 
-      sessions.addAll(newSessions);
-      Get.snackbar(
-        'Berhasil',
-        'Semua sesi berhasil dibuat',
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      // Add matching sessions to the current list
+      final matchingSessions =
+          newSessions.where(_matchesCurrentFilters).toList();
+      if (matchingSessions.isNotEmpty) {
+        sessions.addAll(matchingSessions);
+      }
+
+      _showSuccessSnackbar('Semua sesi berhasil dibuat');
       return true;
-    } on ApiException catch (e) {
-      errorMessage.value = e.message;
-      _logger.error('Failed to create multiple sessions: ${e.message}');
-      Get.snackbar(
-        'Gagal',
-        e.message,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
-      );
-      return false;
     } catch (e) {
-      errorMessage.value = 'Terjadi kesalahan saat membuat beberapa sesi';
-      _logger.error('Unexpected error creating multiple sessions: $e');
-      Get.snackbar(
-        'Gagal',
-        'Terjadi kesalahan saat membuat beberapa sesi',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      _handleError(e, 'Terjadi kesalahan saat membuat beberapa sesi');
       return false;
     } finally {
       isSubmitting.value = false;
@@ -191,14 +232,31 @@ class SessionController extends GetxController {
 
       final session = await repository.getSessionById(id);
       currentSession.value = session;
-    } on ApiException catch (e) {
-      errorMessage.value = e.message;
-      _logger.error('Failed to get session: ${e.message}');
     } catch (e) {
-      errorMessage.value = 'Terjadi kesalahan saat mengambil detail sesi';
-      _logger.error('Unexpected error getting session: $e');
+      _handleError(e, 'Terjadi kesalahan saat mengambil detail sesi');
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  // Update session in the list
+  void _updateSessionInList(Session updatedSession) {
+    final index = sessions.indexWhere((s) => s.id == updatedSession.id);
+    if (index != -1) {
+      if (_matchesCurrentFilters(updatedSession)) {
+        sessions[index] = updatedSession;
+      } else {
+        // Remove if it no longer matches filters
+        sessions.removeAt(index);
+      }
+    } else if (_matchesCurrentFilters(updatedSession)) {
+      // Add if it now matches filters
+      sessions.add(updatedSession);
+    }
+
+    // Update current session if it's the one being viewed
+    if (currentSession.value?.id == updatedSession.id) {
+      currentSession.value = updatedSession;
     }
   }
 
@@ -220,42 +278,11 @@ class SessionController extends GetxController {
         isBooked: isBooked,
       );
 
-      // Update the session in the list
-      final index = sessions.indexWhere((s) => s.id == id);
-      if (index != -1) {
-        sessions[index] = updatedSession;
-      }
-
-      currentSession.value = updatedSession;
-      Get.snackbar(
-        'Berhasil',
-        'Sesi berhasil diperbarui',
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      _updateSessionInList(updatedSession);
+      _showSuccessSnackbar('Sesi berhasil diperbarui');
       return true;
-    } on ApiException catch (e) {
-      errorMessage.value = e.message;
-      _logger.error('Failed to update session: ${e.message}');
-      Get.snackbar(
-        'Gagal',
-        e.message,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
-      );
-      return false;
     } catch (e) {
-      errorMessage.value = 'Terjadi kesalahan saat memperbarui sesi';
-      _logger.error('Unexpected error updating session: $e');
-      Get.snackbar(
-        'Gagal',
-        'Terjadi kesalahan saat memperbarui sesi',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      _handleError(e, 'Terjadi kesalahan saat memperbarui sesi');
       return false;
     } finally {
       isSubmitting.value = false;
@@ -273,43 +300,13 @@ class SessionController extends GetxController {
         isBooked,
       );
 
-      // Update the session in the list
-      final index = sessions.indexWhere((s) => s.id == id);
-      if (index != -1) {
-        sessions[index] = updatedSession;
-      }
-
-      currentSession.value = updatedSession;
-      Get.snackbar(
-        'Berhasil',
+      _updateSessionInList(updatedSession);
+      _showSuccessSnackbar(
         isBooked ? 'Sesi berhasil dipesan' : 'Sesi berhasil dibatalkan',
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
       );
       return true;
-    } on ApiException catch (e) {
-      errorMessage.value = e.message;
-      _logger.error('Failed to update session booking status: ${e.message}');
-      Get.snackbar(
-        'Gagal',
-        e.message,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
-      );
-      return false;
     } catch (e) {
-      errorMessage.value =
-          'Terjadi kesalahan saat memperbarui status pemesanan';
-      _logger.error('Unexpected error updating booking status: $e');
-      Get.snackbar(
-        'Gagal',
-        'Terjadi kesalahan saat memperbarui status pemesanan',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      _handleError(e, 'Terjadi kesalahan saat memperbarui status pemesanan');
       return false;
     } finally {
       isSubmitting.value = false;
@@ -325,40 +322,19 @@ class SessionController extends GetxController {
       final success = await repository.deleteSession(id);
 
       if (success) {
+        // Remove from the sessions list
         sessions.removeWhere((s) => s.id == id);
+
+        // Clear current session if it was the one deleted
         if (currentSession.value?.id == id) {
           currentSession.value = null;
         }
-        Get.snackbar(
-          'Berhasil',
-          'Sesi berhasil dihapus',
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-          snackPosition: SnackPosition.BOTTOM,
-        );
+
+        _showSuccessSnackbar('Sesi berhasil dihapus');
       }
       return success;
-    } on ApiException catch (e) {
-      errorMessage.value = e.message;
-      _logger.error('Failed to delete session: ${e.message}');
-      Get.snackbar(
-        'Gagal',
-        e.message,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
-      );
-      return false;
     } catch (e) {
-      errorMessage.value = 'Terjadi kesalahan saat menghapus sesi';
-      _logger.error('Unexpected error deleting session: $e');
-      Get.snackbar(
-        'Gagal',
-        'Terjadi kesalahan saat menghapus sesi',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      _handleError(e, 'Terjadi kesalahan saat menghapus sesi');
       return false;
     } finally {
       isSubmitting.value = false;
@@ -371,22 +347,15 @@ class SessionController extends GetxController {
       isLoading.value = true;
       clearError();
 
-      final formattedDate =
-          "${selectedDate.value.year}-${selectedDate.value.month.toString().padLeft(2, '0')}-${selectedDate.value.day.toString().padLeft(2, '0')}";
-
+      final formattedDate = _formatDate(selectedDate.value);
       final result = await repository.getAvailableSessions(
         date: formattedDate,
         duration: serviceDuration.value > 0 ? serviceDuration.value : null,
       );
 
       availableSessions.value = result;
-    } on ApiException catch (e) {
-      errorMessage.value = e.message;
-      _logger.error('Failed to fetch available sessions: ${e.message}');
     } catch (e) {
-      errorMessage.value =
-          'Terjadi kesalahan saat mengambil sesi yang tersedia';
-      _logger.error('Unexpected error fetching available sessions: $e');
+      _handleError(e, 'Terjadi kesalahan saat mengambil sesi yang tersedia');
     } finally {
       isLoading.value = false;
     }
@@ -406,13 +375,11 @@ class SessionController extends GetxController {
       String? formattedEndDate;
 
       if (startDate != null) {
-        formattedStartDate =
-            "${startDate.year}-${startDate.month.toString().padLeft(2, '0')}-${startDate.day.toString().padLeft(2, '0')}";
+        formattedStartDate = _formatDate(startDate);
       }
 
       if (endDate != null) {
-        formattedEndDate =
-            "${endDate.year}-${endDate.month.toString().padLeft(2, '0')}-${endDate.day.toString().padLeft(2, '0')}";
+        formattedEndDate = _formatDate(endDate);
       }
 
       final result = await repository.getSessionsByStaff(
@@ -421,24 +388,48 @@ class SessionController extends GetxController {
         endDate: formattedEndDate,
       );
 
-      // Convert dynamic list to Session list if possible
-      try {
-        sessions.value =
-            (result)
-                .map((item) => Session.fromJson(item as Map<String, dynamic>))
-                .toList();
-      } catch (e) {
-        _logger.error('Error converting staff sessions: $e');
-        sessions.value = [];
-      }
-    } on ApiException catch (e) {
-      errorMessage.value = e.message;
-      _logger.error('Failed to fetch staff sessions: ${e.message}');
+      // Update the selected staff ID for filtering
+      selectedStaffId.value = staffId;
+      sessions.value = result;
     } catch (e) {
-      errorMessage.value = 'Terjadi kesalahan saat mengambil jadwal staf';
-      _logger.error('Unexpected error fetching staff sessions: $e');
+      _handleError(e, 'Terjadi kesalahan saat mengambil jadwal staf');
     } finally {
       isLoading.value = false;
     }
+  }
+
+  // Get sessions for a specific date
+  Future<void> fetchSessionsByDate(DateTime date) async {
+    try {
+      isLoading.value = true;
+      clearError();
+
+      final formattedDate = _formatDate(date);
+      selectedDate.value = date; // Update selected date first
+
+      final result = await repository.getAllSessions(
+        date: formattedDate,
+        staffId:
+            selectedStaffId.value.isNotEmpty ? selectedStaffId.value : null,
+        isBooked: filterIsBooked.value,
+      );
+
+      sessions.value = result;
+    } catch (e) {
+      _handleError(
+        e,
+        'Terjadi kesalahan saat mengambil sesi untuk tanggal tersebut',
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // Reset all filters
+  void resetFilters() {
+    selectedStaffId.value = '';
+    filterIsBooked.value = null;
+    selectedDate.value = DateTime.now();
+    fetchSessions();
   }
 }

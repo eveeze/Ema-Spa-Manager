@@ -4,6 +4,8 @@ import 'package:emababyspa/features/service/views/service_edit_view.dart';
 import 'package:emababyspa/features/service/views/service_form_view.dart';
 import 'package:emababyspa/features/service/views/service_manage_view.dart';
 import 'package:emababyspa/features/service_category/views/service_category_form_view.dart';
+import 'package:emababyspa/features/time_slot/bindings/time_slot_bindings.dart';
+import 'package:emababyspa/features/time_slot/views/time_slot_view.dart';
 import 'package:get/get.dart';
 import 'package:emababyspa/features/splash/views/splash_view.dart';
 import 'package:emababyspa/features/splash/bindings/splash_bindings.dart';
@@ -54,7 +56,6 @@ class AppRoutes {
   static const String schedule = '/schedule';
   static const String sessionList = '/sessions';
   static const String sessionDetail = '/sessions/:id';
-  static const String timeSlotList = '/time-slots';
   static const String timeSlotForm = '/time-slots/form';
   static const String timeSlotDetail = '/time-slots/:id';
   static const String analytics = '/analytics';
@@ -129,7 +130,12 @@ class AppRoutes {
       page: () => ScheduleView(),
       binding: ScheduleBindings(),
     ),
-    // schedule routes
+
+    GetPage(
+      name: timeSlotDetail,
+      page: () => TimeSlotView(),
+      binding: TimeSlotBinding(),
+    ),
 
     // Rute detail dan form akan ditambahkan disini
   ];

@@ -40,7 +40,7 @@ class ApiEndpoints {
   static const String operatingSchedules = '/operating-schedule';
   static const String operatingScheduleDetail = '/operating-schedule/{id}';
   static const String operatingScheduleByDate =
-      '/operating-schedules/date/{date}';
+      '/operating-schedule/date/{date}';
   // Time Slots
   static const String timeSlots = '/time-slot';
   // session

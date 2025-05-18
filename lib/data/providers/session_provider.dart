@@ -2,9 +2,28 @@
 import 'package:get/get.dart' hide Response;
 import 'package:emababyspa/data/api/api_client.dart';
 import 'package:emababyspa/data/api/api_endpoints.dart';
+import 'package:emababyspa/data/api/api_exception.dart';
 
 class SessionProvider {
   final ApiClient _apiClient = Get.find<ApiClient>();
+
+  /// Helper method to extract data from API response
+  dynamic _extractData(dynamic response) {
+    if (response is Map<String, dynamic> && response.containsKey('data')) {
+      return response['data'];
+    }
+    return response;
+  }
+
+  /// Format date to YYYY-MM-DD
+  String _formatDate(String date) {
+    try {
+      return DateTime.parse(date).toIso8601String().split('T')[0];
+    } catch (_) {
+      // If the date is already formatted or invalid, return as is
+      return date;
+    }
+  }
 
   /// Create a new session
   Future<Map<String, dynamic>> createSession({
@@ -23,7 +42,8 @@ class SessionProvider {
         ApiEndpoints.sessions,
         data: data,
       );
-      return response['data'];
+
+      return _extractData(response);
     } catch (e) {
       rethrow;
     }
@@ -41,7 +61,14 @@ class SessionProvider {
         data: data,
       );
 
-      return List<Map<String, dynamic>>.from(response['data']);
+      final extractedData = _extractData(response);
+
+      // Check if the extracted data is a list
+      if (extractedData is List) {
+        return List<Map<String, dynamic>>.from(extractedData);
+      }
+
+      throw ApiException(message: 'Unexpected response format from server');
     } catch (e) {
       rethrow;
     }
@@ -70,7 +97,7 @@ class SessionProvider {
       }
 
       if (date != null) {
-        queryParameters['date'] = date;
+        queryParameters['date'] = _formatDate(date);
       }
 
       final response = await _apiClient.getValidated(
@@ -78,7 +105,18 @@ class SessionProvider {
         queryParameters: queryParameters,
       );
 
-      return List<Map<String, dynamic>>.from(response['data']);
+      final extractedData = _extractData(response);
+
+      // Check for the response structure
+      if (extractedData is List) {
+        return List<Map<String, dynamic>>.from(extractedData);
+      } else if (extractedData is Map<String, dynamic> &&
+          extractedData.containsKey('id')) {
+        // If the response is itself a single item
+        return [extractedData];
+      }
+
+      throw ApiException(message: 'Unexpected response format from server');
     } catch (e) {
       rethrow;
     }
@@ -90,7 +128,7 @@ class SessionProvider {
       final response = await _apiClient.getValidated(
         '${ApiEndpoints.sessions}/$id',
       );
-      return response['data'];
+      return _extractData(response);
     } catch (e) {
       rethrow;
     }
@@ -115,7 +153,7 @@ class SessionProvider {
         data: data,
       );
 
-      return response['data'];
+      return _extractData(response);
     } catch (e) {
       rethrow;
     }
@@ -127,7 +165,13 @@ class SessionProvider {
       final response = await _apiClient.deleteValidated(
         '${ApiEndpoints.sessions}/$id',
       );
-      return response['success'] == true;
+
+      // Check for success field in response
+      if (response is Map<String, dynamic> && response.containsKey('success')) {
+        return response['success'] == true;
+      }
+
+      return true; // Assume success if no specific indicator
     } catch (e) {
       rethrow;
     }
@@ -139,7 +183,7 @@ class SessionProvider {
     int? duration,
   }) async {
     try {
-      Map<String, dynamic> queryParameters = {'date': date};
+      Map<String, dynamic> queryParameters = {'date': _formatDate(date)};
 
       if (duration != null) {
         queryParameters['duration'] = duration.toString();
@@ -150,7 +194,13 @@ class SessionProvider {
         queryParameters: queryParameters,
       );
 
-      return List<Map<String, dynamic>>.from(response['data']);
+      final extractedData = _extractData(response);
+
+      if (extractedData is List) {
+        return List<Map<String, dynamic>>.from(extractedData);
+      }
+
+      throw ApiException(message: 'Unexpected response format from server');
     } catch (e) {
       rethrow;
     }
@@ -167,7 +217,7 @@ class SessionProvider {
         data: {'isBooked': isBooked},
       );
 
-      return response['data'];
+      return _extractData(response);
     } catch (e) {
       rethrow;
     }
@@ -183,11 +233,11 @@ class SessionProvider {
       Map<String, dynamic> queryParameters = {};
 
       if (startDate != null) {
-        queryParameters['startDate'] = startDate;
+        queryParameters['startDate'] = _formatDate(startDate);
       }
 
       if (endDate != null) {
-        queryParameters['endDate'] = endDate;
+        queryParameters['endDate'] = _formatDate(endDate);
       }
 
       final response = await _apiClient.getValidated(
@@ -195,7 +245,13 @@ class SessionProvider {
         queryParameters: queryParameters,
       );
 
-      return List<Map<String, dynamic>>.from(response['data']);
+      final extractedData = _extractData(response);
+
+      if (extractedData is List) {
+        return List<Map<String, dynamic>>.from(extractedData);
+      }
+
+      throw ApiException(message: 'Unexpected response format from server');
     } catch (e) {
       rethrow;
     }

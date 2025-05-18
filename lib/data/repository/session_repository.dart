@@ -9,6 +9,15 @@ class SessionRepository {
 
   SessionRepository({required SessionProvider provider}) : _provider = provider;
 
+  /// Helper method to handle common Dio exceptions
+  ApiException _handleDioException(DioException e) {
+    return ApiException(
+      message:
+          e.response?.data?['message'] ?? e.message ?? 'Network error occurred',
+      code: e.response?.statusCode,
+    );
+  }
+
   /// Create a new session
   Future<Session> createSession({
     required String timeSlotId,
@@ -24,11 +33,11 @@ class SessionRepository {
 
       return Session.fromJson(data);
     } on DioException catch (e) {
-      throw ApiException(
-        message: e.response?.data?['message'] ?? 'Failed to create session',
-        code: e.response?.statusCode,
-      );
+      throw _handleDioException(e);
     } catch (e) {
+      if (e is ApiException) {
+        rethrow;
+      }
       throw ApiException(
         message: 'Gagal membuat sesi baru. Silakan coba lagi nanti.',
       );
@@ -45,11 +54,11 @@ class SessionRepository {
 
       return sessionsData.map((json) => Session.fromJson(json)).toList();
     } on DioException catch (e) {
-      throw ApiException(
-        message: e.response?.data?['message'] ?? 'Failed to create sessions',
-        code: e.response?.statusCode,
-      );
+      throw _handleDioException(e);
     } catch (e) {
+      if (e is ApiException) {
+        rethrow;
+      }
       throw ApiException(
         message: 'Gagal membuat beberapa sesi. Silakan coba lagi nanti.',
       );
@@ -74,11 +83,11 @@ class SessionRepository {
 
       return sessionsData.map((json) => Session.fromJson(json)).toList();
     } on DioException catch (e) {
-      throw ApiException(
-        message: e.response?.data?['message'] ?? 'Failed to retrieve sessions',
-        code: e.response?.statusCode,
-      );
+      throw _handleDioException(e);
     } catch (e) {
+      if (e is ApiException) {
+        rethrow;
+      }
       throw ApiException(
         message: 'Gagal mengambil data sesi. Silakan coba lagi nanti.',
       );
@@ -92,11 +101,17 @@ class SessionRepository {
 
       return Session.fromJson(data);
     } on DioException catch (e) {
-      throw ApiException(
-        message: e.response?.data?['message'] ?? 'Session not found',
-        code: e.response?.statusCode,
-      );
+      if (e.response?.statusCode == 404) {
+        throw ApiException(
+          message: 'Sesi dengan ID tersebut tidak ditemukan.',
+          code: 404,
+        );
+      }
+      throw _handleDioException(e);
     } catch (e) {
+      if (e is ApiException) {
+        rethrow;
+      }
       throw ApiException(
         message: 'Gagal mengambil detail sesi. Silakan coba lagi nanti.',
       );
@@ -120,11 +135,11 @@ class SessionRepository {
 
       return Session.fromJson(data);
     } on DioException catch (e) {
-      throw ApiException(
-        message: e.response?.data?['message'] ?? 'Failed to update session',
-        code: e.response?.statusCode,
-      );
+      throw _handleDioException(e);
     } catch (e) {
+      if (e is ApiException) {
+        rethrow;
+      }
       throw ApiException(
         message: 'Gagal memperbarui sesi. Silakan coba lagi nanti.',
       );
@@ -136,11 +151,11 @@ class SessionRepository {
     try {
       return await _provider.deleteSession(id);
     } on DioException catch (e) {
-      throw ApiException(
-        message: e.response?.data?['message'] ?? 'Failed to delete session',
-        code: e.response?.statusCode,
-      );
+      throw _handleDioException(e);
     } catch (e) {
+      if (e is ApiException) {
+        rethrow;
+      }
       throw ApiException(
         message: 'Gagal menghapus sesi. Silakan coba lagi nanti.',
       );
@@ -158,13 +173,11 @@ class SessionRepository {
 
       return availableSessions.map((json) => Session.fromJson(json)).toList();
     } on DioException catch (e) {
-      throw ApiException(
-        message:
-            e.response?.data?['message'] ??
-            'Failed to retrieve available sessions',
-        code: e.response?.statusCode,
-      );
+      throw _handleDioException(e);
     } catch (e) {
+      if (e is ApiException) {
+        rethrow;
+      }
       throw ApiException(
         message: 'Gagal mengambil sesi yang tersedia. Silakan coba lagi nanti.',
       );
@@ -178,13 +191,11 @@ class SessionRepository {
 
       return Session.fromJson(data);
     } on DioException catch (e) {
-      throw ApiException(
-        message:
-            e.response?.data?['message'] ??
-            'Failed to update session booking status',
-        code: e.response?.statusCode,
-      );
+      throw _handleDioException(e);
     } catch (e) {
+      if (e is ApiException) {
+        rethrow;
+      }
       throw ApiException(
         message:
             'Gagal memperbarui status pemesanan sesi. Silakan coba lagi nanti.',
@@ -204,13 +215,11 @@ class SessionRepository {
 
       return staffSessions.map((json) => Session.fromJson(json)).toList();
     } on DioException catch (e) {
-      throw ApiException(
-        message:
-            e.response?.data?['message'] ?? 'Failed to retrieve staff sessions',
-
-        code: e.response?.statusCode,
-      );
+      throw _handleDioException(e);
     } catch (e) {
+      if (e is ApiException) {
+        rethrow;
+      }
       throw ApiException(
         message: 'Gagal mengambil jadwal staf. Silakan coba lagi nanti.',
       );
