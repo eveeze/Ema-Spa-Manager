@@ -7,6 +7,29 @@ import 'package:emababyspa/data/api/api_endpoints.dart';
 class TimeSlotProvider {
   final ApiClient _apiClient = Get.find<ApiClient>();
 
+  /// Format DateTime to ISO8601 string with Z suffix
+  String _formatDateTimeToIso8601Z(DateTime dateTime) {
+    String isoString = dateTime.toIso8601String();
+    if (!isoString.endsWith('Z')) {
+      // Add Z suffix if not present
+      if (isoString.endsWith('.000')) {
+        return "${isoString}Z";
+      } else {
+        return "$isoString.000Z";
+      }
+    }
+    return isoString;
+  }
+
+  /// Replace template placeholders in endpoint URLs
+  String _replaceUrlTemplate(String template, Map<String, String> params) {
+    String url = template;
+    params.forEach((key, value) {
+      url = url.replaceAll('{$key}', value);
+    });
+    return url;
+  }
+
   /// Create a new time slot
   Future<dynamic> createTimeSlot({
     required String operatingScheduleId,
@@ -16,8 +39,8 @@ class TimeSlotProvider {
     try {
       Map<String, dynamic> data = {
         'operatingScheduleId': operatingScheduleId,
-        'startTime': startTime.toIso8601String(),
-        'endTime': endTime.toIso8601String(),
+        'startTime': _formatDateTimeToIso8601Z(startTime),
+        'endTime': _formatDateTimeToIso8601Z(endTime),
       };
 
       return await _apiClient.postValidated(ApiEndpoints.timeSlots, data: data);
@@ -32,9 +55,53 @@ class TimeSlotProvider {
     required List<Map<String, dynamic>> timeSlots,
   }) async {
     try {
+      // Process each time slot to ensure proper format
+      final formattedTimeSlots =
+          timeSlots.map((slot) {
+            final Map<String, dynamic> formattedSlot = {...slot};
+
+            // Format startTime if it's a DateTime
+            if (formattedSlot.containsKey('startTime')) {
+              if (formattedSlot['startTime'] is DateTime) {
+                formattedSlot['startTime'] = _formatDateTimeToIso8601Z(
+                  formattedSlot['startTime'],
+                );
+              } else if (formattedSlot['startTime'] is String) {
+                String startTime = formattedSlot['startTime'];
+                if (!startTime.endsWith('Z')) {
+                  if (startTime.endsWith('.000')) {
+                    formattedSlot['startTime'] = "${startTime}Z";
+                  } else {
+                    formattedSlot['startTime'] = "$startTime.000Z";
+                  }
+                }
+              }
+            }
+
+            // Format endTime if it's a DateTime
+            if (formattedSlot.containsKey('endTime')) {
+              if (formattedSlot['endTime'] is DateTime) {
+                formattedSlot['endTime'] = _formatDateTimeToIso8601Z(
+                  formattedSlot['endTime'],
+                );
+              } else if (formattedSlot['endTime'] is String) {
+                String endTime = formattedSlot['endTime'];
+                if (!endTime.endsWith('Z')) {
+                  if (endTime.endsWith('.000')) {
+                    formattedSlot['endTime'] = "${endTime}Z";
+                  } else {
+                    formattedSlot['endTime'] = "$endTime.000Z";
+                  }
+                }
+              }
+            }
+
+            return formattedSlot;
+          }).toList();
+
       Map<String, dynamic> data = {
         'operatingScheduleId': operatingScheduleId,
-        'timeSlots': timeSlots,
+        'timeSlots': formattedTimeSlots,
       };
 
       return await _apiClient.postValidated(
@@ -65,10 +132,19 @@ class TimeSlotProvider {
       }
 
       if (startTime != null) {
+        // Ensure Z suffix for query parameter
+        if (!startTime.endsWith('Z')) {
+          startTime =
+              startTime.endsWith('.000') ? "${startTime}Z" : "$startTime.000Z";
+        }
         queryParameters['startTime'] = startTime;
       }
 
       if (endTime != null) {
+        // Ensure Z suffix for query parameter
+        if (!endTime.endsWith('Z')) {
+          endTime = endTime.endsWith('.000') ? "${endTime}Z" : "$endTime.000Z";
+        }
         queryParameters['endTime'] = endTime;
       }
 
@@ -84,7 +160,10 @@ class TimeSlotProvider {
   /// Get time slot by ID
   Future<dynamic> getTimeSlotById(String id) async {
     try {
-      return await _apiClient.getValidated('${ApiEndpoints.timeSlots}/$id');
+      final endpoint = _replaceUrlTemplate(ApiEndpoints.timeSlotDetail, {
+        'id': id,
+      });
+      return await _apiClient.getValidated(endpoint);
     } catch (e) {
       rethrow;
     }
@@ -127,17 +206,18 @@ class TimeSlotProvider {
       }
 
       if (startTime != null) {
-        data['startTime'] = startTime.toIso8601String();
+        data['startTime'] = _formatDateTimeToIso8601Z(startTime);
       }
 
       if (endTime != null) {
-        data['endTime'] = endTime.toIso8601String();
+        data['endTime'] = _formatDateTimeToIso8601Z(endTime);
       }
 
-      return await _apiClient.putValidated(
-        '${ApiEndpoints.timeSlots}/$id',
-        data: data,
-      );
+      final endpoint = _replaceUrlTemplate(ApiEndpoints.timeSlotDetail, {
+        'id': id,
+      });
+
+      return await _apiClient.putValidated(endpoint, data: data);
     } catch (e) {
       rethrow;
     }
@@ -146,7 +226,10 @@ class TimeSlotProvider {
   /// Delete time slot
   Future<dynamic> deleteTimeSlot(String id) async {
     try {
-      return await _apiClient.deleteValidated('${ApiEndpoints.timeSlots}/$id');
+      final endpoint = _replaceUrlTemplate(ApiEndpoints.timeSlotDetail, {
+        'id': id,
+      });
+      return await _apiClient.deleteValidated(endpoint);
     } catch (e) {
       rethrow;
     }

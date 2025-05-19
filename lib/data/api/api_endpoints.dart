@@ -43,6 +43,7 @@ class ApiEndpoints {
       '/operating-schedule/date/{date}';
   // Time Slots
   static const String timeSlots = '/time-slot';
+  static const String timeSlotDetail = '/time-slot/{id}';
   // session
   static const String sessions = '/session';
 

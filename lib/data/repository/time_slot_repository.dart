@@ -23,7 +23,8 @@ class TimeSlotRepository {
 
       final data = await _provider.createTimeSlot(
         operatingScheduleId: operatingScheduleId,
-        startTime: startTime,
+        startTime:
+            startTime, // The provider should handle ISO conversion with Z
         endTime: endTime,
       );
 
@@ -42,12 +43,26 @@ class TimeSlotRepository {
     required List<Map<String, dynamic>> timeSlots,
   }) async {
     try {
-      // Validate time slot format
-      for (var slot in timeSlots) {
+      // Validate time slot format and ensure all have proper formatting
+      for (var i = 0; i < timeSlots.length; i++) {
+        var slot = timeSlots[i];
         if (!slot.containsKey('startTime') || !slot.containsKey('endTime')) {
           throw ApiException(
             message: 'Setiap time slot harus memiliki startTime dan endTime',
           );
+        }
+
+        // Ensure Z suffix if values are strings
+        if (slot['startTime'] is String && !slot['startTime'].endsWith('Z')) {
+          final startTime = slot['startTime'] as String;
+          timeSlots[i]['startTime'] =
+              "$startTime${startTime.endsWith('.000') ? 'Z' : '.000Z'}";
+        }
+
+        if (slot['endTime'] is String && !slot['endTime'].endsWith('Z')) {
+          final endTime = slot['endTime'] as String;
+          timeSlots[i]['endTime'] =
+              "$endTime${endTime.endsWith('.000') ? 'Z' : '.000Z'}";
         }
       }
 

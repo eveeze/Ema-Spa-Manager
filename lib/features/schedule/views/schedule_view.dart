@@ -12,7 +12,6 @@ import 'package:emababyspa/features/operating_schedule/controllers/operating_sch
 import 'package:emababyspa/features/session/controllers/session_controller.dart';
 import 'package:emababyspa/features/time_slot/controllers/time_slot_controller.dart';
 import 'package:emababyspa/utils/app_routes.dart';
-import 'package:emababyspa/data/models/scheduler.dart';
 import 'package:emababyspa/common/utils/date_utils.dart' as app_date_utils;
 
 class ScheduleView extends GetView<ScheduleController> {
@@ -86,7 +85,7 @@ class ScheduleView extends GetView<ScheduleController> {
 
     // Load sessions for the selected date
     final sessionController = Get.find<SessionController>();
-    await sessionController.fetchSessionsByDate(date); // Add this line
+    await sessionController.fetchSessionsByDate(date);
 
     // Get schedule ID for the selected date if exists
     final schedule = operatingScheduleController.schedulesList.firstWhereOrNull(
@@ -97,8 +96,11 @@ class ScheduleView extends GetView<ScheduleController> {
     );
 
     if (schedule != null) {
-      // Load time slots for this schedule
+      // Use the new method to load time slots for this schedule
       await timeSlotController.fetchTimeSlotsByScheduleId(schedule.id);
+    } else {
+      // Clear time slots if no schedule exists
+      timeSlotController.timeSlots.clear();
     }
 
     isDataLoaded.value = true;
@@ -563,8 +565,12 @@ class ScheduleView extends GetView<ScheduleController> {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: () {
-              // Show the TimeSlotDialog instead of navigating to a form
+            onTap: () async {
+              // First, make sure time slots are up-to-date
+              final timeSlotController = Get.find<TimeSlotController>();
+              await timeSlotController.fetchTimeSlotsByScheduleId(scheduleId);
+
+              // Then show the TimeSlotDialog with the schedule ID
               showDialog(
                 context: Get.context!,
                 builder:
@@ -724,8 +730,8 @@ class ScheduleView extends GetView<ScheduleController> {
   Widget _buildTimeSlotItem(
     dynamic timeSlot,
     String displayStartTime,
-    List<dynamic> sessions, // Update to accept sessions list
-    SessionController sessionController, // Add the controller
+    List<dynamic> sessions,
+    SessionController sessionController,
   ) {
     // Get total sessions and booked sessions count from actual session data
     final int totalSessions = sessions.length;
@@ -734,6 +740,9 @@ class ScheduleView extends GetView<ScheduleController> {
 
     // Determine if all sessions are booked
     final bool allBooked = totalSessions > 0 && bookedSessions == totalSessions;
+
+    // Use the TimeSlotController to format the time if needed
+    Get.find<TimeSlotController>();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -1125,15 +1134,25 @@ class ScheduleView extends GetView<ScheduleController> {
             AppButton(
               text: 'Generate Slot Waktu',
               icon: Icons.add_alarm,
-              onPressed: () {
-                // Generate time slots for this schedule
-                controller.generateTimeSlots(
-                  scheduleIds: [schedule.id],
-                  timeConfig: TimeConfig(
-                    startHour: 7,
-                    endHour: 15,
-                    slotDurationMinutes: 60,
-                  ),
+              onPressed: () async {
+                // Get the current date from the schedule
+                final scheduleDate = schedule.date;
+
+                // Use the new TimeSlotController method to generate time slots
+                final timeSlotController = Get.find<TimeSlotController>();
+
+                // Generate fixed interval time slots (7:00 AM to 3:00 PM with 1-hour slots)
+                await timeSlotController.generateFixedIntervalTimeSlots(
+                  operatingScheduleId: schedule.id,
+                  startDate: scheduleDate,
+                  firstSlotStart: TimeOfDay(hour: 7, minute: 0),
+                  lastSlotEnd: TimeOfDay(hour: 15, minute: 0),
+                  slotDuration: Duration(minutes: 60),
+                );
+
+                // Refresh the UI with the new slots
+                await timeSlotController.fetchTimeSlotsByScheduleId(
+                  schedule.id,
                 );
               },
             ),

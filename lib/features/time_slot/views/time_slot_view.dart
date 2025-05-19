@@ -1,3 +1,4 @@
+// lib/features/time_slot/views/time_slot_view.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -68,8 +69,9 @@ class TimeSlotView extends GetView<TimeSlotController> {
           icon: const Icon(Icons.edit_outlined),
           tooltip: 'Edit Time Slot',
           onPressed: () {
+            // Navigate to edit page with time slot ID in route and pass time slot object
             Get.toNamed(
-              AppRoutes.timeSlotForm,
+              AppRoutes.timeSlotEdit.replaceAll(':id', timeSlot.id.toString()),
               arguments: {'timeSlot': timeSlot},
             );
           },

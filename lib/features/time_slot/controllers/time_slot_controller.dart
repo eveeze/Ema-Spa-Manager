@@ -1,4 +1,6 @@
 // lib/features/time_slot/controllers/time_slot_controller.dart
+import 'package:flutter/material.dart'
+    show TimeOfDay; // Import TimeOfDay from Flutter
 import 'package:get/get.dart';
 import 'package:emababyspa/data/api/api_exception.dart';
 import 'package:emababyspa/data/models/time_slot.dart';
@@ -28,6 +30,11 @@ class TimeSlotController extends GetxController {
     _logger.debug('TimeSlotController initialized');
   }
 
+  /// Format DateTime to ISO8601 string with Z suffix
+  String _formatDateTimeToIso8601(DateTime dateTime) {
+    return "${dateTime.toIso8601String()}Z";
+  }
+
   /// Create a new time slot
   Future<TimeSlot?> createTimeSlot({
     required String operatingScheduleId,
@@ -38,6 +45,14 @@ class TimeSlotController extends GetxController {
     errorMessage.value = '';
 
     try {
+      // Ensure we use ISO8601 format with Z suffix
+      final formattedStartTime = _formatDateTimeToIso8601(startTime);
+      final formattedEndTime = _formatDateTimeToIso8601(endTime);
+
+      _logger.debug(
+        'Creating time slot with startTime: $formattedStartTime, endTime: $formattedEndTime',
+      );
+
       final timeSlot = await _repository.createTimeSlot(
         operatingScheduleId: operatingScheduleId,
         startTime: startTime,
@@ -71,9 +86,34 @@ class TimeSlotController extends GetxController {
     errorMessage.value = '';
 
     try {
+      // Ensure all ISO strings have the Z suffix
+      final formattedTimeSlotsData =
+          timeSlotsData.map((slot) {
+            final Map<String, dynamic> formattedSlot = {...slot};
+            if (formattedSlot.containsKey('startTime') &&
+                formattedSlot['startTime'] is String) {
+              final startTime = formattedSlot['startTime'] as String;
+              if (!startTime.endsWith('Z')) {
+                formattedSlot['startTime'] =
+                    "$startTime${startTime.endsWith('.000') ? 'Z' : '.000Z'}";
+              }
+            }
+            if (formattedSlot.containsKey('endTime') &&
+                formattedSlot['endTime'] is String) {
+              final endTime = formattedSlot['endTime'] as String;
+              if (!endTime.endsWith('Z')) {
+                formattedSlot['endTime'] =
+                    "$endTime${endTime.endsWith('.000') ? 'Z' : '.000Z'}";
+              }
+            }
+            return formattedSlot;
+          }).toList();
+
+      _logger.debug('Creating multiple time slots: $formattedTimeSlotsData');
+
       final createdTimeSlots = await _repository.createMultipleTimeSlots(
         operatingScheduleId: operatingScheduleId,
-        timeSlots: timeSlotsData,
+        timeSlots: formattedTimeSlotsData,
       );
 
       // Add all created time slots to the list
@@ -91,6 +131,156 @@ class TimeSlotController extends GetxController {
     } finally {
       isCreating.value = false;
     }
+  }
+
+  /// Generate time slots with fixed intervals
+  /// Example: 7:00-8:00, 8:00-9:00, 9:00-10:00
+  Future<List<TimeSlot>?> generateFixedIntervalTimeSlots({
+    required String operatingScheduleId,
+    required DateTime startDate,
+    required TimeOfDay firstSlotStart,
+    required TimeOfDay lastSlotEnd,
+    required Duration slotDuration,
+  }) async {
+    try {
+      // Generate time slot data
+      final List<Map<String, dynamic>> timeSlotsData = [];
+
+      DateTime currentStart = DateTime(
+        startDate.year,
+        startDate.month,
+        startDate.day,
+        firstSlotStart.hour,
+        firstSlotStart.minute,
+      );
+
+      final DateTime endLimit = DateTime(
+        startDate.year,
+        startDate.month,
+        startDate.day,
+        lastSlotEnd.hour,
+        lastSlotEnd.minute,
+      );
+
+      while (currentStart.add(slotDuration).isBefore(endLimit) ||
+          currentStart.add(slotDuration).isAtSameMomentAs(endLimit)) {
+        final DateTime slotEnd = currentStart.add(slotDuration);
+
+        timeSlotsData.add({
+          'startTime': _formatDateTimeToIso8601(currentStart),
+          'endTime': _formatDateTimeToIso8601(slotEnd),
+        });
+
+        // Move to next slot
+        currentStart = slotEnd;
+      }
+
+      // Create the time slots if we have any
+      if (timeSlotsData.isNotEmpty) {
+        return await createMultipleTimeSlots(
+          operatingScheduleId: operatingScheduleId,
+          timeSlotsData: timeSlotsData,
+        );
+      }
+
+      return [];
+    } catch (e) {
+      errorMessage.value = 'Gagal membuat jadwal dengan interval tetap.';
+      _logger.error('Error generating fixed interval time slots: $e');
+      return null;
+    }
+  }
+
+  /// Generate time slots with custom intervals
+  /// Example: 7:00-8:00, 8:30-9:30, 10:00-11:00
+  Future<List<TimeSlot>?> generateCustomTimeSlots({
+    required String operatingScheduleId,
+    required DateTime date,
+    required List<Map<String, dynamic>> timeRanges,
+  }) async {
+    try {
+      // Validate time ranges format
+      for (var range in timeRanges) {
+        if (!range.containsKey('start') || !range.containsKey('end')) {
+          errorMessage.value = 'Format rentang waktu tidak valid.';
+          return null;
+        }
+      }
+
+      // Generate time slot data
+      final List<Map<String, dynamic>> timeSlotsData = [];
+
+      for (var range in timeRanges) {
+        final TimeOfDay start = range['start'];
+        final TimeOfDay end = range['end'];
+
+        final DateTime startTime = DateTime(
+          date.year,
+          date.month,
+          date.day,
+          start.hour,
+          start.minute,
+        );
+
+        final DateTime endTime = DateTime(
+          date.year,
+          date.month,
+          date.day,
+          end.hour,
+          end.minute,
+        );
+
+        // Ensure start time is before end time
+        if (startTime.isBefore(endTime)) {
+          timeSlotsData.add({
+            'startTime': _formatDateTimeToIso8601(startTime),
+            'endTime': _formatDateTimeToIso8601(endTime),
+          });
+        }
+      }
+
+      // Create the time slots if we have any
+      if (timeSlotsData.isNotEmpty) {
+        return await createMultipleTimeSlots(
+          operatingScheduleId: operatingScheduleId,
+          timeSlotsData: timeSlotsData,
+        );
+      }
+
+      return [];
+    } catch (e) {
+      errorMessage.value = 'Gagal membuat jadwal dengan interval kustom.';
+      _logger.error('Error generating custom time slots: $e');
+      return null;
+    }
+  }
+
+  /// Check if time slots overlap
+  bool hasOverlap(List<TimeSlot> slots) {
+    if (slots.length <= 1) return false;
+
+    // Sort by start time
+    final sortedSlots = [...slots]
+      ..sort((a, b) => a.startTime.compareTo(b.startTime));
+
+    for (int i = 0; i < sortedSlots.length - 1; i++) {
+      // For each pair of adjacent slots
+      final currentSlot = sortedSlots[i];
+      final nextSlot = sortedSlots[i + 1];
+
+      // Check for overlap: current slot ends after or exactly when next slot starts
+      if (currentSlot.endTime.isAfter(nextSlot.startTime) ||
+          currentSlot.endTime.isAtSameMomentAs(nextSlot.startTime)) {
+        // Exception for back-to-back slots (e.g. 8:00-9:00 and 9:00-10:00)
+        // These shouldn't count as overlaps
+        if (currentSlot.endTime.isAtSameMomentAs(nextSlot.startTime)) {
+          continue;
+        }
+        return true;
+      }
+    }
+
+    return false;
   }
 
   /// Fetch all time slots with optional filtering
@@ -193,11 +383,23 @@ class TimeSlotController extends GetxController {
     errorMessage.value = '';
 
     try {
+      // Ensure we format the dates properly with Z suffix
+      DateTime? formattedStartTime = startTime;
+      DateTime? formattedEndTime = endTime;
+
+      _logger.debug('Updating time slot with ID: $id');
+      if (startTime != null) {
+        _logger.debug('Start time: ${_formatDateTimeToIso8601(startTime)}');
+      }
+      if (endTime != null) {
+        _logger.debug('End time: ${_formatDateTimeToIso8601(endTime)}');
+      }
+
       final updatedTimeSlot = await _repository.updateTimeSlot(
         id: id,
         operatingScheduleId: operatingScheduleId,
-        startTime: startTime,
-        endTime: endTime,
+        startTime: formattedStartTime,
+        endTime: formattedEndTime,
       );
 
       // Update in list
@@ -280,5 +482,17 @@ class TimeSlotController extends GetxController {
   /// Check if a time slot is available (has no sessions)
   bool isTimeSlotAvailable(TimeSlot slot) {
     return slot.sessions == null || slot.sessions!.isEmpty;
+  }
+
+  /// Get duration of a time slot in minutes
+  int getTimeSlotDurationMinutes(TimeSlot slot) {
+    return slot.endTime.difference(slot.startTime).inMinutes;
+  }
+
+  /// Sort time slots by start time
+  List<TimeSlot> getSortedTimeSlots(List<TimeSlot> slots) {
+    final sortedSlots = [...slots];
+    sortedSlots.sort((a, b) => a.startTime.compareTo(b.startTime));
+    return sortedSlots;
   }
 }
