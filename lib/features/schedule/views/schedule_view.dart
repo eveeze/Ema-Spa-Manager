@@ -107,6 +107,155 @@ class ScheduleView extends GetView<ScheduleController> {
     isDataLoaded.value = true;
   }
 
+  void _deleteSchedule(dynamic schedule) async {
+    final operatingScheduleController = Get.find<OperatingScheduleController>();
+    final timeSlotController = Get.find<TimeSlotController>();
+
+    // Close the confirmation dialog
+    Get.back();
+
+    try {
+      // Delete the schedule
+      final success = await operatingScheduleController.deleteOperatingSchedule(
+        schedule.id,
+      );
+
+      // Important: Always close the loading dialog before showing any other dialog
+      if (Get.isDialogOpen ?? false) {
+        Get.back();
+      }
+
+      if (success) {
+        // Fetch updated data without showing loading indicator
+        final formattedDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
+        await operatingScheduleController.fetchAllSchedules(
+          date: formattedDate,
+        );
+
+        // Get session controller and fetch sessions without loading indicator
+        final sessionController = Get.find<SessionController>();
+        await sessionController.fetchSessionsByDate(DateTime.now());
+
+        // Clear time slots since we deleted the schedule
+        timeSlotController.timeSlots.clear();
+
+        // Show success message
+        Get.snackbar(
+          'Success',
+          'Jadwal operasional berhasil dihapus',
+          backgroundColor: ColorTheme.success.withValues(alpha: 0.1),
+          colorText: ColorTheme.success,
+        );
+      } else {
+        // Show error message for unsuccessful deletion
+        Get.snackbar(
+          'Error',
+          'Gagal menghapus jadwal operasional',
+          backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
+          colorText: ColorTheme.error,
+        );
+      }
+    } catch (e) {
+      // Make sure to close loading dialog in case of exception
+      if (Get.isDialogOpen ?? false) {
+        Get.back();
+      }
+
+      // Show error message
+      Get.snackbar(
+        'Error',
+        'Gagal menghapus jadwal operasional: ${e.toString()}',
+        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
+        colorText: ColorTheme.error,
+      );
+    }
+  }
+
+  void _showDeleteConfirmationDialog(dynamic schedule) {
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.warning_amber_rounded,
+                  size: 48,
+                  color: Colors.red.shade700,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Hapus Jadwal Operasional',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: ColorTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Yakin ingin menghapus jadwal operasional ini? Semua slot waktu dan sesi yang terkait juga akan dihapus.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, color: ColorTheme.textSecondary),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  // Cancel button
+                  ElevatedButton(
+                    onPressed: () => Get.back(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey.shade200,
+                      foregroundColor: ColorTheme.textPrimary,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text('Batal'),
+                  ),
+                  // Delete button
+                  ElevatedButton(
+                    onPressed: () => _deleteSchedule(schedule),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text('Hapus'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   // Helper function to compare dates without time component
   bool _isSameDate(String? apiDate, String targetDate) {
     if (apiDate == null) return false;
@@ -644,40 +793,55 @@ class ScheduleView extends GetView<ScheduleController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: ColorTheme.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  Icons.calendar_today_rounded,
-                  color: ColorTheme.primary,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Row(
                 children: [
-                  Text(
-                    TimeZoneUtil.formatDate(selectedDate),
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: ColorTheme.textPrimary,
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: ColorTheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.calendar_today_rounded,
+                      color: ColorTheme.primary,
                     ),
                   ),
-                  Text(
-                    DateFormat(
-                      'EEEE',
-                    ).format(TimeZoneUtil.toIndonesiaTime(selectedDate)),
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: ColorTheme.textSecondary,
-                    ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        TimeZoneUtil.formatDate(selectedDate),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: ColorTheme.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        DateFormat(
+                          'EEEE',
+                        ).format(TimeZoneUtil.toIndonesiaTime(selectedDate)),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: ColorTheme.textSecondary,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
+              ),
+              // Delete button
+              IconButton(
+                onPressed: () => _showDeleteConfirmationDialog(schedule),
+                icon: Icon(
+                  Icons.delete_outline,
+                  color: Colors.red.shade400,
+                  size: 24,
+                ),
+                tooltip: 'Delete Schedule',
               ),
             ],
           ),
@@ -1071,12 +1235,25 @@ class ScheduleView extends GetView<ScheduleController> {
                 ),
               ),
             const SizedBox(height: 24),
-            AppButton(
-              text: 'Ubah Status Libur',
-              icon: Icons.edit_calendar,
-              onPressed: () {
-                controller.toggleHolidayStatus(schedule.id, false);
-              },
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                AppButton(
+                  text: 'Ubah Status Libur',
+                  icon: Icons.edit_calendar,
+                  onPressed: () {
+                    controller.toggleHolidayStatus(schedule.id, false);
+                  },
+                ),
+                const SizedBox(width: 12),
+                // Delete button
+                AppButton(
+                  text: 'Hapus Jadwal',
+                  icon: Icons.delete_outline,
+                  type: AppButtonType.values[1],
+                  onPressed: () => _showDeleteConfirmationDialog(schedule),
+                ),
+              ],
             ),
           ],
         ),
@@ -1133,30 +1310,43 @@ class ScheduleView extends GetView<ScheduleController> {
               style: TextStyle(fontSize: 16, color: ColorTheme.textSecondary),
             ),
             const SizedBox(height: 24),
-            AppButton(
-              text: 'Generate Slot Waktu',
-              icon: Icons.add_alarm,
-              onPressed: () async {
-                // Get the current date from the schedule
-                final scheduleDate = schedule.date;
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                AppButton(
+                  text: 'Generate Slot Waktu',
+                  icon: Icons.add_alarm,
+                  onPressed: () async {
+                    // Get the current date from the schedule
+                    final scheduleDate = schedule.date;
 
-                // Use the new TimeSlotController method to generate time slots
-                final timeSlotController = Get.find<TimeSlotController>();
+                    // Use the new TimeSlotController method to generate time slots
+                    final timeSlotController = Get.find<TimeSlotController>();
 
-                // Generate fixed interval time slots (7:00 AM to 3:00 PM with 1-hour slots)
-                await timeSlotController.generateFixedIntervalTimeSlots(
-                  operatingScheduleId: schedule.id,
-                  startDate: scheduleDate,
-                  firstSlotStart: TimeOfDay(hour: 7, minute: 0),
-                  lastSlotEnd: TimeOfDay(hour: 15, minute: 0),
-                  slotDuration: Duration(minutes: 60),
-                );
+                    // Generate fixed interval time slots (7:00 AM to 3:00 PM with 1-hour slots)
+                    await timeSlotController.generateFixedIntervalTimeSlots(
+                      operatingScheduleId: schedule.id,
+                      startDate: scheduleDate,
+                      firstSlotStart: TimeOfDay(hour: 7, minute: 0),
+                      lastSlotEnd: TimeOfDay(hour: 15, minute: 0),
+                      slotDuration: Duration(minutes: 60),
+                    );
 
-                // Refresh the UI with the new slots
-                await timeSlotController.fetchTimeSlotsByScheduleId(
-                  schedule.id,
-                );
-              },
+                    // Refresh the UI with the new slots
+                    await timeSlotController.fetchTimeSlotsByScheduleId(
+                      schedule.id,
+                    );
+                  },
+                ),
+                const SizedBox(width: 12),
+                // Delete button
+                AppButton(
+                  text: 'Hapus Jadwal',
+                  icon: Icons.delete_outline,
+                  type: AppButtonType.values[1],
+                  onPressed: () => _showDeleteConfirmationDialog(schedule),
+                ),
+              ],
             ),
           ],
         ),
