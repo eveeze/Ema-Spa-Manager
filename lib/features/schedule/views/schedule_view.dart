@@ -12,7 +12,8 @@ import 'package:emababyspa/features/operating_schedule/controllers/operating_sch
 import 'package:emababyspa/features/session/controllers/session_controller.dart';
 import 'package:emababyspa/features/time_slot/controllers/time_slot_controller.dart';
 import 'package:emababyspa/utils/app_routes.dart';
-import 'package:emababyspa/common/utils/date_utils.dart' as app_date_utils;
+import 'package:emababyspa/features/operating_schedule/widgets/operating_schedule_dialog.dart';
+import 'package:emababyspa/utils/timezone_utils.dart';
 
 class ScheduleView extends GetView<ScheduleController> {
   const ScheduleView({super.key});
@@ -480,7 +481,7 @@ class ScheduleView extends GetView<ScheduleController> {
     );
 
     if (schedule == null) {
-      return _buildNoScheduleView(formattedDate);
+      return _buildNoScheduleView(formattedDate, selectedDate);
     }
 
     // Check if this is a holiday
@@ -660,7 +661,7 @@ class ScheduleView extends GetView<ScheduleController> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    app_date_utils.DateUtils.formatDate(selectedDate),
+                    TimeZoneUtil.formatDate(selectedDate),
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -668,7 +669,9 @@ class ScheduleView extends GetView<ScheduleController> {
                     ),
                   ),
                   Text(
-                    DateFormat('EEEE').format(selectedDate),
+                    DateFormat(
+                      'EEEE',
+                    ).format(TimeZoneUtil.toIndonesiaTime(selectedDate)),
                     style: TextStyle(
                       fontSize: 14,
                       color: ColorTheme.textSecondary,
@@ -715,16 +718,7 @@ class ScheduleView extends GetView<ScheduleController> {
 
   // Helper function to format time slots for display
   String _formatTimeSlot(String isoTimeString) {
-    try {
-      // Parse the ISO time string
-      DateTime dateTime = DateTime.parse(isoTimeString);
-
-      // Format it to display just the hour:minute
-      return DateFormat('HH:mm').format(dateTime);
-    } catch (e) {
-      // If parsing fails, return the original string
-      return isoTimeString;
-    }
+    return TimeZoneUtil.formatISOToIndonesiaTime(isoTimeString);
   }
 
   Widget _buildTimeSlotItem(
@@ -947,7 +941,7 @@ class ScheduleView extends GetView<ScheduleController> {
     );
   }
 
-  Widget _buildNoScheduleView(String formattedDate) {
+  Widget _buildNoScheduleView(String formattedDate, DateTime selectedDate) {
     return Center(
       child: Container(
         padding: const EdgeInsets.all(24),
@@ -999,7 +993,15 @@ class ScheduleView extends GetView<ScheduleController> {
             AppButton(
               text: 'Buat Jadwal',
               icon: Icons.add_circle_outline,
-              onPressed: () => Get.toNamed(AppRoutes.operatingScheduleForm),
+              onPressed: () {
+                showDialog(
+                  context: Get.context!,
+                  barrierDismissible: false,
+                  builder:
+                      (context) =>
+                          OperatingScheduleDialog(selectedDate: selectedDate),
+                );
+              },
             ),
           ],
         ),

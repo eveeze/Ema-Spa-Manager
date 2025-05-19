@@ -1,13 +1,13 @@
 // lib/features/time_slot/views/time_slot_view.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:intl/intl.dart';
 import 'package:emababyspa/common/theme/color_theme.dart';
 import 'package:emababyspa/common/layouts/main_layout.dart';
 import 'package:emababyspa/common/widgets/app_button.dart';
 import 'package:emababyspa/features/time_slot/controllers/time_slot_controller.dart';
 import 'package:emababyspa/features/session/controllers/session_controller.dart';
 import 'package:emababyspa/utils/app_routes.dart';
+import 'package:emababyspa/utils/timezone_utils.dart';
 
 class TimeSlotView extends GetView<TimeSlotController> {
   const TimeSlotView({super.key});
@@ -22,16 +22,17 @@ class TimeSlotView extends GetView<TimeSlotController> {
     // Get the session controller
     final sessionController = Get.find<SessionController>();
 
-    // Format date for display
-    final String dateFormatted = _formatDateFromIso(
+    // Format date and times using TimeZoneUtil
+    final String dateFormatted = TimeZoneUtil.formatISOToIndonesiaTime(
+      timeSlot.startTime.toIso8601String(),
+      format: 'EEEE, d MMMM yyyy',
+    );
+
+    final String startTime = TimeZoneUtil.formatISOToIndonesiaTime(
       timeSlot.startTime.toIso8601String(),
     );
 
-    // Format times for display
-    final String startTime = _formatTimeFromIso(
-      timeSlot.startTime.toIso8601String(),
-    );
-    final String endTime = _formatTimeFromIso(
+    final String endTime = TimeZoneUtil.formatISOToIndonesiaTime(
       timeSlot.endTime.toIso8601String(),
     );
 
@@ -159,26 +160,6 @@ class TimeSlotView extends GetView<TimeSlotController> {
         ],
       ),
     );
-  }
-
-  // Format date from ISO string to user-friendly format
-  String _formatDateFromIso(String isoString) {
-    try {
-      final DateTime dateTime = DateTime.parse(isoString);
-      return DateFormat('EEEE, d MMMM yyyy').format(dateTime);
-    } catch (e) {
-      return "Date unavailable";
-    }
-  }
-
-  // Format time from ISO string to user-friendly format
-  String _formatTimeFromIso(String isoString) {
-    try {
-      final DateTime dateTime = DateTime.parse(isoString);
-      return DateFormat('HH:mm').format(dateTime);
-    } catch (e) {
-      return isoString;
-    }
   }
 
   // Header section showing time slot details

@@ -7,6 +7,7 @@ import 'package:emababyspa/common/layouts/main_layout.dart';
 import 'package:emababyspa/common/widgets/app_button.dart';
 import 'package:emababyspa/features/time_slot/controllers/time_slot_controller.dart';
 import 'package:emababyspa/data/models/time_slot.dart';
+import 'package:emababyspa/utils/timezone_utils.dart';
 
 class TimeSlotEditView extends GetView<TimeSlotController> {
   const TimeSlotEditView({super.key});
@@ -67,7 +68,7 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
     );
   }
 
-  // Initialize form with existing time slot data
+  // Initialize form with existing time slot data, using Indonesia time
   void _initializeForm(
     TimeSlot timeSlot,
     TextEditingController startDateController,
@@ -79,25 +80,29 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
     Rx<TimeOfDay?> selectedStartTime,
     Rx<TimeOfDay?> selectedEndTime,
   ) {
+    // Convert UTC times to Indonesia time
+    final startTimeIndonesia = TimeZoneUtil.toIndonesiaTime(timeSlot.startTime);
+    final endTimeIndonesia = TimeZoneUtil.toIndonesiaTime(timeSlot.endTime);
+
     // Set start date and time
-    selectedStartDate.value = timeSlot.startTime;
+    selectedStartDate.value = startTimeIndonesia;
     selectedStartTime.value = TimeOfDay(
-      hour: timeSlot.startTime.hour,
-      minute: timeSlot.startTime.minute,
+      hour: startTimeIndonesia.hour,
+      minute: startTimeIndonesia.minute,
     );
     startDateController.text = DateFormat(
       'dd/MM/yyyy',
-    ).format(timeSlot.startTime);
-    startTimeController.text = DateFormat('HH:mm').format(timeSlot.startTime);
+    ).format(startTimeIndonesia);
+    startTimeController.text = DateFormat('HH:mm').format(startTimeIndonesia);
 
     // Set end date and time
-    selectedEndDate.value = timeSlot.endTime;
+    selectedEndDate.value = endTimeIndonesia;
     selectedEndTime.value = TimeOfDay(
-      hour: timeSlot.endTime.hour,
-      minute: timeSlot.endTime.minute,
+      hour: endTimeIndonesia.hour,
+      minute: endTimeIndonesia.minute,
     );
-    endDateController.text = DateFormat('dd/MM/yyyy').format(timeSlot.endTime);
-    endTimeController.text = DateFormat('HH:mm').format(timeSlot.endTime);
+    endDateController.text = DateFormat('dd/MM/yyyy').format(endTimeIndonesia);
+    endTimeController.text = DateFormat('HH:mm').format(endTimeIndonesia);
   }
 
   // Build app bar
@@ -172,13 +177,17 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
     );
   }
 
-  // Build info card showing current time slot details
+  // Build info card showing current time slot details with Indonesia time
   Widget _buildInfoCard(TimeSlot timeSlot) {
-    final String currentDate = DateFormat(
-      'EEEE, d MMMM yyyy',
-    ).format(timeSlot.startTime);
+    // Use TimeZoneUtil to format dates in Indonesia time
+    final String currentDate = TimeZoneUtil.formatDate(
+      timeSlot.startTime,
+      format: 'EEEE, d MMMM yyyy',
+    );
+
     final String currentTimeRange =
-        '${DateFormat('HH:mm').format(timeSlot.startTime)} - ${DateFormat('HH:mm').format(timeSlot.endTime)}';
+        '${TimeZoneUtil.formatIndonesiaTime(timeSlot.startTime)} - '
+        '${TimeZoneUtil.formatIndonesiaTime(timeSlot.endTime)}';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -241,6 +250,15 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
                         color: ColorTheme.primary,
                       ),
                     ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Indonesia Time (GMT+7)',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
+                        color: ColorTheme.textSecondary,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -286,6 +304,15 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: ColorTheme.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'All times are in Indonesia Time (GMT+7)',
+            style: TextStyle(
+              fontSize: 14,
+              fontStyle: FontStyle.italic,
+              color: ColorTheme.textSecondary,
             ),
           ),
           const SizedBox(height: 24),
@@ -426,7 +453,7 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
     );
   }
 
-  // Build date field
+  // Build date field - Updated to use Indonesia time
   Widget _buildDateField(
     BuildContext context,
     String label,
@@ -458,11 +485,15 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
         return null;
       },
       onTap: () async {
+        // Use Indonesia time for initial date
+        final indonesiaTimeNow = TimeZoneUtil.getNow();
+        final initialDate = selectedDate.value ?? indonesiaTimeNow;
+
         final DateTime? pickedDate = await showDatePicker(
           context: context,
-          initialDate: selectedDate.value ?? DateTime.now(),
-          firstDate: DateTime.now().subtract(const Duration(days: 365)),
-          lastDate: DateTime.now().add(const Duration(days: 365)),
+          initialDate: initialDate,
+          firstDate: indonesiaTimeNow.subtract(const Duration(days: 365)),
+          lastDate: indonesiaTimeNow.add(const Duration(days: 365)),
           builder: (context, child) {
             return Theme(
               data: Theme.of(context).copyWith(
@@ -486,7 +517,7 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
     );
   }
 
-  // Build time field
+  // Build time field - Updated to use Indonesia time
   Widget _buildTimeField(
     BuildContext context,
     String label,
@@ -519,9 +550,18 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
         return null;
       },
       onTap: () async {
+        // Use Indonesia time for initial time
+        final indonesiaTimeNow = TimeZoneUtil.getNow();
+        final initialTime =
+            selectedTime.value ??
+            TimeOfDay(
+              hour: indonesiaTimeNow.hour,
+              minute: indonesiaTimeNow.minute,
+            );
+
         final TimeOfDay? pickedTime = await showTimePicker(
           context: context,
-          initialTime: selectedTime.value ?? TimeOfDay.now(),
+          initialTime: initialTime,
           builder: (context, child) {
             return Theme(
               data: Theme.of(context).copyWith(
@@ -610,7 +650,7 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
     );
   }
 
-  // Handle update time slot
+  // Handle update time slot - Modified to convert from Indonesia to UTC time
   Future<void> _handleUpdate(
     BuildContext context,
     GlobalKey<FormState> formKey,
@@ -638,8 +678,8 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
       return;
     }
 
-    // Create DateTime objects
-    final startDateTime = DateTime(
+    // Create DateTime objects in Indonesia time
+    final startDateTimeIndonesia = DateTime(
       selectedStartDate.value!.year,
       selectedStartDate.value!.month,
       selectedStartDate.value!.day,
@@ -647,7 +687,7 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
       selectedStartTime.value!.minute,
     );
 
-    final endDateTime = DateTime(
+    final endDateTimeIndonesia = DateTime(
       selectedEndDate.value!.year,
       selectedEndDate.value!.month,
       selectedEndDate.value!.day,
@@ -656,8 +696,8 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
     );
 
     // Validate time range
-    if (endDateTime.isBefore(startDateTime) ||
-        endDateTime.isAtSameMomentAs(startDateTime)) {
+    if (endDateTimeIndonesia.isBefore(startDateTimeIndonesia) ||
+        endDateTimeIndonesia.isAtSameMomentAs(startDateTimeIndonesia)) {
       Get.snackbar(
         'Error',
         'End time must be after start time',
@@ -668,9 +708,21 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
       return;
     }
 
-    // Check if there are any changes
-    if (startDateTime.isAtSameMomentAs(timeSlot.startTime) &&
-        endDateTime.isAtSameMomentAs(timeSlot.endTime)) {
+    // Convert from Indonesia time to UTC
+    final startDateTimeUTC = startDateTimeIndonesia.subtract(
+      const Duration(hours: 7),
+    );
+    final endDateTimeUTC = endDateTimeIndonesia.subtract(
+      const Duration(hours: 7),
+    );
+
+    // Convert the original time slot to Indonesia time for comparison
+    final startTimeIndonesia = TimeZoneUtil.toIndonesiaTime(timeSlot.startTime);
+    final endTimeIndonesia = TimeZoneUtil.toIndonesiaTime(timeSlot.endTime);
+
+    // Check if there are any changes (comparing in Indonesia time)
+    if (startDateTimeIndonesia.isAtSameMomentAs(startTimeIndonesia) &&
+        endDateTimeIndonesia.isAtSameMomentAs(endTimeIndonesia)) {
       Get.snackbar(
         'No Changes',
         'No changes detected in the time slot',
@@ -682,10 +734,11 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
     }
 
     try {
+      // Send UTC times to the controller
       final updatedTimeSlot = await controller.updateTimeSlot(
         id: timeSlot.id,
-        startTime: startDateTime,
-        endTime: endDateTime,
+        startTime: startDateTimeUTC,
+        endTime: endDateTimeUTC,
       );
 
       if (updatedTimeSlot != null) {
