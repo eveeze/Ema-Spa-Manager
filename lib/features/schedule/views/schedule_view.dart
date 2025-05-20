@@ -924,7 +924,7 @@ class ScheduleView extends GetView<ScheduleController> {
               // Navigate to time slot details page directly
               Get.toNamed(
                 AppRoutes.timeSlotDetail,
-                arguments: {'timeSlot': timeSlot, 'sessions': sessions},
+                arguments: {'timeSlot': timeSlot},
               );
             },
             child: Container(

@@ -31,6 +31,9 @@ class SessionController extends GetxController {
   // Booking status filter - use Rx<bool?> for nullable boolean
   final Rx<bool?> filterIsBooked = Rx<bool?>(null);
 
+  // Last used timeSlotId - for easier refreshing
+  String? _lastTimeSlotId;
+
   SessionController({required this.repository});
 
   @override
@@ -116,21 +119,65 @@ class SessionController extends GetxController {
       isLoading.value = true;
       errorMessage.value = '';
 
+      // Store the timeSlotId for potential refreshes later
+      if (timeSlotId != null) {
+        _lastTimeSlotId = timeSlotId;
+      }
+
       // Use filters from parameters or stored filter values
       final sessionsList = await repository.getAllSessions(
         isBooked: isBooked ?? filterIsBooked.value,
         staffId:
             staffId ??
             (selectedStaffId.value.isNotEmpty ? selectedStaffId.value : null),
-        timeSlotId: timeSlotId,
+        timeSlotId: timeSlotId ?? _lastTimeSlotId,
         date: date ?? _formatDate(selectedDate.value),
       );
 
       sessions.value = sessionsList;
+      update(); // Ensure UI updates
     } catch (e) {
       _handleError(e, 'Gagal mengambil data sesi');
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  // Refresh data based on last used parameters
+  Future<bool> refreshData({String? specificTimeSlotId}) async {
+    try {
+      isLoading.value = true;
+      clearError();
+
+      // Use specified timeSlotId or fallback to last used
+      final timeSlotId = specificTimeSlotId ?? _lastTimeSlotId;
+
+      // Refresh sessions data - this is the primary functionality we need
+      await fetchSessions(
+        timeSlotId: timeSlotId,
+        staffId:
+            selectedStaffId.value.isNotEmpty ? selectedStaffId.value : null,
+        isBooked: filterIsBooked.value,
+        date: _formatDate(selectedDate.value),
+      );
+
+      // Signal success
+      Get.snackbar(
+        'Berhasil',
+        'Data berhasil disegarkan',
+        backgroundColor: Colors.green.shade100,
+        colorText: Colors.green.shade900,
+        snackPosition: SnackPosition.TOP,
+        duration: const Duration(seconds: 1),
+      );
+
+      return true;
+    } catch (e) {
+      _handleError(e, 'Gagal menyegarkan data');
+      return false;
+    } finally {
+      isLoading.value = false;
+      update(); // Force UI refresh
     }
   }
 
@@ -144,19 +191,21 @@ class SessionController extends GetxController {
       isSubmitting.value = true;
       clearError();
 
+      // Store timeSlotId for future refreshes
+      _lastTimeSlotId = timeSlotId;
+
       final session = await repository.createSession(
         timeSlotId: timeSlotId,
         staffId: staffId,
         isBooked: isBooked,
       );
 
-      // Add to list if it matches current filters
-      if (_matchesCurrentFilters(session)) {
-        sessions.add(session);
-      }
+      // Refresh all the data to ensure UI consistency
+      await fetchSessions(timeSlotId: timeSlotId);
 
       currentSession.value = session;
       _showSuccessSnackbar('Sesi berhasil dibuat');
+      update(); // Force UI update
       return true;
     } catch (e) {
       _handleError(e, 'Terjadi kesalahan saat membuat sesi');
@@ -203,18 +252,21 @@ class SessionController extends GetxController {
       isSubmitting.value = true;
       clearError();
 
-      final newSessions = await repository.createManySessions(
-        sessions: sessionsList,
-      );
+      // Extract timeSlotId from first session if available (for future refreshes)
+      if (sessionsList.isNotEmpty &&
+          sessionsList[0].containsKey('timeSlotId')) {
+        _lastTimeSlotId = sessionsList[0]['timeSlotId'];
+      }
 
-      // Add matching sessions to the current list
-      final matchingSessions =
-          newSessions.where(_matchesCurrentFilters).toList();
-      if (matchingSessions.isNotEmpty) {
-        sessions.addAll(matchingSessions);
+      // Refresh data completely rather than just adding to the list
+      if (_lastTimeSlotId != null) {
+        await fetchSessions(timeSlotId: _lastTimeSlotId);
+      } else {
+        await fetchSessions();
       }
 
       _showSuccessSnackbar('Semua sesi berhasil dibuat');
+      update(); // Force UI update
       return true;
     } catch (e) {
       _handleError(e, 'Terjadi kesalahan saat membuat beberapa sesi');
@@ -232,6 +284,7 @@ class SessionController extends GetxController {
 
       final session = await repository.getSessionById(id);
       currentSession.value = session;
+      update(); // Force UI update
     } catch (e) {
       _handleError(e, 'Terjadi kesalahan saat mengambil detail sesi');
     } finally {
@@ -258,6 +311,8 @@ class SessionController extends GetxController {
     if (currentSession.value?.id == updatedSession.id) {
       currentSession.value = updatedSession;
     }
+
+    update(); // Force UI update
   }
 
   // Update a session
@@ -271,6 +326,11 @@ class SessionController extends GetxController {
       isSubmitting.value = true;
       clearError();
 
+      // Store timeSlotId for future refreshes if provided
+      if (timeSlotId != null) {
+        _lastTimeSlotId = timeSlotId;
+      }
+
       final updatedSession = await repository.updateSession(
         id: id,
         timeSlotId: timeSlotId,
@@ -278,8 +338,15 @@ class SessionController extends GetxController {
         isBooked: isBooked,
       );
 
-      _updateSessionInList(updatedSession);
+      // Instead of just updating in the list, refresh all data if needed
+      if (_lastTimeSlotId != null) {
+        await fetchSessions(timeSlotId: _lastTimeSlotId);
+      } else {
+        _updateSessionInList(updatedSession);
+      }
+
       _showSuccessSnackbar('Sesi berhasil diperbarui');
+      update(); // Force UI update
       return true;
     } catch (e) {
       _handleError(e, 'Terjadi kesalahan saat memperbarui sesi');
@@ -300,10 +367,17 @@ class SessionController extends GetxController {
         isBooked,
       );
 
-      _updateSessionInList(updatedSession);
+      // If we know the timeSlotId, refresh all sessions for that timeslot
+      if (_lastTimeSlotId != null) {
+        await fetchSessions(timeSlotId: _lastTimeSlotId);
+      } else {
+        _updateSessionInList(updatedSession);
+      }
+
       _showSuccessSnackbar(
         isBooked ? 'Sesi berhasil dipesan' : 'Sesi berhasil dibatalkan',
       );
+      update(); // Force UI update
       return true;
     } catch (e) {
       _handleError(e, 'Terjadi kesalahan saat memperbarui status pemesanan');
@@ -330,7 +404,13 @@ class SessionController extends GetxController {
           currentSession.value = null;
         }
 
+        // Refresh all sessions if needed
+        if (_lastTimeSlotId != null) {
+          await fetchSessions(timeSlotId: _lastTimeSlotId);
+        }
+
         _showSuccessSnackbar('Sesi berhasil dihapus');
+        update(); // Force UI update
       }
       return success;
     } catch (e) {
@@ -354,6 +434,7 @@ class SessionController extends GetxController {
       );
 
       availableSessions.value = result;
+      update(); // Force UI update
     } catch (e) {
       _handleError(e, 'Terjadi kesalahan saat mengambil sesi yang tersedia');
     } finally {
@@ -391,6 +472,7 @@ class SessionController extends GetxController {
       // Update the selected staff ID for filtering
       selectedStaffId.value = staffId;
       sessions.value = result;
+      update(); // Force UI update
     } catch (e) {
       _handleError(e, 'Terjadi kesalahan saat mengambil jadwal staf');
     } finally {
@@ -412,9 +494,11 @@ class SessionController extends GetxController {
         staffId:
             selectedStaffId.value.isNotEmpty ? selectedStaffId.value : null,
         isBooked: filterIsBooked.value,
+        timeSlotId: _lastTimeSlotId,
       );
 
       sessions.value = result;
+      update(); // Force UI update
     } catch (e) {
       _handleError(
         e,
@@ -430,6 +514,7 @@ class SessionController extends GetxController {
     selectedStaffId.value = '';
     filterIsBooked.value = null;
     selectedDate.value = DateTime.now();
+    _lastTimeSlotId = null;
     fetchSessions();
   }
 }

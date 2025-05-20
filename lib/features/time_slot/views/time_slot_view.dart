@@ -9,18 +9,31 @@ import 'package:emababyspa/features/session/controllers/session_controller.dart'
 import 'package:emababyspa/utils/app_routes.dart';
 import 'package:emababyspa/utils/timezone_utils.dart';
 
-class TimeSlotView extends GetView<TimeSlotController> {
+class TimeSlotView extends StatefulWidget {
   const TimeSlotView({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // Get the time slot and sessions from arguments
+  State<TimeSlotView> createState() => _TimeSlotViewState();
+}
+
+class _TimeSlotViewState extends State<TimeSlotView> {
+  final controller = Get.find<TimeSlotController>();
+  final sessionController = Get.find<SessionController>();
+
+  @override
+  void initState() {
+    super.initState();
     final args = Get.arguments as Map<String, dynamic>;
     final timeSlot = args['timeSlot'];
-    final sessions = args['sessions'] ?? [];
+    // Fetch sessions using controller
+    sessionController.fetchSessions(timeSlotId: timeSlot.id);
+  }
 
-    // Get the session controller
-    final sessionController = Get.find<SessionController>();
+  @override
+  Widget build(BuildContext context) {
+    // Get the time slot from arguments
+    final args = Get.arguments as Map<String, dynamic>;
+    final timeSlot = args['timeSlot'];
 
     // Format date and times using TimeZoneUtil
     final String dateFormatted = TimeZoneUtil.formatISOToIndonesiaTime(
@@ -39,15 +52,7 @@ class TimeSlotView extends GetView<TimeSlotController> {
     return MainLayout(
       child: Scaffold(
         appBar: _buildAppBar(context, timeSlot),
-        body: _buildBody(
-          context,
-          timeSlot,
-          sessions,
-          sessionController,
-          dateFormatted,
-          startTime,
-          endTime,
-        ),
+        body: _buildBody(context, timeSlot, dateFormatted, startTime, endTime),
       ),
     );
   }
@@ -92,8 +97,6 @@ class TimeSlotView extends GetView<TimeSlotController> {
   Widget _buildBody(
     BuildContext context,
     dynamic timeSlot,
-    List<dynamic> sessions,
-    SessionController sessionController,
     String dateFormatted,
     String startTime,
     String endTime,
@@ -121,14 +124,18 @@ class TimeSlotView extends GetView<TimeSlotController> {
               children: [
                 _buildDateHeader(dateFormatted),
                 const SizedBox(height: 16),
-                _buildTimeSlotHeader(startTime, endTime, timeSlot, sessions),
-                const SizedBox(height: 24),
-                _buildSessionsSection(
-                  context,
-                  sessions,
-                  sessionController,
-                  timeSlot,
+                // Use Obx to reactively update time slot header with session stats
+                Obx(
+                  () => _buildTimeSlotHeader(
+                    startTime,
+                    endTime,
+                    timeSlot,
+                    sessionController.sessions,
+                  ),
                 ),
+                const SizedBox(height: 24),
+                // Use Obx for reactive session list updates
+                _buildSessionsSection(context, timeSlot),
               ],
             ),
           ),
@@ -169,10 +176,13 @@ class TimeSlotView extends GetView<TimeSlotController> {
     dynamic timeSlot,
     List<dynamic> sessions,
   ) {
+    // Ensure sessions is always a non-null list
+    final safeSessionsList = sessions;
+
     // Calculate session statistics
-    final int totalSessions = sessions.length;
+    final int totalSessions = safeSessionsList.length;
     final int bookedSessions =
-        sessions.where((session) => session.isBooked == true).length;
+        safeSessionsList.where((session) => session.isBooked == true).length;
     final int availableSessions = totalSessions - bookedSessions;
     final bool allBooked = totalSessions > 0 && bookedSessions == totalSessions;
 
@@ -328,30 +338,31 @@ class TimeSlotView extends GetView<TimeSlotController> {
     );
   }
 
-  // Sessions section
-  Widget _buildSessionsSection(
-    BuildContext context,
-    List<dynamic> sessions,
-    SessionController sessionController,
-    dynamic timeSlot,
-  ) {
+  // Sessions section with reactive Obx list
+  Widget _buildSessionsSection(BuildContext context, dynamic timeSlot) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionHeader('Sessions', timeSlot),
         const SizedBox(height: 12),
-        sessions.isEmpty
-            ? _buildEmptySessions(timeSlot)
-            : ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: sessions.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final session = sessions[index];
-                return _buildSessionItem(context, session, sessionController);
-              },
-            ),
+        // Use Obx to reactively update the session list
+        Obx(() {
+          final sessions = sessionController.sessions;
+
+          return sessions.isEmpty
+              ? _buildEmptySessions(timeSlot)
+              : ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: sessions.length,
+                separatorBuilder:
+                    (context, index) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final session = sessions[index];
+                  return _buildSessionItem(context, session);
+                },
+              );
+        }),
       ],
     );
   }
@@ -371,13 +382,10 @@ class TimeSlotView extends GetView<TimeSlotController> {
         ),
         TextButton.icon(
           onPressed: () {
-            Get.toNamed(
-              AppRoutes.serviceForm,
-              arguments: {'timeSlotId': timeSlot.id},
-            );
+            _showAddSessionDialog(Get.context!, timeSlot);
           },
           icon: const Icon(Icons.add_circle_outline),
-          label: const Text('Add Session'),
+          label: const Text('Add Sessions'),
           style: TextButton.styleFrom(foregroundColor: ColorTheme.primary),
         ),
       ],
@@ -431,13 +439,10 @@ class TimeSlotView extends GetView<TimeSlotController> {
           ),
           const SizedBox(height: 24),
           AppButton(
-            text: 'Add Session',
+            text: 'Add Sessions',
             icon: Icons.add_circle_outline,
             onPressed: () {
-              Get.toNamed(
-                AppRoutes.serviceForm,
-                arguments: {'timeSlotId': timeSlot.id},
-              );
+              _showAddSessionDialog(Get.context!, timeSlot);
             },
           ),
         ],
@@ -446,11 +451,7 @@ class TimeSlotView extends GetView<TimeSlotController> {
   }
 
   // Session item card
-  Widget _buildSessionItem(
-    BuildContext context,
-    dynamic session,
-    SessionController sessionController,
-  ) {
+  Widget _buildSessionItem(BuildContext context, dynamic session) {
     final bool isBooked = session.isBooked ?? false;
 
     // Safely get customer name from reservation if available
@@ -606,7 +607,6 @@ class TimeSlotView extends GetView<TimeSlotController> {
                           _showToggleBookingConfirmation(
                             context,
                             session,
-                            sessionController,
                             value,
                           );
                         },
@@ -626,7 +626,6 @@ class TimeSlotView extends GetView<TimeSlotController> {
   Future<void> _showToggleBookingConfirmation(
     BuildContext context,
     dynamic session,
-    SessionController sessionController,
     bool newBookingStatus,
   ) async {
     final action = newBookingStatus ? 'book' : 'unbook';
@@ -689,6 +688,18 @@ class TimeSlotView extends GetView<TimeSlotController> {
           },
         ) ??
         false;
+  }
+
+  void _showAddSessionDialog(BuildContext context, dynamic timeSlot) {
+    // Navigate to the session form view with required arguments
+    Get.toNamed(
+      AppRoutes.sessionForm,
+      arguments: {
+        'timeSlotId': timeSlot.id.toString(),
+        'existingSessions': sessionController.sessions,
+      },
+    );
+    // No need for callback handling anymore as we're using reactive Obx
   }
 
   // Confirmation dialog for deleting a time slot
