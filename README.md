@@ -15,3 +15,9 @@ For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
 # Ema-Spa-Manager
+
+
+# TODOLIST
+- [TODO] fix time slot card so it refreshes the amount of session after adding or deleting session in it
+- [TODO] fix time zone issues when bulk creating the time slot
+- [TODO] fix create many session pages , controller (make sure its correct as the backend)

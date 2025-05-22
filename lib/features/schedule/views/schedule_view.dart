@@ -657,37 +657,38 @@ class ScheduleView extends GetView<ScheduleController> {
         _buildDailyHeader(selectedDate, schedule),
         Expanded(
           child: ListView.builder(
-            itemCount: timeSlots.length + 1, // +1 for the add button at the end
+            itemCount: timeSlots.length + 1,
             padding: const EdgeInsets.symmetric(
               horizontal: 16.0,
               vertical: 8.0,
             ),
             physics: const BouncingScrollPhysics(),
             itemBuilder: (context, index) {
-              // Check if this is the last item (add button)
               if (index == timeSlots.length) {
                 return _buildAddTimeSlotButton(schedule.id);
               }
 
               final timeSlot = timeSlots[index];
 
-              // Format time slots for display
-              String displayStartTime = _formatTimeSlot(
-                timeSlot.startTime.toIso8601String(),
-              );
+              return Obx(() {
+                // Tambahkan Obx di sini
+                // Dapatkan sesi secara reaktif
+                final sessionsForSlot =
+                    sessionController.sessions
+                        .where((session) => session.timeSlotId == timeSlot.id)
+                        .toList();
 
-              // Find sessions for this time slot
-              final sessionsForSlot =
-                  sessionController.sessions
-                      .where((session) => session.timeSlotId == timeSlot.id)
-                      .toList();
+                String displayStartTime = _formatTimeSlot(
+                  timeSlot.startTime.toIso8601String(),
+                );
 
-              return _buildTimeSlotItem(
-                timeSlot,
-                displayStartTime,
-                sessionsForSlot, // Pass the sessions
-                sessionController, // Pass the controller
-              );
+                return _buildTimeSlotItem(
+                  timeSlot,
+                  displayStartTime,
+                  sessionsForSlot,
+                  sessionController,
+                );
+              });
             },
           ),
         ),

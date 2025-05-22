@@ -797,6 +797,25 @@ class ScheduleController extends GetxController {
     }
   }
 
+  Future<void> refreshData({String? specificTimeSlotId}) async {
+    try {
+      // Refresh operating schedules
+      await operatingScheduleController.fetchAllSchedules();
+
+      // Refresh time slots
+      if (specificTimeSlotId != null) {
+        await timeSlotController.fetchTimeSlotsByScheduleId(specificTimeSlotId);
+      }
+
+      // Refresh sessions
+      await sessionController.fetchSessionsByDate(DateTime.now());
+
+      update();
+    } catch (e) {
+      _logger.error('Error refreshing data: $e');
+    }
+  }
+
   // Refresh controllers for a specific date
   Future<void> _refreshControllersForDate(String date) async {
     try {
@@ -805,7 +824,8 @@ class ScheduleController extends GetxController {
 
       // Get schedule ID for this date
       final schedule = operatingScheduleController.schedulesList
-          .firstWhereOrNull((schedule) => schedule.date == date);
+      // ignore: unrelated_type_equality_checks
+      .firstWhereOrNull((schedule) => schedule.date == date);
 
       final scheduleId = schedule?.id;
 

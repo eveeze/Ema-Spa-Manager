@@ -6,7 +6,7 @@ enum AppButtonType { primary, secondary, outline, text }
 
 enum AppButtonSize { small, medium, large }
 
-class AppButton extends StatelessWidget {
+class AppButton extends StatefulWidget {
   final String text;
   final VoidCallback? onPressed;
   final AppButtonType type;
@@ -29,14 +29,83 @@ class AppButton extends StatelessWidget {
   });
 
   @override
+  State<AppButton> createState() => _AppButtonState();
+}
+
+class _AppButtonState extends State<AppButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+  bool _isPressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  void _handleTapDown(TapDownDetails details) {
+    if (widget.onPressed != null && !widget.isLoading) {
+      setState(() => _isPressed = true);
+      _animationController.forward();
+    }
+  }
+
+  void _handleTapUp(TapUpDetails details) {
+    _resetAnimation();
+  }
+
+  void _handleTapCancel() {
+    _resetAnimation();
+  }
+
+  void _resetAnimation() {
+    setState(() => _isPressed = false);
+    _animationController.reverse();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return _buildButton();
+    return AnimatedBuilder(
+      animation: _scaleAnimation,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _scaleAnimation.value,
+          child: _buildButton(),
+        );
+      },
+    );
   }
 
   Widget _buildButton() {
-    switch (type) {
+    return GestureDetector(
+      onTapDown: _handleTapDown,
+      onTapUp: _handleTapUp,
+      onTapCancel: _handleTapCancel,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        child: _buildButtonByType(),
+      ),
+    );
+  }
+
+  Widget _buildButtonByType() {
+    switch (widget.type) {
       case AppButtonType.primary:
-        return _buildElevatedButton();
+        return _buildPrimaryButton();
       case AppButtonType.secondary:
         return _buildSecondaryButton();
       case AppButtonType.outline:
@@ -46,180 +115,316 @@ class AppButton extends StatelessWidget {
     }
   }
 
-  Widget _buildElevatedButton() {
-    return SizedBox(
-      width: isFullWidth ? double.infinity : null,
+  Widget _buildPrimaryButton() {
+    return Container(
+      width: widget.isFullWidth ? double.infinity : null,
       height: _getHeight(),
-      child: ElevatedButton(
-        onPressed: isLoading ? null : onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: ColorTheme.primary,
-          foregroundColor: Colors.white,
-          padding: _getPadding(),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          elevation: 2,
-          shadowColor: ColorTheme.primary.withValues(alpha: 0.4),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [ColorTheme.primary, ColorTheme.primaryDark],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        child: _buildButtonContent(Colors.white),
+        borderRadius: BorderRadius.circular(_getBorderRadius()),
+        boxShadow: [
+          BoxShadow(
+            color: ColorTheme.primary.withValues(alpha: 0.3),
+            blurRadius: _isPressed ? 8 : 12,
+            offset: _isPressed ? const Offset(0, 2) : const Offset(0, 4),
+            spreadRadius: _isPressed ? 0 : 1,
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: widget.isLoading ? null : widget.onPressed,
+          borderRadius: BorderRadius.circular(_getBorderRadius()),
+          splashColor: Colors.white.withValues(alpha: 0.2),
+          highlightColor: Colors.white.withValues(alpha: 0.1),
+          child: Container(
+            padding: _getPadding(),
+            alignment: Alignment.center,
+            child: _buildButtonContent(Colors.white),
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildSecondaryButton() {
-    return SizedBox(
-      width: isFullWidth ? double.infinity : null,
+    return Container(
+      width: widget.isFullWidth ? double.infinity : null,
       height: _getHeight(),
-      child: ElevatedButton(
-        onPressed: isLoading ? null : onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: ColorTheme.secondary,
-          foregroundColor: Colors.white,
-          padding: _getPadding(),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          elevation: 2,
-          shadowColor: ColorTheme.secondary.withValues(alpha: 0.4),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            ColorTheme.secondary,
+            ColorTheme.secondary.withValues(alpha: 0.9),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        child: _buildButtonContent(Colors.white),
+        borderRadius: BorderRadius.circular(_getBorderRadius()),
+        boxShadow: [
+          BoxShadow(
+            color: ColorTheme.secondary.withValues(alpha: 0.25),
+            blurRadius: _isPressed ? 6 : 10,
+            offset: _isPressed ? const Offset(0, 2) : const Offset(0, 3),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: widget.isLoading ? null : widget.onPressed,
+          borderRadius: BorderRadius.circular(_getBorderRadius()),
+          splashColor: Colors.white.withValues(alpha: 0.2),
+          highlightColor: Colors.white.withValues(alpha: 0.1),
+          child: Container(
+            padding: _getPadding(),
+            alignment: Alignment.center,
+            child: _buildButtonContent(Colors.white),
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildOutlinedButton() {
-    return SizedBox(
-      width: isFullWidth ? double.infinity : null,
+    return Container(
+      width: widget.isFullWidth ? double.infinity : null,
       height: _getHeight(),
-      child: OutlinedButton(
-        onPressed: isLoading ? null : onPressed,
-        style: OutlinedButton.styleFrom(
-          foregroundColor: ColorTheme.primary,
-          side: BorderSide(color: ColorTheme.primary, width: 1.5),
-          padding: _getPadding(),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+      decoration: BoxDecoration(
+        color:
+            _isPressed
+                ? ColorTheme.primary.withValues(alpha: 0.05)
+                : Colors.transparent,
+        border: Border.all(color: ColorTheme.primary, width: 1.5),
+        borderRadius: BorderRadius.circular(_getBorderRadius()),
+        boxShadow:
+            _isPressed
+                ? []
+                : [
+                  BoxShadow(
+                    color: ColorTheme.primary.withValues(alpha: 0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                    spreadRadius: 0,
+                  ),
+                ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: widget.isLoading ? null : widget.onPressed,
+          borderRadius: BorderRadius.circular(_getBorderRadius()),
+          splashColor: ColorTheme.primary.withValues(alpha: 0.1),
+          highlightColor: ColorTheme.primary.withValues(alpha: 0.05),
+          child: Container(
+            padding: _getPadding(),
+            alignment: Alignment.center,
+            child: _buildButtonContent(ColorTheme.primary),
           ),
         ),
-        child: _buildButtonContent(ColorTheme.primary),
       ),
     );
   }
 
   Widget _buildTextButton() {
-    return SizedBox(
-      width: isFullWidth ? double.infinity : null,
+    return Container(
+      width: widget.isFullWidth ? double.infinity : null,
       height: _getHeight(),
-      child: TextButton(
-        onPressed: isLoading ? null : onPressed,
-        style: TextButton.styleFrom(
-          foregroundColor: ColorTheme.primary,
-          padding: _getPadding(),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          overlayColor: ColorTheme.primaryLight.withValues(alpha: 0.2),
+      decoration: BoxDecoration(
+        color:
+            _isPressed
+                ? ColorTheme.primary.withValues(alpha: 0.08)
+                : Colors.transparent,
+        borderRadius: BorderRadius.circular(_getBorderRadius()),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: widget.isLoading ? null : widget.onPressed,
+          borderRadius: BorderRadius.circular(_getBorderRadius()),
+          splashColor: ColorTheme.primary.withValues(alpha: 0.12),
+          highlightColor: ColorTheme.primary.withValues(alpha: 0.06),
+          child: Container(
+            padding: _getPadding(),
+            alignment: Alignment.center,
+            child: _buildButtonContent(ColorTheme.primary),
+          ),
         ),
-        child: _buildButtonContent(ColorTheme.primary),
       ),
     );
   }
 
   Widget _buildButtonContent(Color color) {
-    if (isLoading) {
+    if (widget.isLoading) {
       return _buildLoadingIndicator(color);
-    } else if (icon != null) {
+    } else if (widget.icon != null) {
       return _buildTextWithIcon(color);
     } else {
-      return Text(
-        text,
-        style: TextStyle(
-          fontSize: _getFontSize(),
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.3,
-        ),
-      );
+      return _buildText(color);
     }
+  }
+
+  Widget _buildText(Color color) {
+    return AnimatedDefaultTextStyle(
+      duration: const Duration(milliseconds: 200),
+      style: TextStyle(
+        fontSize: _getFontSize(),
+        fontWeight: _getFontWeight(),
+        letterSpacing: _getLetterSpacing(),
+        color: color,
+        height: 1.2,
+      ),
+      child: Text(widget.text),
+    );
   }
 
   Widget _buildLoadingIndicator(Color color) {
     return SizedBox(
-      height: size == AppButtonSize.small ? 16 : 20,
-      width: size == AppButtonSize.small ? 16 : 20,
+      height: _getLoadingSize(),
+      width: _getLoadingSize(),
       child: CircularProgressIndicator(
-        strokeWidth: size == AppButtonSize.small ? 2 : 2.5,
+        strokeWidth: _getLoadingStrokeWidth(),
         valueColor: AlwaysStoppedAnimation<Color>(color),
+        strokeCap: StrokeCap.round,
       ),
     );
   }
 
   Widget _buildTextWithIcon(Color color) {
-    final iconGap = size == AppButtonSize.large ? 10.0 : 8.0;
+    final iconGap = _getIconGap();
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        if (iconPosition) ...[
-          Icon(icon, size: _getIconSize()),
+        if (widget.iconPosition) ...[
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            child: Icon(widget.icon, size: _getIconSize(), color: color),
+          ),
           SizedBox(width: iconGap),
         ],
-        Text(
-          text,
-          style: TextStyle(
-            fontSize: _getFontSize(),
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.3,
-          ),
-        ),
-        if (!iconPosition) ...[
+        Flexible(child: _buildText(color)),
+        if (!widget.iconPosition) ...[
           SizedBox(width: iconGap),
-          Icon(icon, size: _getIconSize()),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            child: Icon(widget.icon, size: _getIconSize(), color: color),
+          ),
         ],
       ],
     );
   }
 
+  // Dimension and styling methods
   double _getHeight() {
-    switch (size) {
+    switch (widget.size) {
       case AppButtonSize.small:
-        return 36;
+        return 40;
       case AppButtonSize.medium:
-        return 44;
+        return 48;
       case AppButtonSize.large:
-        return 52;
+        return 56;
     }
   }
 
   EdgeInsets _getPadding() {
-    switch (size) {
+    switch (widget.size) {
       case AppButtonSize.small:
-        return const EdgeInsets.symmetric(horizontal: 12, vertical: 8);
+        return const EdgeInsets.symmetric(horizontal: 16, vertical: 8);
       case AppButtonSize.medium:
-        return const EdgeInsets.symmetric(horizontal: 16, vertical: 12);
+        return const EdgeInsets.symmetric(horizontal: 20, vertical: 12);
       case AppButtonSize.large:
         return const EdgeInsets.symmetric(horizontal: 24, vertical: 16);
     }
   }
 
-  double _getFontSize() {
-    switch (size) {
+  double _getBorderRadius() {
+    switch (widget.size) {
       case AppButtonSize.small:
-        return 12;
+        return 8;
       case AppButtonSize.medium:
-        return 14;
+        return 12;
       case AppButtonSize.large:
         return 16;
     }
   }
 
+  double _getFontSize() {
+    switch (widget.size) {
+      case AppButtonSize.small:
+        return 13;
+      case AppButtonSize.medium:
+        return 15;
+      case AppButtonSize.large:
+        return 17;
+    }
+  }
+
+  FontWeight _getFontWeight() {
+    return widget.type == AppButtonType.text
+        ? FontWeight.w500
+        : FontWeight.w600;
+  }
+
+  double _getLetterSpacing() {
+    switch (widget.size) {
+      case AppButtonSize.small:
+        return 0.2;
+      case AppButtonSize.medium:
+        return 0.3;
+      case AppButtonSize.large:
+        return 0.4;
+    }
+  }
+
   double _getIconSize() {
-    switch (size) {
+    switch (widget.size) {
       case AppButtonSize.small:
         return 16;
       case AppButtonSize.medium:
         return 18;
       case AppButtonSize.large:
         return 20;
+    }
+  }
+
+  double _getIconGap() {
+    switch (widget.size) {
+      case AppButtonSize.small:
+        return 6;
+      case AppButtonSize.medium:
+        return 8;
+      case AppButtonSize.large:
+        return 10;
+    }
+  }
+
+  double _getLoadingSize() {
+    switch (widget.size) {
+      case AppButtonSize.small:
+        return 16;
+      case AppButtonSize.medium:
+        return 20;
+      case AppButtonSize.large:
+        return 24;
+    }
+  }
+
+  double _getLoadingStrokeWidth() {
+    switch (widget.size) {
+      case AppButtonSize.small:
+        return 2;
+      case AppButtonSize.medium:
+        return 2.5;
+      case AppButtonSize.large:
+        return 3;
     }
   }
 }

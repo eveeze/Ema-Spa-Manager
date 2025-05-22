@@ -1,4 +1,5 @@
 // lib/features/time_slot/views/time_slot_view.dart
+import 'package:emababyspa/features/schedule/controllers/schedule_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:emababyspa/common/theme/color_theme.dart';
@@ -665,29 +666,40 @@ class _TimeSlotViewState extends State<TimeSlotView> {
     BuildContext context,
     dynamic session,
   ) async {
-    return await showDialog<bool>(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text('Delete Session'),
-              content: const Text(
-                'Are you sure you want to delete this session?',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text('Cancel'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  style: TextButton.styleFrom(foregroundColor: Colors.red),
-                  child: const Text('Delete'),
-                ),
-              ],
-            );
-          },
-        ) ??
-        false;
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Session'),
+          content: const Text('Are you sure you want to delete this session?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result == true) {
+      final success = await sessionController.deleteSession(session.id);
+      if (success) {
+        // Refresh data setelah penghapusan
+        await sessionController.refreshSessions(session.timeSlotId);
+        // Paksa update ScheduleView
+        Get.find<ScheduleController>().refreshData(
+          specificTimeSlotId: session.timeSlotId,
+        );
+      }
+      return success;
+    }
+    return false;
   }
 
   void _showAddSessionDialog(BuildContext context, dynamic timeSlot) {
@@ -703,7 +715,7 @@ class _TimeSlotViewState extends State<TimeSlotView> {
   }
 
   // Confirmation dialog for deleting a time slot
-  void _showDeleteConfirmation(BuildContext context, dynamic timeSlot) {
+  void _showDeleteConfirmation(BuildContext context, dynamic timeSlot) async {
     showDialog(
       context: context,
       builder: (BuildContext context) {
