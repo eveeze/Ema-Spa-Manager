@@ -457,9 +457,17 @@ class _TimeSlotViewState extends State<TimeSlotView> {
 
     // Safely get customer name from reservation if available
     String customerName = "Customer";
-    if (session.reservation != null &&
-        session.reservation?.customerName != null) {
-      customerName = session.reservation!.customerName;
+    if (session.reservation != null) {
+      // Use babyName as customer identifier since customer object is not included
+      if (session.reservation?.babyName != null &&
+          session.reservation!.babyName.isNotEmpty) {
+        customerName = session.reservation!.babyName;
+      }
+      // Or if you have parentNames field available:
+      else if (session.reservation?.parentNames != null &&
+          session.reservation!.parentNames!.isNotEmpty) {
+        customerName = session.reservation!.parentNames!;
+      }
     }
 
     // Safely get staff name
@@ -468,11 +476,11 @@ class _TimeSlotViewState extends State<TimeSlotView> {
       staffName = session.staff!.name;
     }
 
-    // Determine session type/service type
+    // Determine session type/service type - you might need to fetch service details separately
     String serviceType = "Regular Session";
-    if (session.reservation != null &&
-        session.reservation?.serviceType != null) {
-      serviceType = session.reservation!.serviceType;
+    if (session.reservation != null) {
+      // You can customize this based on your service data structure
+      serviceType = "Spa Session for ${session.reservation!.babyName}";
     }
 
     return Dismissible(
@@ -570,7 +578,7 @@ class _TimeSlotViewState extends State<TimeSlotView> {
                             const SizedBox(height: 4),
                             Text(
                               isBooked
-                                  ? 'Booked by $customerName'
+                                  ? 'Booked for $customerName'
                                   : 'Available for booking',
                               style: TextStyle(
                                 fontSize: 14,
@@ -730,20 +738,38 @@ class _TimeSlotViewState extends State<TimeSlotView> {
               child: const Text('Cancel'),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.of(context).pop();
-                controller.deleteTimeSlot(timeSlot.id).then((success) {
-                  if (success) {
-                    Get.back(); // Go back to previous screen
-                    Get.snackbar(
-                      'Success',
-                      'Time slot deleted successfully',
-                      backgroundColor: Colors.green,
-                      colorText: Colors.white,
-                      snackPosition: SnackPosition.BOTTOM,
-                    );
-                  }
-                });
+
+                // Simpan timeSlotId sebelum dihapus
+                final timeSlotId = timeSlot.id;
+
+                final success = await controller.deleteTimeSlot(timeSlotId);
+                if (success) {
+                  // Refresh data di ScheduleController dengan method yang lebih komprehensif
+                  final scheduleController = Get.find<ScheduleController>();
+                  await scheduleController
+                      .fetchScheduleData(); // Gunakan method baru
+
+                  // Kembali ke halaman sebelumnya
+                  Get.back();
+
+                  Get.snackbar(
+                    'Success',
+                    'Time slot deleted successfully',
+                    backgroundColor: Colors.green,
+                    colorText: Colors.white,
+                    snackPosition: SnackPosition.BOTTOM,
+                  );
+                } else {
+                  Get.snackbar(
+                    'Error',
+                    'Failed to delete time slot',
+                    backgroundColor: Colors.red,
+                    colorText: Colors.white,
+                    snackPosition: SnackPosition.BOTTOM,
+                  );
+                }
               },
               style: TextButton.styleFrom(foregroundColor: Colors.red),
               child: const Text('Delete'),

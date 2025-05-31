@@ -61,7 +61,7 @@ class ServiceFormView extends GetView<ServiceController> {
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Colors.black.withValues(alpha: 0.05),
                             blurRadius: 10,
                             offset: const Offset(0, 2),
                           ),
@@ -92,7 +92,7 @@ class ServiceFormView extends GetView<ServiceController> {
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 10,
                         offset: const Offset(0, 2),
                       ),
@@ -151,7 +151,7 @@ class ServiceFormView extends GetView<ServiceController> {
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 10,
                         offset: const Offset(0, 2),
                       ),
@@ -163,7 +163,7 @@ class ServiceFormView extends GetView<ServiceController> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: ColorTheme.primary.withOpacity(0.1),
+                          color: ColorTheme.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(
@@ -235,12 +235,14 @@ class ServiceFormView extends GetView<ServiceController> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    ColorTheme.primary.withOpacity(0.1),
-                    ColorTheme.primary.withOpacity(0.05),
+                    ColorTheme.primary.withValues(alpha: 0.1),
+                    ColorTheme.primary.withValues(alpha: 0.05),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: ColorTheme.primary.withOpacity(0.2)),
+                border: Border.all(
+                  color: ColorTheme.primary.withValues(alpha: 0.2),
+                ),
               ),
               child: Column(
                 children: [
@@ -351,13 +353,13 @@ class ServiceFormView extends GetView<ServiceController> {
                   gradient: LinearGradient(
                     colors: [
                       ColorTheme.primary,
-                      ColorTheme.primary.withOpacity(0.8),
+                      ColorTheme.primary.withValues(alpha: 0.8),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: ColorTheme.primary.withOpacity(0.3),
+                      color: ColorTheme.primary.withValues(alpha: 0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
@@ -393,7 +395,7 @@ class ServiceFormView extends GetView<ServiceController> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -407,7 +409,7 @@ class ServiceFormView extends GetView<ServiceController> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: ColorTheme.primary.withOpacity(0.1),
+                  color: ColorTheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon, color: ColorTheme.primary, size: 20),
@@ -440,7 +442,7 @@ class ServiceFormView extends GetView<ServiceController> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -453,7 +455,7 @@ class ServiceFormView extends GetView<ServiceController> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: ColorTheme.primary.withOpacity(0.1),
+                  color: ColorTheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(Icons.image, color: ColorTheme.primary, size: 20),
@@ -488,13 +490,13 @@ class ServiceFormView extends GetView<ServiceController> {
             color: Colors.grey[50],
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: ColorTheme.primary.withOpacity(0.3),
+              color: ColorTheme.primary.withValues(alpha: 0.3),
               width: 2,
               style: BorderStyle.solid,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -524,7 +526,7 @@ class ServiceFormView extends GetView<ServiceController> {
                               borderRadius: BorderRadius.circular(8),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
+                                  color: Colors.black.withValues(alpha: 0.1),
                                   blurRadius: 4,
                                 ),
                               ],
@@ -544,7 +546,7 @@ class ServiceFormView extends GetView<ServiceController> {
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: ColorTheme.primary.withOpacity(0.1),
+                            color: ColorTheme.primary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(
@@ -614,7 +616,7 @@ class ServiceFormView extends GetView<ServiceController> {
             color: Colors.white,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.02),
+                color: Colors.black.withValues(alpha: 0.02),
                 blurRadius: 4,
                 offset: const Offset(0, 1),
               ),
@@ -631,7 +633,7 @@ class ServiceFormView extends GetView<ServiceController> {
               focusedBorder: InputBorder.none,
               prefixIcon: Icon(
                 Icons.category_outlined,
-                color: ColorTheme.primary.withOpacity(0.7),
+                color: ColorTheme.primary.withValues(alpha: 0.7),
                 size: 20,
               ),
             ),
@@ -676,7 +678,7 @@ class ServiceFormView extends GetView<ServiceController> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: ColorTheme.primary.withOpacity(0.1),
+              color: ColorTheme.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
@@ -874,11 +876,11 @@ class ServiceFormView extends GetView<ServiceController> {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: ColorTheme.primary.withOpacity(0.2),
+                      color: ColorTheme.primary.withValues(alpha: 0.2),
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.03),
+                        color: Colors.black.withValues(alpha: 0.03),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -897,7 +899,9 @@ class ServiceFormView extends GetView<ServiceController> {
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: ColorTheme.primary.withOpacity(0.1),
+                                color: ColorTheme.primary.withValues(
+                                  alpha: 0.1,
+                                ),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
@@ -1058,7 +1062,7 @@ class ServiceFormView extends GetView<ServiceController> {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: ColorTheme.primary.withOpacity(0.1),
+                  color: ColorTheme.primary.withValues(alpha: 0.1),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),

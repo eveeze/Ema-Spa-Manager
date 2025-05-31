@@ -1,4 +1,4 @@
-// lib/data/models/customer.dart
+// lib/data/models/customer.dart (Owner App)
 import 'package:equatable/equatable.dart';
 import 'reservation.dart';
 import 'rating.dart';
@@ -9,15 +9,13 @@ class Customer extends Equatable {
   final String email;
   final String phoneNumber;
   final bool isVerified;
-  final bool isResetPasswordVerified;
-  final String? verificationOtp;
-  final DateTime? verificationOtpCreatedAt;
-  final String? resetPasswordOtp;
-  final DateTime? resetOtpCreatedAt;
+  final bool isManualCustomer; // Penting untuk owner mengetahui customer manual
+  final String? address; // Berguna untuk owner mengetahui lokasi customer
+  final String? instagramHandle; // Berguna untuk marketing/customer service
   final DateTime createdAt;
   final DateTime updatedAt;
-  final List<Reservation>? reservations;
-  final List<Rating>? ratings;
+  final List<Reservation>? reservations; // Untuk melihat riwayat booking
+  final List<Rating>? ratings; // Untuk melihat feedback customer
 
   const Customer({
     required this.id,
@@ -25,11 +23,9 @@ class Customer extends Equatable {
     required this.email,
     required this.phoneNumber,
     required this.isVerified,
-    required this.isResetPasswordVerified,
-    this.verificationOtp,
-    this.verificationOtpCreatedAt,
-    this.resetPasswordOtp,
-    this.resetOtpCreatedAt,
+    required this.isManualCustomer,
+    this.address,
+    this.instagramHandle,
     required this.createdAt,
     required this.updatedAt,
     this.reservations,
@@ -43,17 +39,9 @@ class Customer extends Equatable {
       email: json['email'],
       phoneNumber: json['phoneNumber'],
       isVerified: json['isVerified'] ?? false,
-      isResetPasswordVerified: json['isResetPasswordVerified'] ?? false,
-      verificationOtp: json['verificationOtp'],
-      verificationOtpCreatedAt:
-          json['verificationOtpCreatedAt'] != null
-              ? DateTime.parse(json['verificationOtpCreatedAt'])
-              : null,
-      resetPasswordOtp: json['resetPasswordOtp'],
-      resetOtpCreatedAt:
-          json['resetOtpCreatedAt'] != null
-              ? DateTime.parse(json['resetOtpCreatedAt'])
-              : null,
+      isManualCustomer: json['isManualCustomer'] ?? false,
+      address: json['address'],
+      instagramHandle: json['instagramHandle'],
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: DateTime.parse(json['updatedAt']),
       reservations:
@@ -78,20 +66,13 @@ class Customer extends Equatable {
       'email': email,
       'phoneNumber': phoneNumber,
       'isVerified': isVerified,
-      'isResetPasswordVerified': isResetPasswordVerified,
+      'isManualCustomer': isManualCustomer,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
 
-    if (verificationOtp != null) data['verificationOtp'] = verificationOtp;
-    if (verificationOtpCreatedAt != null) {
-      data['verificationOtpCreatedAt'] =
-          verificationOtpCreatedAt!.toIso8601String();
-    }
-    if (resetPasswordOtp != null) data['resetPasswordOtp'] = resetPasswordOtp;
-    if (resetOtpCreatedAt != null) {
-      data['resetOtpCreatedAt'] = resetOtpCreatedAt!.toIso8601String();
-    }
+    if (address != null) data['address'] = address;
+    if (instagramHandle != null) data['instagramHandle'] = instagramHandle;
     if (reservations != null) {
       data['reservations'] = reservations!.map((e) => e.toJson()).toList();
     }
@@ -108,11 +89,9 @@ class Customer extends Equatable {
     String? email,
     String? phoneNumber,
     bool? isVerified,
-    bool? isResetPasswordVerified,
-    String? verificationOtp,
-    DateTime? verificationOtpCreatedAt,
-    String? resetPasswordOtp,
-    DateTime? resetOtpCreatedAt,
+    bool? isManualCustomer,
+    String? address,
+    String? instagramHandle,
     DateTime? createdAt,
     DateTime? updatedAt,
     List<Reservation>? reservations,
@@ -124,18 +103,42 @@ class Customer extends Equatable {
       email: email ?? this.email,
       phoneNumber: phoneNumber ?? this.phoneNumber,
       isVerified: isVerified ?? this.isVerified,
-      isResetPasswordVerified:
-          isResetPasswordVerified ?? this.isResetPasswordVerified,
-      verificationOtp: verificationOtp ?? this.verificationOtp,
-      verificationOtpCreatedAt:
-          verificationOtpCreatedAt ?? this.verificationOtpCreatedAt,
-      resetPasswordOtp: resetPasswordOtp ?? this.resetPasswordOtp,
-      resetOtpCreatedAt: resetOtpCreatedAt ?? this.resetOtpCreatedAt,
+      isManualCustomer: isManualCustomer ?? this.isManualCustomer,
+      address: address ?? this.address,
+      instagramHandle: instagramHandle ?? this.instagramHandle,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       reservations: reservations ?? this.reservations,
       ratings: ratings ?? this.ratings,
     );
+  }
+
+  // Helper methods khusus untuk owner app
+  String get displayName => name;
+
+  String get contactInfo {
+    final parts = <String>[phoneNumber];
+    if (instagramHandle != null) {
+      parts.add('@$instagramHandle');
+    }
+    return parts.join(' • ');
+  }
+
+  bool get hasRecentActivity {
+    if (reservations == null || reservations!.isEmpty) return false;
+    final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
+    return reservations!.any((r) => r.createdAt.isAfter(thirtyDaysAgo));
+  }
+
+  int get totalReservations => reservations?.length ?? 0;
+
+  double get averageRating {
+    if (ratings == null || ratings!.isEmpty) return 0.0;
+    final total = ratings!.fold<double>(
+      0.0,
+      (sum, rating) => sum + rating.rating,
+    );
+    return total / ratings!.length;
   }
 
   @override
@@ -145,11 +148,9 @@ class Customer extends Equatable {
     email,
     phoneNumber,
     isVerified,
-    isResetPasswordVerified,
-    verificationOtp,
-    verificationOtpCreatedAt,
-    resetPasswordOtp,
-    resetOtpCreatedAt,
+    isManualCustomer,
+    address,
+    instagramHandle,
     createdAt,
     updatedAt,
     reservations,

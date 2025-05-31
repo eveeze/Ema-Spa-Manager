@@ -797,6 +797,42 @@ class ScheduleController extends GetxController {
     }
   }
 
+  Future<void> fetchScheduleData() async {
+    try {
+      isLoading.value = true;
+
+      // 1. Refresh operating schedules
+      await fetchOperatingSchedules();
+
+      // 2. Refresh time slots untuk semua operating schedules
+      final allTimeSlotIds = <String>[];
+
+      for (final schedule in operatingSchedules) {
+        await timeSlotController.fetchTimeSlotsByScheduleId(schedule.id);
+
+        // Get the time slots from the controller's observable list
+        // Filter time slots that belong to this specific schedule
+        final scheduleTimeSlots =
+            timeSlotController.timeSlots
+                .where((ts) => ts.operatingScheduleId == schedule.id)
+                .toList();
+
+        allTimeSlotIds.addAll(scheduleTimeSlots.map((ts) => ts.id));
+      }
+
+      // 3. Refresh sessions untuk semua time slots yang ada
+      if (allTimeSlotIds.isNotEmpty) {
+        for (final timeSlotId in allTimeSlotIds) {
+          await sessionController.fetchSessions(timeSlotId: timeSlotId);
+        }
+      }
+    } catch (e) {
+      _logger.error('Error fetching schedule data: $e');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
   Future<void> refreshData({String? specificTimeSlotId}) async {
     try {
       // Refresh operating schedules

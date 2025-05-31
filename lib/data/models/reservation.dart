@@ -22,6 +22,7 @@ class Reservation extends Equatable {
   final String staffId;
   final String sessionId;
   final String? notes;
+  final String? parentNames; // NEW: Parent names for manual reservations
   final String babyName;
   final int babyAge;
   final String? priceTierId;
@@ -39,6 +40,7 @@ class Reservation extends Equatable {
     required this.staffId,
     required this.sessionId,
     this.notes,
+    this.parentNames, // NEW: Optional parent names
     required this.babyName,
     required this.babyAge,
     this.priceTierId,
@@ -51,27 +53,34 @@ class Reservation extends Equatable {
 
   factory Reservation.fromJson(Map<String, dynamic> json) {
     return Reservation(
-      id: json['id'],
+      id: json['id'] ?? '',
       reservationType: ReservationType.values.firstWhere(
         (e) => e.toString() == 'ReservationType.${json['reservationType']}',
         orElse: () => ReservationType.ONLINE,
       ),
-      customerId: json['customerId'],
-      serviceId: json['serviceId'],
-      staffId: json['staffId'],
-      sessionId: json['sessionId'],
+      customerId: json['customerId'] ?? '',
+      serviceId: json['serviceId'] ?? '',
+      staffId: json['staffId'] ?? '',
+      sessionId: json['sessionId'] ?? '',
       notes: json['notes'],
-      babyName: json['babyName'],
-      babyAge: json['babyAge'],
+      parentNames: json['parentNames'], // NEW: Parse parent names
+      babyName: json['babyName'] ?? '',
+      babyAge: json['babyAge'] ?? 0,
       priceTierId: json['priceTierId'],
-      totalPrice: json['totalPrice'].toDouble(),
+      totalPrice: (json['totalPrice'] ?? 0.0).toDouble(),
       status: ReservationStatus.values.firstWhere(
         (e) => e.toString() == 'ReservationStatus.${json['status']}',
         orElse: () => ReservationStatus.PENDING,
       ),
       createdByOwner: json['createdByOwner'] ?? false,
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
+      createdAt:
+          json['createdAt'] != null
+              ? DateTime.parse(json['createdAt'])
+              : DateTime.now(),
+      updatedAt:
+          json['updatedAt'] != null
+              ? DateTime.parse(json['updatedAt'])
+              : DateTime.now(),
     );
   }
 
@@ -84,6 +93,7 @@ class Reservation extends Equatable {
       'staffId': staffId,
       'sessionId': sessionId,
       'notes': notes,
+      'parentNames': parentNames, // NEW: Include parent names in JSON
       'babyName': babyName,
       'babyAge': babyAge,
       'priceTierId': priceTierId,
@@ -103,6 +113,7 @@ class Reservation extends Equatable {
     String? staffId,
     String? sessionId,
     String? notes,
+    String? parentNames, // NEW: Include in copyWith
     String? babyName,
     int? babyAge,
     String? priceTierId,
@@ -120,6 +131,9 @@ class Reservation extends Equatable {
       staffId: staffId ?? this.staffId,
       sessionId: sessionId ?? this.sessionId,
       notes: notes ?? this.notes,
+      parentNames:
+          parentNames ??
+          this.parentNames, // NEW: Use provided value or existing
       babyName: babyName ?? this.babyName,
       babyAge: babyAge ?? this.babyAge,
       priceTierId: priceTierId ?? this.priceTierId,
@@ -140,6 +154,7 @@ class Reservation extends Equatable {
     staffId,
     sessionId,
     notes,
+    parentNames, // NEW: Include in props for equality comparison
     babyName,
     babyAge,
     priceTierId,
@@ -149,4 +164,13 @@ class Reservation extends Equatable {
     createdAt,
     updatedAt,
   ];
+
+  @override
+  String toString() {
+    return 'Reservation{id: $id, reservationType: $reservationType, '
+        'customerId: $customerId, serviceId: $serviceId, '
+        'staffId: $staffId, sessionId: $sessionId, '
+        'babyName: $babyName, babyAge: $babyAge, '
+        'status: $status, totalPrice: $totalPrice}';
+  }
 }

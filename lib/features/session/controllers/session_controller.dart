@@ -40,6 +40,7 @@ class SessionController extends GetxController {
   // Data change listeners - untuk notifikasi antar views
   final RxBool dataChanged = false.obs;
   final RxString lastChangedOperation = ''.obs;
+  final sessionsMap = <String, List<Session>>{}.obs;
 
   SessionController({required this.repository});
 

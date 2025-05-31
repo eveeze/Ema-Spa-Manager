@@ -27,10 +27,10 @@ class ApiEndpoints {
 
   // Reservations
   static const String reservations = '/reservations';
-  static const String reservationDetail = '/reservations/{id}';
-  static const String createReservation = '/reservations/create';
-  static const String updateReservationStatus = '/reservations/{id}/status';
-
+  static const String reservationsOwner = '$reservations/owner';
+  static const String manualReservations = '$reservationsOwner/manual';
+  static const String reservationsAnalytics = '$reservations/analytics';
+  static const String ownerPayment = '$reservationsOwner/payment';
   // Payments
   static const String payments = '/payments';
   static const String paymentDetail = '/payments/{id}';

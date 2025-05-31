@@ -5,6 +5,7 @@ import 'package:emababyspa/utils/storage_utils.dart';
 import 'package:emababyspa/data/providers/auth_provider.dart';
 import 'package:emababyspa/data/repository/auth_repository.dart';
 import 'package:emababyspa/features/dashboard/controllers/dashboard_controller.dart';
+import 'package:emababyspa/utils/logger_utils.dart';
 
 class AppBindings extends Bindings {
   @override
@@ -16,6 +17,9 @@ class AppBindings extends Bindings {
       () => AuthRepository(provider: Get.find<AuthProvider>()),
       fenix: true,
     );
+    if (!Get.isRegistered<LoggerUtils>()) {
+      Get.put(LoggerUtils(), permanent: true);
+    }
     Get.lazyPut(() => DashboardController(), fenix: true);
   }
 }
