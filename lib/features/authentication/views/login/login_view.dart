@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 import 'package:emababyspa/common/theme/color_theme.dart';
 import 'package:emababyspa/features/authentication/controllers/auth_controller.dart';
 import 'package:emababyspa/common/utils/validator_utils.dart';
+import 'package:emababyspa/common/widgets/app_text_field.dart';
+import 'package:emababyspa/common/widgets/app_button.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -45,19 +47,29 @@ class _LoginViewState extends State<LoginView> {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
     final size = MediaQuery.of(context).size;
+    final isDark = theme.brightness == Brightness.dark;
+
+    // Dynamic colors based on theme
+    final gradientPrimary =
+        isDark ? ColorTheme.secondaryDark : ColorTheme.secondary;
+    final gradientSecondary =
+        isDark ? ColorTheme.primaryLightDark : ColorTheme.primaryDark;
+    final formBackground =
+        isDark ? ColorTheme.surfaceDark : ColorTheme.primaryDark;
+    final textPrimary = isDark ? ColorTheme.textPrimaryDark : Colors.white;
 
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
-          // Radial gradient dengan biru muda di tengah dan biru tua di sekeliling
+          // Dynamic gradient based on theme
           gradient: RadialGradient(
             center: Alignment.center,
             radius: 1.2,
             colors: [
-              ColorTheme.secondary, // Biru muda di tengah
-              ColorTheme.primaryDark, // Biru tua di sekeliling
+              gradientPrimary, // Center color
+              gradientSecondary, // Outer color
             ],
-            stops: [0.3, 1.0],
+            stops: const [0.3, 1.0],
           ),
         ),
         child: SafeArea(
@@ -89,11 +101,11 @@ class _LoginViewState extends State<LoginView> {
                                 height: size.width * 0.5,
                                 fit: BoxFit.contain,
                                 errorBuilder: (context, error, stackTrace) {
-                                  // Fallback if image doesn't exist
+                                  // Fallback icon with theme-aware color
                                   return Icon(
                                     Icons.spa,
                                     size: size.width * 0.3,
-                                    color: Colors.white,
+                                    color: textPrimary,
                                   );
                                 },
                               ),
@@ -110,25 +122,29 @@ class _LoginViewState extends State<LoginView> {
                     child: Container(
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        // Background form menggunakan warna biru yang lebih tua
-                        color: ColorTheme.primaryDark, // Biru tua untuk form
-                        borderRadius: BorderRadius.only(
+                        // Dynamic form background
+                        color: formBackground,
+                        borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(32),
                           topRight: Radius.circular(32),
                         ),
                         border: Border.symmetric(
                           horizontal: BorderSide(
-                            color: ColorTheme.borderFocus, // Warna border fokus
+                            color:
+                                isDark
+                                    ? ColorTheme.borderDark
+                                    : ColorTheme.borderFocus,
                             width: 2,
                           ),
                         ),
-                        // Tambahkan shadow untuk depth
+                        // Theme-aware shadow
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.2),
+                            color: (isDark ? Colors.black : Colors.black)
+                                .withValues(alpha: isDark ? 0.4 : 0.2),
                             spreadRadius: 0,
                             blurRadius: 20,
-                            offset: Offset(0, -5),
+                            offset: const Offset(0, -5),
                           ),
                         ],
                       ),
@@ -146,277 +162,130 @@ class _LoginViewState extends State<LoginView> {
                                   child: Text(
                                     'Sign In',
                                     style: textTheme.displaySmall?.copyWith(
-                                      color: Colors.white, // Ubah ke putih
+                                      color: textPrimary,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 ),
                               ),
 
-                              // Email field
-                              Text(
-                                'Email',
-                                style: textTheme.labelLarge?.copyWith(
-                                  color: Colors.white, // Ubah ke putih
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: Color(
-                                    0xFF2A4A6B,
-                                  ), // Background input lebih gelap
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: Color(
-                                      0xFF3D5A7A,
-                                    ), // Border lebih terang
-                                    width: 1,
-                                  ),
-                                ),
-                                child: TextFormField(
-                                  controller: _emailController,
-                                  keyboardType: TextInputType.emailAddress,
-                                  style: textTheme.bodyMedium?.copyWith(
-                                    color: Colors.white, // Text putih
-                                  ),
-                                  validator: ValidatorUtils.validateEmail,
-                                  decoration: InputDecoration(
-                                    hintText: 'Enter your email',
-                                    hintStyle: textTheme.bodyMedium?.copyWith(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.6,
-                                      ), // Hint lebih transparan
-                                    ),
-                                    border: InputBorder.none,
-                                    contentPadding: const EdgeInsets.all(16),
-                                  ),
-                                ),
+                              // Email field using AppTextField
+                              AppTextField(
+                                label: 'Email',
+                                placeholder: 'Enter your email',
+                                controller: _emailController,
+                                keyboardType: TextInputType.emailAddress,
+                                size: TextFieldSize.medium,
+                                isRequired: true,
+                                prefix: const Icon(Icons.email_outlined),
+                                validator: ValidatorUtils.validateEmail,
+                                textInputAction: TextInputAction.next,
                               ),
 
                               const SizedBox(height: 24),
 
-                              // Password field
-                              Text(
-                                'Password',
-                                style: textTheme.labelLarge?.copyWith(
-                                  color: Colors.white, // Ubah ke putih
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: Color(
-                                    0xFF2A4A6B,
-                                  ), // Background input lebih gelap
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: Color(
-                                      0xFF3D5A7A,
-                                    ), // Border lebih terang
-                                    width: 1,
+                              // Password field using AppTextField
+                              AppTextField(
+                                label: 'Password',
+                                placeholder: 'Enter your password',
+                                controller: _passwordController,
+                                obscureText: !_isPasswordVisible,
+                                size: TextFieldSize.medium,
+                                isRequired: true,
+                                prefix: const Icon(Icons.lock_outlined),
+                                suffix: IconButton(
+                                  icon: Icon(
+                                    _isPasswordVisible
+                                        ? Icons.visibility_off_outlined
+                                        : Icons.visibility_outlined,
                                   ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _isPasswordVisible = !_isPasswordVisible;
+                                    });
+                                  },
                                 ),
-                                child: TextFormField(
-                                  controller: _passwordController,
-                                  obscureText: !_isPasswordVisible,
-                                  style: textTheme.bodyMedium?.copyWith(
-                                    color: Colors.white, // Text putih
-                                  ),
-                                  validator: ValidatorUtils.validatePassword,
-                                  decoration: InputDecoration(
-                                    hintText: 'Enter your password',
-                                    hintStyle: textTheme.bodyMedium?.copyWith(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.6,
-                                      ), // Hint lebih transparan
-                                    ),
-                                    border: InputBorder.none,
-                                    contentPadding: const EdgeInsets.all(16),
-                                    suffixIcon: IconButton(
-                                      icon: Icon(
-                                        _isPasswordVisible
-                                            ? Icons.visibility_off_outlined
-                                            : Icons.visibility_outlined,
-                                        color: Colors.white.withValues(
-                                          alpha: 0.7,
-                                        ), // Icon putih transparan
-                                      ),
-                                      onPressed: () {
-                                        setState(() {
-                                          _isPasswordVisible =
-                                              !_isPasswordVisible;
-                                        });
-                                      },
-                                    ),
-                                  ),
-                                ),
+                                validator: ValidatorUtils.validatePassword,
+                                textInputAction: TextInputAction.done,
+                                onSubmitted: (_) => _handleLogin(),
                               ),
 
                               const SizedBox(height: 32),
 
-                              // Login button
+                              // Login button using AppButton
                               Obx(
-                                () => SizedBox(
-                                  width: double.infinity,
-                                  height: 56,
-                                  child: ElevatedButton(
-                                    onPressed:
-                                        _authController.isLoading.value
-                                            ? null
-                                            : _handleLogin,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: ColorTheme.primary,
-                                      foregroundColor:
-                                          ColorTheme
-                                              .primaryDark, // Text button biru tua
-                                      elevation: 4, // Tambah elevation
-                                      shadowColor: Colors.black.withValues(
-                                        alpha: 0.3,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      disabledBackgroundColor: Color(
-                                        0xFF3D5A7A,
-                                      ), // Disabled state lebih gelap
-                                    ),
-                                    child:
-                                        _authController.isLoading.value
-                                            ? SizedBox(
-                                              width: 24,
-                                              height: 24,
-                                              child: CircularProgressIndicator(
-                                                valueColor:
-                                                    AlwaysStoppedAnimation<
-                                                      Color
-                                                    >(ColorTheme.primaryDark),
-                                                strokeWidth: 2,
-                                              ),
-                                            )
-                                            : Text(
-                                              'LOGIN',
-                                              style: textTheme.labelLarge?.copyWith(
-                                                color:
-                                                    ColorTheme
-                                                        .primaryDark, // Text biru tua
-                                                fontWeight: FontWeight.w600,
-                                                letterSpacing: 1.0,
-                                              ),
-                                            ),
-                                  ),
+                                () => AppButton(
+                                  text: 'LOGIN',
+                                  onPressed:
+                                      _authController.isLoading.value
+                                          ? null
+                                          : _handleLogin,
+                                  type: AppButtonType.primary,
+                                  size: AppButtonSize.large,
+                                  isFullWidth: true,
+                                  isLoading: _authController.isLoading.value,
+                                  icon: Icons.login,
                                 ),
                               ),
 
                               const SizedBox(height: 24),
 
-                              // Forgot password link
+                              // Forgot password button using AppButton
                               Center(
-                                child: TextButton(
+                                child: AppButton(
+                                  text: 'Lupa Password',
                                   onPressed: () {
                                     Get.toNamed('/forgot-password');
                                   },
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: ColorTheme.primary,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 8,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    'Lupa Password',
-                                    style: textTheme.bodyMedium?.copyWith(
-                                      color: ColorTheme.primary,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
+                                  type: AppButtonType.text,
+                                  size: AppButtonSize.medium,
                                 ),
                               ),
+
+                              const SizedBox(height: 16),
 
                               // Error messages
                               Obx(() {
                                 if (_authController.errorMessage.isNotEmpty) {
-                                  return Padding(
-                                    padding: const EdgeInsets.only(top: 16.0),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        color: ColorTheme.error.withValues(
-                                          alpha:
-                                              0.2, // Lebih visible di background gelap
-                                        ),
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                          color: ColorTheme.error.withValues(
-                                            alpha: 0.5, // Border lebih terang
-                                          ),
-                                        ),
+                                  return Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: (isDark
+                                              ? ColorTheme.errorDark
+                                              : ColorTheme.error)
+                                          .withValues(alpha: 0.2),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: (isDark
+                                                ? ColorTheme.errorDark
+                                                : ColorTheme.error)
+                                            .withValues(alpha: 0.5),
                                       ),
-                                      child: Row(
-                                        children: [
-                                          Icon(
-                                            Icons.error_outline,
-                                            color: ColorTheme.error,
-                                            size: 20,
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.error_outline,
+                                          color:
+                                              isDark
+                                                  ? ColorTheme.errorDark
+                                                  : ColorTheme.error,
+                                          size: 20,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            _authController.errorMessage.value,
+                                            style: textTheme.bodySmall
+                                                ?.copyWith(color: textPrimary),
                                           ),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Text(
-                                              _authController
-                                                  .errorMessage
-                                                  .value,
-                                              style: textTheme.bodySmall?.copyWith(
-                                                color:
-                                                    Colors
-                                                        .white, // Text error putih
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
+                                        ),
+                                      ],
                                     ),
                                   );
                                 }
                                 return const SizedBox.shrink();
                               }),
-
-                              // Register link (if needed)
-                              const Spacer(),
-                              Center(
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      "Don't have an account? ",
-                                      style: textTheme.bodyMedium?.copyWith(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.7,
-                                        ), // Text putih transparan
-                                      ),
-                                    ),
-                                    TextButton(
-                                      onPressed: () {
-                                        Get.toNamed('/register');
-                                      },
-                                      style: TextButton.styleFrom(
-                                        foregroundColor: ColorTheme.primary,
-                                        padding: EdgeInsets.zero,
-                                        minimumSize: Size.zero,
-                                        tapTargetSize:
-                                            MaterialTapTargetSize.shrinkWrap,
-                                      ),
-                                      child: Text(
-                                        'Register',
-                                        style: textTheme.bodyMedium?.copyWith(
-                                          color: ColorTheme.primary,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
                             ],
                           ),
                         ),

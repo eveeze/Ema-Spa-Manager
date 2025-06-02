@@ -547,6 +547,8 @@ class _SessionDetailViewState extends State<SessionDetailView> {
         return 'Cancelled';
       case ReservationStatus.EXPIRED:
         return 'Expired';
+      case ReservationStatus.PENDING_PAYMENT:
+        return 'Pending';
     }
   }
 

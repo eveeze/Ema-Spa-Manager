@@ -118,31 +118,77 @@ class ScheduleController extends GetxController {
     }
   }
 
-  Future<void> refreshScheduleData(DateTime date) async {
-    isDataLoaded.value = false;
-    final formattedDate = DateFormat('yyyy-MM-dd').format(date);
+  Future<void> refreshScheduleData(DateTime dateToRefreshDetailsFor) async {
+    isDataLoaded.value = false; // Indicate loading for details section
 
-    // Reset data sebelum load
-    operatingScheduleController.schedulesList.clear();
+    // 1. Update selectedDate (important for TableCalendar's selectedDayPredicate)
+    selectedDate.value = dateToRefreshDetailsFor;
+    // focusedDate is typically handled by calendar interactions or explicit setting.
+    // If not, ensure it's aligned with dateToRefreshDetailsFor or the relevant view.
+    if (focusedDate.value.month != dateToRefreshDetailsFor.month ||
+        focusedDate.value.year != dateToRefreshDetailsFor.year) {
+      focusedDate.value = dateToRefreshDetailsFor;
+    }
+
+    // 2. Fetch OperatingSchedules for the current calendar view (e.g., month of focusedDate)
+    //    This data is for the TableCalendar markers.
+    DateTime firstDayOfMonth = DateTime(
+      focusedDate.value.year,
+      focusedDate.value.month,
+      1,
+    );
+    DateTime lastDayOfMonth = DateTime(
+      focusedDate.value.year,
+      focusedDate.value.month + 1,
+      0,
+    );
+
+    // Let OperatingScheduleController manage the list used by its view components
+    // Ensure OperatingScheduleController.fetchAllSchedules can handle a date range.
+    await operatingScheduleController.fetchAllSchedules(
+      startDate: DateFormat('yyyy-MM-dd').format(firstDayOfMonth),
+      endDate: DateFormat('yyyy-MM-dd').format(lastDayOfMonth),
+    );
+    // Now operatingScheduleController.schedulesList contains schedules for the current month.
+
+    // 3. Fetch specific details for the 'dateToRefreshDetailsFor'.
+    final formattedDate = DateFormat(
+      'yyyy-MM-dd',
+    ).format(dateToRefreshDetailsFor);
+    // Find the schedule from the list populated in OperatingScheduleController
+    final scheduleForSelectedDate = operatingScheduleController.schedulesList
+        .firstWhereOrNull(
+          (s) => _isSameDate(s.date.toIso8601String(), formattedDate),
+        );
+
+    // Clear previous details from respective controllers
     timeSlotController.timeSlots.clear();
     sessionController.sessions.clear();
 
-    // Load operating schedule
-    await operatingScheduleController.fetchAllSchedules(date: formattedDate);
-
-    // Cari schedule untuk tanggal ini
-    final schedule = operatingScheduleController.schedulesList.firstWhereOrNull(
-      (s) => _isSameDate(s.date.toIso8601String(), formattedDate),
-    );
-
-    if (schedule != null) {
-      // Load time slots
-      await timeSlotController.fetchTimeSlotsByScheduleId(schedule.id);
-      // Load sessions
-      await sessionController.fetchSessionsByDate(date);
+    if (scheduleForSelectedDate != null) {
+      // Load time slots for the selected date's schedule
+      await timeSlotController.fetchTimeSlotsByScheduleId(
+        scheduleForSelectedDate.id,
+      );
+      // Load sessions for the selected date
+      await sessionController.fetchSessionsByDate(dateToRefreshDetailsFor);
+    } else {
+      _logger.info(
+        "No operating schedule found for date: $formattedDate. Time slots and sessions will be empty for this date.",
+      );
     }
 
-    isDataLoaded.value = true;
+    isDataLoaded.value =
+        true; // Indicate details are loaded for the selected date
+  }
+
+  void resetInternalStatesForNewDateSelection() {
+    isDataLoaded.value = false;
+    // Do not reset selectedDate or focusedDate here if they are meant to be preserved
+    // from a previous state or set explicitly before calling refresh.
+    operatingScheduleController.schedulesList.clear();
+    timeSlotController.timeSlots.clear();
+    sessionController.sessions.clear();
   }
 
   /// Create a new operating schedule directly

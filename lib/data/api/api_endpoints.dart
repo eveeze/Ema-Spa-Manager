@@ -31,6 +31,10 @@ class ApiEndpoints {
   static const String manualReservations = '$reservationsOwner/manual';
   static const String reservationsAnalytics = '$reservations/analytics';
   static const String ownerPayment = '$reservationsOwner/payment';
+  static const String reservationsOwnerUpcoming = '$reservationsOwner/upcoming';
+  static const String reservationsOwnerDashboardUpcomingByDay =
+      '$reservationsOwner/dashboard/upcoming-by-day';
+
   // Payments
   static const String payments = '/payments';
   static const String paymentDetail = '/payments/{id}';

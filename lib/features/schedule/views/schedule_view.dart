@@ -672,20 +672,22 @@ class ScheduleView extends GetView<ScheduleController> {
           child: InkWell(
             onTap: () async {
               // Simpan tanggal yang sedang dilihat
-              final currentDate = controller.selectedDate.value;
-
+              final dateBeforeNavigation = controller.selectedDate.value;
+              final focusedDateBeforeNavigation = controller.focusedDate.value;
               await Get.toNamed(
                 AppRoutes.timeSlotDetail,
-                arguments: {'timeSlot': timeSlot},
+                arguments: {
+                  'timeSlot': timeSlot,
+                }, // timeSlot is the item being tapped
               );
-
               // Reset state saat kembali
-              controller.resetScheduleState();
+              controller.selectedDate.value = dateBeforeNavigation;
+              controller.focusedDate.value = focusedDateBeforeNavigation;
               Get.find<TimeSlotController>().resetTimeSlotState();
               Get.find<SessionController>().resetSessionState();
 
               // Refresh data untuk tanggal yang sama
-              controller.refreshScheduleData(currentDate);
+              await controller.refreshScheduleData(dateBeforeNavigation);
             },
             child: Container(
               padding: const EdgeInsets.all(2),

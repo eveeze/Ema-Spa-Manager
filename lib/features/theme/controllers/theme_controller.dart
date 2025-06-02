@@ -13,14 +13,14 @@ class ThemeController extends GetxController {
   final Rx<ThemeMode> _themeMode = ThemeMode.system.obs;
   ThemeMode get themeMode => _themeMode.value;
 
+  // Observable untuk system brightness detection yang lebih akurat
+  final RxBool _systemBrightnessDark = false.obs;
+
   // Computed property to check if dark mode is active
   bool get isDarkMode {
     if (_themeMode.value == ThemeMode.system) {
-      final context = Get.context;
-      if (context != null) {
-        return MediaQuery.of(context).platformBrightness == Brightness.dark;
-      }
-      return false;
+      // Gunakan cached system brightness untuk performa lebih baik
+      return _systemBrightnessDark.value;
     }
     return _themeMode.value == ThemeMode.dark;
   }
@@ -28,11 +28,7 @@ class ThemeController extends GetxController {
   // Computed property to check if light mode is active
   bool get isLightMode {
     if (_themeMode.value == ThemeMode.system) {
-      final context = Get.context;
-      if (context != null) {
-        return MediaQuery.of(context).platformBrightness == Brightness.light;
-      }
-      return true;
+      return !_systemBrightnessDark.value;
     }
     return _themeMode.value == ThemeMode.light;
   }
@@ -44,6 +40,34 @@ class ThemeController extends GetxController {
   void onInit() {
     super.onInit();
     _loadThemeFromStorage();
+    _initSystemBrightnessListener();
+  }
+
+  /// Initialize system brightness listener
+  void _initSystemBrightnessListener() {
+    // Set initial system brightness
+    _updateSystemBrightness();
+
+    // Listen to system brightness changes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final context = Get.context;
+      if (context != null) {
+        final brightness = MediaQuery.of(context).platformBrightness;
+        _systemBrightnessDark.value = brightness == Brightness.dark;
+      }
+    });
+  }
+
+  /// Update system brightness detection
+  void _updateSystemBrightness() {
+    final context = Get.context;
+    if (context != null) {
+      final brightness = MediaQuery.of(context).platformBrightness;
+      _systemBrightnessDark.value = brightness == Brightness.dark;
+    } else {
+      // Fallback: assume light mode if context is not available
+      _systemBrightnessDark.value = false;
+    }
   }
 
   /// Load theme preference from storage
@@ -89,6 +113,7 @@ class ThemeController extends GetxController {
     _themeMode.value = themeMode;
     Get.changeThemeMode(themeMode);
     _saveThemeToStorage();
+    _updateSystemBrightness(); // Update system brightness detection
     _updateSystemUIOverlayStyle();
 
     // Show feedback to user
@@ -123,6 +148,11 @@ class ThemeController extends GetxController {
   void setLightMode() => changeThemeMode(ThemeMode.light);
   void setDarkMode() => changeThemeMode(ThemeMode.dark);
   void setSystemMode() => changeThemeMode(ThemeMode.system);
+
+  /// Manually trigger system brightness update (panggil ini dari main app)
+  void updateSystemBrightness() {
+    _updateSystemBrightness();
+  }
 
   /// Update system UI overlay style based on current theme
   void _updateSystemUIOverlayStyle() {

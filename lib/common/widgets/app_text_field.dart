@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:emababyspa/common/theme/color_theme.dart';
-import 'package:emababyspa/common/theme/text_theme.dart';
 
 enum TextFieldSize { small, medium, large }
 
@@ -68,6 +67,7 @@ class AppTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Use Theme.of(context) instead of ThemeController for consistency
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final isError = errorText != null;
@@ -75,29 +75,10 @@ class AppTextField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (label != null) ...[
-          _buildLabel(context, isDark),
-          const SizedBox(height: 8),
-        ],
+        if (label != null) ...[_buildLabel(isDark), const SizedBox(height: 8)],
         AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              if (enabled && !isError && !isDark)
-                BoxShadow(
-                  color: ColorTheme.primary.withValues(alpha: 0.08),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              if (enabled && !isError && isDark)
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-            ],
-          ),
+          decoration: _getContainerDecoration(isDark, isError),
           child: TextFormField(
             controller: controller,
             obscureText: obscureText,
@@ -118,62 +99,33 @@ class AppTextField extends StatelessWidget {
             enableSuggestions: enableSuggestions,
             inputFormatters: inputFormatters,
             validator: validator,
-            cursorColor:
-                isDark ? ColorTheme.primaryLightDark : ColorTheme.primary,
+            cursorColor: _getCursorColor(isDark),
             cursorWidth: 2.0,
             cursorRadius: const Radius.circular(1),
+            style: _getTextStyle(isDark),
             decoration: InputDecoration(
               hintText: placeholder,
-              hintStyle: _getHintStyle(context, isDark),
+              hintStyle: _getHintStyle(isDark),
               helperText: helperText,
-              helperStyle: _getHelperStyle(context, isDark),
+              helperStyle: _getHelperStyle(isDark),
               errorText: errorText,
-              errorStyle: _getErrorStyle(context, isDark),
+              errorStyle: _getErrorStyle(isDark),
               contentPadding: _getContentPadding(),
               filled: true,
-              fillColor: _getFillColor(context, isDark),
-              border: _getBorder(context, isDark, isError: false),
-              enabledBorder: _getBorder(context, isDark, isError: false),
-              focusedBorder: _getBorder(context, isDark, isFocused: true),
-              errorBorder: _getBorder(context, isDark, isError: true),
+              fillColor: _getFillColor(isDark),
+              border: _getBorder(isDark, isError: false),
+              enabledBorder: _getBorder(isDark, isError: false),
+              focusedBorder: _getBorder(isDark, isFocused: true),
+              errorBorder: _getBorder(isDark, isError: true),
               focusedErrorBorder: _getBorder(
-                context,
                 isDark,
                 isError: true,
                 isFocused: true,
               ),
               prefixIcon:
-                  prefix != null
-                      ? Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 14.0),
-                        child: IconTheme(
-                          data: IconThemeData(
-                            color:
-                                isDark
-                                    ? ColorTheme.textSecondaryDark
-                                    : ColorTheme.textSecondary,
-                            size: _getIconSize(),
-                          ),
-                          child: prefix!,
-                        ),
-                      )
-                      : null,
+                  prefix != null ? _buildIconWrapper(prefix!, isDark) : null,
               suffixIcon:
-                  suffix != null
-                      ? Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 14.0),
-                        child: IconTheme(
-                          data: IconThemeData(
-                            color:
-                                isDark
-                                    ? ColorTheme.textSecondaryDark
-                                    : ColorTheme.textSecondary,
-                            size: _getIconSize(),
-                          ),
-                          child: suffix!,
-                        ),
-                      )
-                      : null,
+                  suffix != null ? _buildIconWrapper(suffix!, isDark) : null,
               isDense: size == TextFieldSize.small,
               prefixIconConstraints: const BoxConstraints(
                 minWidth: 48,
@@ -184,31 +136,27 @@ class AppTextField extends StatelessWidget {
                 minHeight: 48,
               ),
             ),
-            style: _getTextStyle(context, isDark),
           ),
         ),
         if (helperText != null && errorText == null)
           Padding(
             padding: const EdgeInsets.only(top: 8.0, left: 4.0),
-            child: _buildHelperText(context, isDark),
+            child: _buildHelperText(isDark),
           ),
       ],
     );
   }
 
-  Widget _buildLabel(BuildContext context, bool isDark) {
-    Theme.of(context);
-    final textTheme = isDark ? TextThemes.darkTextTheme : TextThemes.textTheme;
-
+  Widget _buildLabel(bool isDark) {
     return Padding(
       padding: const EdgeInsets.only(left: 4.0, bottom: 2.0),
       child: Row(
         children: [
-          Text(label!, style: _getLabelStyle(textTheme, isDark)),
+          Text(label!, style: _getLabelStyle(isDark)),
           if (isRequired)
             Text(
               " *",
-              style: _getLabelStyle(textTheme, isDark).copyWith(
+              style: _getLabelStyle(isDark).copyWith(
                 color: isDark ? ColorTheme.errorDark : ColorTheme.error,
               ),
             ),
@@ -217,72 +165,67 @@ class AppTextField extends StatelessWidget {
     );
   }
 
-  Widget _buildHelperText(BuildContext context, bool isDark) {
-    final textTheme = isDark ? TextThemes.darkTextTheme : TextThemes.textTheme;
-
-    return Text(helperText!, style: _getHelperTextStyle(textTheme, isDark));
+  Widget _buildHelperText(bool isDark) {
+    return Text(helperText!, style: _getHelperTextStyle(isDark));
   }
 
-  // Enhanced styling methods using TextThemes
-  TextStyle _getLabelStyle(TextTheme textTheme, bool isDark) {
-    switch (size) {
-      case TextFieldSize.small:
-        return textTheme.labelMedium!.copyWith(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.1,
-          color:
-              isDark
-                  ? ColorTheme.textPrimaryDark.withValues(alpha: 0.9)
-                  : ColorTheme.textPrimary.withValues(alpha: 0.9),
-        );
-      case TextFieldSize.medium:
-        return textTheme.labelLarge!.copyWith(
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.1,
-          color:
-              isDark
-                  ? ColorTheme.textPrimaryDark.withValues(alpha: 0.9)
-                  : ColorTheme.textPrimary.withValues(alpha: 0.9),
-        );
-      case TextFieldSize.large:
-        return textTheme.titleSmall!.copyWith(
-          fontSize: 15,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.1,
-          color:
-              isDark
-                  ? ColorTheme.textPrimaryDark.withValues(alpha: 0.9)
-                  : ColorTheme.textPrimary.withValues(alpha: 0.9),
-        );
-    }
-  }
-
-  TextStyle _getHelperTextStyle(TextTheme textTheme, bool isDark) {
-    return textTheme.bodySmall!.copyWith(
-      fontSize: _getHelperFontSize(),
-      fontWeight: FontWeight.w400,
-      color:
-          isDark
-              ? ColorTheme.textTertiaryDark.withValues(alpha: 0.8)
-              : ColorTheme.textTertiary.withValues(alpha: 0.8),
+  Widget _buildIconWrapper(Widget icon, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14.0),
+      child: IconTheme(
+        data: IconThemeData(color: _getIconColor(isDark), size: _getIconSize()),
+        child: icon,
+      ),
     );
   }
 
-  Color _getFillColor(BuildContext context, bool isDark) {
+  // Container decoration with proper shadow for both themes
+  BoxDecoration _getContainerDecoration(bool isDark, bool isError) {
+    return BoxDecoration(
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: [
+        if (enabled && !isError)
+          BoxShadow(
+            color:
+                isDark
+                    ? Colors.black.withValues(alpha: 0.4)
+                    : ColorTheme.primary.withValues(alpha: 0.08),
+            blurRadius: isDark ? 6 : 8,
+            offset: const Offset(0, 2),
+          ),
+      ],
+    );
+  }
+
+  // Improved color methods with proper light/dark mode support
+  Color _getCursorColor(bool isDark) {
+    return isDark ? ColorTheme.primaryLightDark : ColorTheme.primary;
+  }
+
+  Color _getIconColor(bool isDark) {
     if (!enabled) {
       return isDark
-          ? ColorTheme.borderDark.withValues(alpha: 0.3)
-          : ColorTheme.border.withValues(alpha: 0.3);
+          ? ColorTheme.textTertiaryDark.withValues(alpha: 0.5)
+          : ColorTheme.textTertiary.withValues(alpha: 0.5);
+    }
+    return isDark ? ColorTheme.textSecondaryDark : ColorTheme.textSecondary;
+  }
+
+  Color _getFillColor(bool isDark) {
+    if (!enabled) {
+      return isDark
+          ? ColorTheme.surfaceDark.withValues(alpha: 0.3)
+          : ColorTheme.surface.withValues(alpha: 0.5);
     } else if (readOnly) {
-      return isDark ? ColorTheme.surfaceDark : ColorTheme.surfaceAlt;
+      return isDark
+          ? ColorTheme.surfaceDark.withValues(alpha: 0.7)
+          : ColorTheme.surfaceAlt;
     } else {
       return isDark ? ColorTheme.surfaceDark : Colors.white;
     }
   }
 
   OutlineInputBorder _getBorder(
-    BuildContext context,
     bool isDark, {
     bool isError = false,
     bool isFocused = false,
@@ -296,6 +239,11 @@ class AppTextField extends StatelessWidget {
     } else if (isFocused) {
       borderColor = isDark ? ColorTheme.primaryLightDark : ColorTheme.primary;
       borderWidth = 2.0;
+    } else if (!enabled) {
+      borderColor =
+          isDark
+              ? ColorTheme.borderDark.withValues(alpha: 0.5)
+              : ColorTheme.border.withValues(alpha: 0.5);
     } else {
       borderColor = isDark ? ColorTheme.borderDark : ColorTheme.border;
     }
@@ -306,115 +254,144 @@ class AppTextField extends StatelessWidget {
     );
   }
 
-  TextStyle _getTextStyle(BuildContext context, bool isDark) {
-    final textTheme = isDark ? TextThemes.darkTextTheme : TextThemes.textTheme;
+  TextStyle _getLabelStyle(bool isDark) {
+    final baseColor =
+        isDark ? ColorTheme.textPrimaryDark : ColorTheme.textPrimary;
 
     switch (size) {
       case TextFieldSize.small:
-        return textTheme.bodySmall!.copyWith(
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
-          letterSpacing: 0.2,
-          height: 1.5,
-          color:
-              enabled
-                  ? (isDark
-                      ? ColorTheme.textPrimaryDark
-                      : ColorTheme.textPrimary)
-                  : (isDark
-                      ? ColorTheme.textTertiaryDark
-                      : ColorTheme.textTertiary),
+        return TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.1,
+          color: baseColor,
+          fontFamily: 'JosefinSans',
         );
       case TextFieldSize.medium:
-        return textTheme.bodyMedium!.copyWith(
+        return TextStyle(
           fontSize: 15,
-          fontWeight: FontWeight.w500,
-          letterSpacing: 0.2,
-          height: 1.5,
-          color:
-              enabled
-                  ? (isDark
-                      ? ColorTheme.textPrimaryDark
-                      : ColorTheme.textPrimary)
-                  : (isDark
-                      ? ColorTheme.textTertiaryDark
-                      : ColorTheme.textTertiary),
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.1,
+          color: baseColor,
+          fontFamily: 'JosefinSans',
         );
       case TextFieldSize.large:
-        return textTheme.bodyLarge!.copyWith(
-          fontWeight: FontWeight.w500,
-          letterSpacing: 0.2,
-          height: 1.5,
-          color:
-              enabled
-                  ? (isDark
-                      ? ColorTheme.textPrimaryDark
-                      : ColorTheme.textPrimary)
-                  : (isDark
-                      ? ColorTheme.textTertiaryDark
-                      : ColorTheme.textTertiary),
+        return TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.1,
+          color: baseColor,
+          fontFamily: 'JosefinSans',
         );
     }
   }
 
-  TextStyle _getHintStyle(BuildContext context, bool isDark) {
-    final textTheme = isDark ? TextThemes.darkTextTheme : TextThemes.textTheme;
+  TextStyle _getHelperTextStyle(bool isDark) {
+    return TextStyle(
+      fontSize: _getHelperFontSize(),
+      fontWeight: FontWeight.w400,
+      color:
+          isDark
+              ? ColorTheme.textTertiaryDark.withValues(alpha: 0.8)
+              : ColorTheme.textTertiary.withValues(alpha: 0.8),
+      fontFamily: 'JosefinSans',
+    );
+  }
+
+  TextStyle _getTextStyle(bool isDark) {
+    Color textColor;
+    if (!enabled) {
+      textColor =
+          isDark ? ColorTheme.textTertiaryDark : ColorTheme.textTertiary;
+    } else {
+      textColor = isDark ? ColorTheme.textPrimaryDark : ColorTheme.textPrimary;
+    }
 
     switch (size) {
       case TextFieldSize.small:
-        return textTheme.bodySmall!.copyWith(
+        return TextStyle(
           fontSize: 13,
-          fontWeight: FontWeight.w400,
+          fontWeight: FontWeight.w500,
           letterSpacing: 0.2,
           height: 1.5,
-          color:
-              isDark
-                  ? ColorTheme.textTertiaryDark.withValues(alpha: 0.7)
-                  : ColorTheme.textTertiary.withValues(alpha: 0.7),
+          color: textColor,
+          fontFamily: 'JosefinSans',
         );
       case TextFieldSize.medium:
-        return textTheme.bodyMedium!.copyWith(
+        return TextStyle(
           fontSize: 15,
-          fontWeight: FontWeight.w400,
+          fontWeight: FontWeight.w500,
           letterSpacing: 0.2,
           height: 1.5,
-          color:
-              isDark
-                  ? ColorTheme.textTertiaryDark.withValues(alpha: 0.7)
-                  : ColorTheme.textTertiary.withValues(alpha: 0.7),
+          color: textColor,
+          fontFamily: 'JosefinSans',
         );
       case TextFieldSize.large:
-        return textTheme.bodyLarge!.copyWith(
-          fontWeight: FontWeight.w400,
+        return TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
           letterSpacing: 0.2,
           height: 1.5,
-          color:
-              isDark
-                  ? ColorTheme.textTertiaryDark.withValues(alpha: 0.7)
-                  : ColorTheme.textTertiary.withValues(alpha: 0.7),
+          color: textColor,
+          fontFamily: 'JosefinSans',
         );
     }
   }
 
-  TextStyle _getHelperStyle(BuildContext context, bool isDark) {
-    final textTheme = isDark ? TextThemes.darkTextTheme : TextThemes.textTheme;
+  TextStyle _getHintStyle(bool isDark) {
+    final hintColor =
+        isDark
+            ? ColorTheme.textTertiaryDark.withValues(alpha: 0.7)
+            : ColorTheme.textTertiary.withValues(alpha: 0.7);
 
-    return textTheme.bodySmall!.copyWith(
+    switch (size) {
+      case TextFieldSize.small:
+        return TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w400,
+          letterSpacing: 0.2,
+          height: 1.5,
+          color: hintColor,
+          fontFamily: 'JosefinSans',
+        );
+      case TextFieldSize.medium:
+        return TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w400,
+          letterSpacing: 0.2,
+          height: 1.5,
+          color: hintColor,
+          fontFamily: 'JosefinSans',
+        );
+      case TextFieldSize.large:
+        return TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w400,
+          letterSpacing: 0.2,
+          height: 1.5,
+          color: hintColor,
+          fontFamily: 'JosefinSans',
+        );
+    }
+  }
+
+  TextStyle _getHelperStyle(bool isDark) {
+    return TextStyle(
       fontSize: _getHelperFontSize(),
       fontWeight: FontWeight.w400,
       height: 1.4,
       color: isDark ? ColorTheme.textTertiaryDark : ColorTheme.textTertiary,
+      fontFamily: 'JosefinSans',
     );
   }
 
-  TextStyle _getErrorStyle(BuildContext context, bool isDark) {
-    final textTheme = isDark ? TextThemes.darkTextTheme : TextThemes.textTheme;
-
-    return textTheme.bodySmall!.copyWith(
+  TextStyle _getErrorStyle(bool isDark) {
+    return TextStyle(
       fontSize: _getHelperFontSize(),
       fontWeight: FontWeight.w500,
       height: 1.4,
       color: isDark ? ColorTheme.errorDark : ColorTheme.error,
+      fontFamily: 'JosefinSans',
     );
   }
 
