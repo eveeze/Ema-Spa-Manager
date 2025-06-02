@@ -7,29 +7,45 @@ import 'package:emababyspa/common/widgets/custom_appbar.dart';
 import 'package:emababyspa/common/widgets/empty_state_widget.dart';
 import 'package:emababyspa/common/layouts/main_layout.dart';
 import 'package:emababyspa/features/service_category/controllers/service_category_controller.dart';
+import 'package:emababyspa/features/theme/controllers/theme_controller.dart';
 import 'package:emababyspa/data/models/service_category.dart';
+import 'package:emababyspa/utils/app_routes.dart';
 
 class ServiceCategoryView extends GetView<ServiceCategoryController> {
   const ServiceCategoryView({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final ThemeController themeController = Get.find<ThemeController>();
+
     return MainLayout(
-      child: Scaffold(
-        appBar: const CustomAppBar(
-          title: 'Service Categories',
-          showBackButton: true,
-        ),
-        floatingActionButton: FloatingActionButton.extended(
+      // Set parent route to services untuk menjaga state bottom navbar
+      parentRoute: AppRoutes.services,
+      // Gunakan custom app bar
+      customAppBar: const CustomAppBar(
+        title: 'Service Categories',
+        showBackButton: true,
+      ),
+      // Floating Action Button
+      floatingActionButton: Obx(() {
+        final ThemeController themeController = Get.find<ThemeController>();
+        final bool isDarkMode = themeController.isDarkMode;
+        final Color primaryColor =
+            isDarkMode ? ColorTheme.primaryLightDark : ColorTheme.primary;
+
+        return FloatingActionButton.extended(
           onPressed: () {
             controller.navigateToAddServiceCategory();
           },
-          backgroundColor: ColorTheme.primary,
-          icon: const Icon(Icons.add_circle_outline, color: Colors.white),
-          label: const Text(
+          backgroundColor: primaryColor,
+          icon: Icon(
+            Icons.add_circle_outline,
+            color: isDarkMode ? Colors.black : Colors.white,
+          ),
+          label: Text(
             'Add Category',
             style: TextStyle(
-              color: Colors.white,
+              color: isDarkMode ? Colors.black : Colors.white,
               fontWeight: FontWeight.w600,
               fontFamily: 'JosefinSans',
             ),
@@ -38,294 +54,340 @@ class ServiceCategoryView extends GetView<ServiceCategoryController> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-        ),
-        body: SafeArea(
-          child: RefreshIndicator(
-            onRefresh: () async {
-              controller.refreshData();
-            },
-            color: ColorTheme.primary,
-            backgroundColor: Colors.white,
-            strokeWidth: 2.5,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20.0,
-                vertical: 16.0,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Enhanced Animated Header
-                  TweenAnimationBuilder(
-                    tween: Tween<double>(begin: 0, end: 1),
-                    duration: const Duration(milliseconds: 800),
-                    curve: Curves.easeOutQuart,
-                    builder: (context, value, child) {
-                      return Opacity(
-                        opacity: value,
-                        child: Transform.translate(
-                          offset: Offset(0, 20 * (1 - value)),
-                          child: child,
-                        ),
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.only(
-                        left: 8,
-                        right: 8,
-                        bottom: 16,
-                      ),
-                      decoration: BoxDecoration(
-                        border: Border(
-                          bottom: BorderSide(
-                            color: ColorTheme.border.withValues(alpha: 0.5),
-                            width: 1,
-                          ),
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Prettier header with gradient icon background
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      ColorTheme.primary.withValues(alpha: 0.2),
-                                      ColorTheme.primary.withValues(
-                                        alpha: 0.05,
-                                      ),
-                                    ],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                child: Icon(
-                                  Icons.spa_rounded,
-                                  size: 28,
-                                  color: ColorTheme.primary,
-                                ),
+        );
+      }),
+      child: Obx(() {
+        final bool isDarkMode = themeController.isDarkMode;
+        final Color backgroundColor =
+            isDarkMode ? ColorTheme.backgroundDark : ColorTheme.background;
+        final Color surfaceColor =
+            isDarkMode ? ColorTheme.surfaceDark : Colors.white;
+        final Color textPrimaryColor =
+            isDarkMode ? ColorTheme.textPrimaryDark : ColorTheme.textPrimary;
+        final Color textSecondaryColor =
+            isDarkMode
+                ? ColorTheme.textSecondaryDark
+                : ColorTheme.textSecondary;
+        final Color borderColor =
+            isDarkMode ? ColorTheme.borderDark : ColorTheme.border;
+        final Color primaryColor =
+            isDarkMode ? ColorTheme.primaryLightDark : ColorTheme.primary;
+
+        return Container(
+          color: backgroundColor,
+          child: Column(
+            children: [
+              // Main content
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: () async {
+                    controller.refreshData();
+                  },
+                  color: primaryColor,
+                  backgroundColor: surfaceColor,
+                  strokeWidth: 2.5,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20.0,
+                      vertical: 16.0,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Enhanced Animated Header
+                        TweenAnimationBuilder(
+                          tween: Tween<double>(begin: 0, end: 1),
+                          duration: const Duration(milliseconds: 800),
+                          curve: Curves.easeOutQuart,
+                          builder: (context, value, child) {
+                            return Opacity(
+                              opacity: value,
+                              child: Transform.translate(
+                                offset: Offset(0, 20 * (1 - value)),
+                                child: child,
                               ),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Service Categories',
-                                style: TextStyle(
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.bold,
-                                  color: ColorTheme.textPrimary,
-                                  fontFamily: 'JosefinSans',
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          // Subtitle with shadow and gradient
-                          Padding(
-                            padding: const EdgeInsets.only(left: 50.0),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    ColorTheme.primary.withValues(alpha: 0.1),
-                                    Colors.transparent,
-                                  ],
-                                  begin: Alignment.centerLeft,
-                                  end: Alignment.centerRight,
-                                ),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              child: Text(
-                                'Manage your spa service categories',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  color: ColorTheme.textSecondary,
-                                  fontFamily: 'JosefinSans',
-                                  fontStyle: FontStyle.italic,
-                                  shadows: [
-                                    Shadow(
-                                      color: Colors.white,
-                                      offset: Offset(0, 1),
-                                      blurRadius: 1,
-                                    ),
-                                  ],
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.only(
+                              left: 8,
+                              right: 8,
+                              bottom: 16,
+                            ),
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: borderColor.withValues(alpha: 0.5),
+                                  width: 1,
                                 ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // Categories count with animated counter
-                  Obx(
-                    () =>
-                        !controller.isLoading.value &&
-                                controller.serviceCategories.isNotEmpty
-                            ? Padding(
-                              padding: const EdgeInsets.only(
-                                left: 12.0,
-                                top: 16.0,
-                                bottom: 16.0,
-                              ),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: ColorTheme.primary.withValues(
-                                    alpha: 0.1,
-                                  ),
-                                  borderRadius: BorderRadius.circular(30),
-                                  border: Border.all(
-                                    color: ColorTheme.primary.withValues(
-                                      alpha: 0.3,
-                                    ),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Prettier header with gradient icon background
+                                Row(
                                   children: [
-                                    Icon(
-                                      Icons.category_rounded,
-                                      size: 18,
-                                      color: ColorTheme.primary,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    TweenAnimationBuilder(
-                                      duration: const Duration(
-                                        milliseconds: 800,
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            primaryColor.withValues(alpha: 0.2),
+                                            primaryColor.withValues(
+                                              alpha: 0.05,
+                                            ),
+                                          ],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        ),
+                                        borderRadius: BorderRadius.circular(14),
                                       ),
-                                      tween: IntTween(
-                                        begin: 0,
-                                        end:
-                                            controller.serviceCategories.length,
+                                      child: Icon(
+                                        Icons.spa_rounded,
+                                        size: 28,
+                                        color: primaryColor,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      'Service Categories',
+                                      style: TextStyle(
+                                        fontSize: 26,
+                                        fontWeight: FontWeight.bold,
+                                        color: textPrimaryColor,
+                                        fontFamily: 'JosefinSans',
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                // Subtitle with shadow and gradient
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 50.0),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          primaryColor.withValues(alpha: 0.1),
+                                          Colors.transparent,
+                                        ],
+                                        begin: Alignment.centerLeft,
+                                        end: Alignment.centerRight,
+                                      ),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 6,
+                                    ),
+                                    child: Text(
+                                      'Manage your spa service categories',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        color: textSecondaryColor,
+                                        fontFamily: 'JosefinSans',
+                                        fontStyle: FontStyle.italic,
+                                        shadows:
+                                            isDarkMode
+                                                ? []
+                                                : [
+                                                  Shadow(
+                                                    color: Colors.white,
+                                                    offset: Offset(0, 1),
+                                                    blurRadius: 1,
+                                                  ),
+                                                ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        // Categories count with animated counter
+                        Obx(
+                          () =>
+                              !controller.isLoading.value &&
+                                      controller.serviceCategories.isNotEmpty
+                                  ? Padding(
+                                    padding: const EdgeInsets.only(
+                                      left: 12.0,
+                                      top: 16.0,
+                                      bottom: 16.0,
+                                    ),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 8,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: primaryColor.withValues(
+                                          alpha: 0.1,
+                                        ),
+                                        borderRadius: BorderRadius.circular(30),
+                                        border: Border.all(
+                                          color: primaryColor.withValues(
+                                            alpha: 0.3,
+                                          ),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.category_rounded,
+                                            size: 18,
+                                            color: primaryColor,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          TweenAnimationBuilder(
+                                            duration: const Duration(
+                                              milliseconds: 800,
+                                            ),
+                                            tween: IntTween(
+                                              begin: 0,
+                                              end:
+                                                  controller
+                                                      .serviceCategories
+                                                      .length,
+                                            ),
+                                            builder: (context, value, child) {
+                                              return Text(
+                                                '$value categories available',
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: primaryColor,
+                                                  fontFamily: 'JosefinSans',
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  )
+                                  : const SizedBox.shrink(),
+                        ),
+
+                        // Categories list with improved loading animation
+                        Expanded(
+                          child: Obx(() {
+                            if (controller.isLoading.value) {
+                              return Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    // Enhanced loading spinner
+                                    TweenAnimationBuilder(
+                                      tween: Tween<double>(begin: 0, end: 1),
+                                      duration: const Duration(
+                                        milliseconds: 1500,
                                       ),
                                       builder: (context, value, child) {
-                                        return Text(
-                                          '$value categories available',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w600,
-                                            color: ColorTheme.primary,
-                                            fontFamily: 'JosefinSans',
+                                        return Transform.scale(
+                                          scale: 0.8 + (value * 0.2),
+                                          child: Container(
+                                            width: 80,
+                                            height: 80,
+                                            padding: const EdgeInsets.all(15),
+                                            decoration: BoxDecoration(
+                                              color: surfaceColor,
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: primaryColor
+                                                      .withValues(alpha: 0.2),
+                                                  blurRadius: 20,
+                                                  spreadRadius: 0,
+                                                ),
+                                              ],
+                                            ),
+                                            child: CircularProgressIndicator(
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                    primaryColor,
+                                                  ),
+                                              strokeWidth: 3,
+                                            ),
                                           ),
                                         );
                                       },
                                     ),
-                                  ],
-                                ),
-                              ),
-                            )
-                            : const SizedBox.shrink(),
-                  ),
-
-                  // Categories list with improved loading animation
-                  Expanded(
-                    child: Obx(() {
-                      if (controller.isLoading.value) {
-                        return Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              // Enhanced loading spinner
-                              TweenAnimationBuilder(
-                                tween: Tween<double>(begin: 0, end: 1),
-                                duration: const Duration(milliseconds: 1500),
-                                builder: (context, value, child) {
-                                  return Transform.scale(
-                                    scale: 0.8 + (value * 0.2),
-                                    child: Container(
-                                      width: 80,
-                                      height: 80,
-                                      padding: const EdgeInsets.all(15),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(20),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: ColorTheme.primary
-                                                .withValues(alpha: 0.2),
-                                            blurRadius: 20,
-                                            spreadRadius: 0,
-                                          ),
-                                        ],
-                                      ),
-                                      child: CircularProgressIndicator(
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                              ColorTheme.primary,
-                                            ),
-                                        strokeWidth: 3,
+                                    const SizedBox(height: 24),
+                                    Text(
+                                      'Loading categories...',
+                                      style: TextStyle(
+                                        color: textSecondaryColor,
+                                        fontFamily: 'JosefinSans',
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
                                       ),
                                     ),
-                                  );
-                                },
-                              ),
-                              const SizedBox(height: 24),
-                              Text(
-                                'Loading categories...',
-                                style: TextStyle(
-                                  color: ColorTheme.textSecondary,
-                                  fontFamily: 'JosefinSans',
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
+                                  ],
                                 ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
+                              );
+                            }
 
-                      if (controller.errorMessage.isNotEmpty) {
-                        return EmptyStateWidget(
-                          title: 'Oops!',
-                          message: controller.errorMessage.value,
-                          icon: Icons.error_outline_rounded,
-                          buttonLabel: 'Refresh',
-                          onButtonPressed: controller.refreshData,
-                          fullScreen: false,
-                        );
-                      }
+                            if (controller.errorMessage.isNotEmpty) {
+                              return EmptyStateWidget(
+                                title: 'Oops!',
+                                message: controller.errorMessage.value,
+                                icon: Icons.error_outline_rounded,
+                                buttonLabel: 'Refresh',
+                                onButtonPressed: controller.refreshData,
+                                fullScreen: false,
+                              );
+                            }
 
-                      if (controller.serviceCategories.isEmpty) {
-                        return EmptyStateWidget(
-                          title: 'No Categories Found',
-                          message:
-                              'You haven\'t added any service categories yet.',
-                          icon: Icons.category_outlined,
-                          buttonLabel: 'Add Category',
-                          onButtonPressed: () {
-                            controller.navigateToAddServiceCategory();
-                          },
-                          fullScreen: false,
-                        );
-                      }
+                            if (controller.serviceCategories.isEmpty) {
+                              return EmptyStateWidget(
+                                title: 'No Categories Found',
+                                message:
+                                    'You haven\'t added any service categories yet.',
+                                icon: Icons.category_outlined,
+                                buttonLabel: 'Add Category',
+                                onButtonPressed: () {
+                                  controller.navigateToAddServiceCategory();
+                                },
+                                fullScreen: false,
+                              );
+                            }
 
-                      return _buildCategoriesList();
-                    }),
+                            return _buildCategoriesList(
+                              isDarkMode: isDarkMode,
+                              surfaceColor: surfaceColor,
+                              textPrimaryColor: textPrimaryColor,
+                              textSecondaryColor: textSecondaryColor,
+                              primaryColor: primaryColor,
+                            );
+                          }),
+                        ),
+                      ],
+                    ),
                   ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
-        ),
-      ),
+        );
+      }),
     );
   }
 
-  Widget _buildCategoriesList() {
+  Widget _buildCategoriesList({
+    required bool isDarkMode,
+    required Color surfaceColor,
+    required Color textPrimaryColor,
+    required Color textSecondaryColor,
+    required Color primaryColor,
+  }) {
     return ListView.builder(
       physics: const BouncingScrollPhysics(),
       itemCount: controller.serviceCategories.length,
@@ -350,7 +412,15 @@ class ServiceCategoryView extends GetView<ServiceCategoryController> {
                     offset: Offset(0, 30 * (1 - value)),
                     child: Padding(
                       padding: const EdgeInsets.only(bottom: 16.0),
-                      child: _buildCategoryCard(category, index),
+                      child: _buildCategoryCard(
+                        category,
+                        index,
+                        isDarkMode: isDarkMode,
+                        surfaceColor: surfaceColor,
+                        textPrimaryColor: textPrimaryColor,
+                        textSecondaryColor: textSecondaryColor,
+                        primaryColor: primaryColor,
+                      ),
                     ),
                   ),
                 );
@@ -362,9 +432,17 @@ class ServiceCategoryView extends GetView<ServiceCategoryController> {
     );
   }
 
-  Widget _buildCategoryCard(ServiceCategory category, int index) {
-    // Enhanced pastel colors for each category
-    final List<List<Color>> pastelGradients = [
+  Widget _buildCategoryCard(
+    ServiceCategory category,
+    int index, {
+    required bool isDarkMode,
+    required Color surfaceColor,
+    required Color textPrimaryColor,
+    required Color textSecondaryColor,
+    required Color primaryColor,
+  }) {
+    // Enhanced pastel colors for each category - adjusted for dark mode
+    final List<List<Color>> lightGradients = [
       [Color(0xFFE6F7FF), Color(0xFFCCEBFF)], // Light Blue
       [Color(0xFFFFF3E6), Color(0xFFFFE6CC)], // Light Orange
       [Color(0xFFE6FFFA), Color(0xFFCCFFF5)], // Light Teal
@@ -373,23 +451,39 @@ class ServiceCategoryView extends GetView<ServiceCategoryController> {
       [Color(0xFFE6FFE6), Color(0xFFCCFFCC)], // Light Green
     ];
 
+    final List<List<Color>> darkGradients = [
+      [Color(0xFF1A365D), Color(0xFF2C5282)], // Dark Blue
+      [Color(0xFF7C2D12), Color(0xFF9A2B00)], // Dark Orange
+      [Color(0xFF134E4A), Color(0xFF0F766E)], // Dark Teal
+      [Color(0xFF581C87), Color(0xFF7C3AED)], // Dark Purple
+      [Color(0xFF7F1D1D), Color(0xFF991B1B)], // Dark Red
+      [Color(0xFF14532D), Color(0xFF15803D)], // Dark Green
+    ];
+
     final List<Color> gradientColors =
-        pastelGradients[index % pastelGradients.length];
-    final Color iconColor = ColorTheme.primary;
+        isDarkMode
+            ? darkGradients[index % darkGradients.length]
+            : lightGradients[index % lightGradients.length];
+
+    final Color iconColor = primaryColor;
+    final Color cardShadowColor =
+        isDarkMode
+            ? Colors.black.withValues(alpha: 0.3)
+            : Colors.black.withValues(alpha: 0.05);
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: surfaceColor,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: cardShadowColor,
             blurRadius: 15,
             offset: const Offset(0, 8),
             spreadRadius: 0,
           ),
           BoxShadow(
-            color: gradientColors[0].withValues(alpha: 0.5),
+            color: gradientColors[0].withValues(alpha: isDarkMode ? 0.3 : 0.5),
             blurRadius: 8,
             offset: const Offset(0, 2),
             spreadRadius: -2,
@@ -423,7 +517,9 @@ class ServiceCategoryView extends GetView<ServiceCategoryController> {
                     borderRadius: BorderRadius.circular(18),
                     boxShadow: [
                       BoxShadow(
-                        color: gradientColors[0].withValues(alpha: 0.5),
+                        color: gradientColors[0].withValues(
+                          alpha: isDarkMode ? 0.4 : 0.5,
+                        ),
                         blurRadius: 8,
                         spreadRadius: 0,
                         offset: const Offset(0, 2),
@@ -431,7 +527,11 @@ class ServiceCategoryView extends GetView<ServiceCategoryController> {
                     ],
                   ),
                   child: Center(
-                    child: Icon(Icons.spa_rounded, size: 36, color: iconColor),
+                    child: Icon(
+                      Icons.spa_rounded,
+                      size: 36,
+                      color: isDarkMode ? Colors.white : iconColor,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 20),
@@ -446,7 +546,7 @@ class ServiceCategoryView extends GetView<ServiceCategoryController> {
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: ColorTheme.textPrimary,
+                          color: textPrimaryColor,
                           fontFamily: 'JosefinSans',
                           letterSpacing: 0.2,
                         ),
@@ -460,7 +560,7 @@ class ServiceCategoryView extends GetView<ServiceCategoryController> {
                             category.description!,
                             style: TextStyle(
                               fontSize: 14,
-                              color: ColorTheme.textSecondary,
+                              color: textSecondaryColor,
                               fontFamily: 'JosefinSans',
                               height: 1.3,
                             ),
@@ -498,7 +598,7 @@ class ServiceCategoryView extends GetView<ServiceCategoryController> {
                             Icon(
                               Icons.check_circle_outline,
                               size: 14,
-                              color: iconColor,
+                              color: isDarkMode ? Colors.white : iconColor,
                             ),
                             const SizedBox(width: 6),
                             Text(
@@ -506,7 +606,7 @@ class ServiceCategoryView extends GetView<ServiceCategoryController> {
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
-                                color: iconColor,
+                                color: isDarkMode ? Colors.white : iconColor,
                                 fontFamily: 'JosefinSans',
                               ),
                             ),
@@ -520,17 +620,23 @@ class ServiceCategoryView extends GetView<ServiceCategoryController> {
                 // Prettier action buttons with glass effect
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.9),
+                    color: surfaceColor.withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
+                        color:
+                            isDarkMode
+                                ? Colors.black.withValues(alpha: 0.2)
+                                : Colors.black.withValues(alpha: 0.04),
                         blurRadius: 8,
                         offset: const Offset(0, 3),
                       ),
                     ],
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.8),
+                      color:
+                          isDarkMode
+                              ? Colors.white.withValues(alpha: 0.1)
+                              : Colors.white.withValues(alpha: 0.8),
                       width: 1.5,
                     ),
                   ),
@@ -553,7 +659,10 @@ class ServiceCategoryView extends GetView<ServiceCategoryController> {
                             padding: EdgeInsets.all(12),
                             child: Icon(
                               Icons.edit_outlined,
-                              color: ColorTheme.info,
+                              color:
+                                  isDarkMode
+                                      ? ColorTheme.primaryLightDark
+                                      : ColorTheme.info,
                               size: 24,
                             ),
                           ),
@@ -567,7 +676,9 @@ class ServiceCategoryView extends GetView<ServiceCategoryController> {
                           gradient: LinearGradient(
                             colors: [
                               Colors.grey.withValues(alpha: 0),
-                              Colors.grey.withValues(alpha: 0.2),
+                              Colors.grey.withValues(
+                                alpha: isDarkMode ? 0.4 : 0.2,
+                              ),
                               Colors.grey.withValues(alpha: 0),
                             ],
                             begin: Alignment.centerLeft,
@@ -592,7 +703,10 @@ class ServiceCategoryView extends GetView<ServiceCategoryController> {
                             padding: EdgeInsets.all(12),
                             child: Icon(
                               Icons.delete_outline_rounded,
-                              color: ColorTheme.error,
+                              color:
+                                  isDarkMode
+                                      ? ColorTheme.errorDark
+                                      : ColorTheme.error,
                               size: 24,
                             ),
                           ),

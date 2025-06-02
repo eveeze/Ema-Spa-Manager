@@ -84,7 +84,7 @@ flutter:
     - family: DeliusSwashCaps
       fonts:
         - asset: assets/fonts/DeliusSwashCaps-Regular.ttf
-        - style: normal
+          style: normal
 
   # fonts:
   #   - family: Schyler

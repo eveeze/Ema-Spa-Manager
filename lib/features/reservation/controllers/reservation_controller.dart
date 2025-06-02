@@ -2,7 +2,6 @@
 import 'package:get/get.dart';
 import 'dart:io';
 import 'package:emababyspa/data/models/reservation.dart';
-import 'package:emababyspa/data/models/payment.dart';
 import 'package:emababyspa/data/repository/reservation_repository.dart';
 import 'package:emababyspa/common/theme/color_theme.dart';
 import 'package:emababyspa/utils/logger_utils.dart';
@@ -290,12 +289,6 @@ class ReservationController extends GetxController {
     try {
       isPaymentUploading.value = true;
 
-      final payment = await _reservationRepository.uploadManualPaymentProof(
-        reservationId,
-        paymentProofFile,
-        notes: notes,
-      );
-
       // Refresh the reservation list to show updated payment info
       await refreshData();
 
@@ -323,11 +316,6 @@ class ReservationController extends GetxController {
   // Verify manual payment
   Future<void> verifyManualPayment(String paymentId, bool isVerified) async {
     try {
-      final payment = await _reservationRepository.verifyManualPayment(
-        paymentId,
-        isVerified,
-      );
-
       // Refresh the reservation list to show updated payment status
       await refreshData();
 

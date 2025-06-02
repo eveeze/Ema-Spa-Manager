@@ -9,6 +9,8 @@ import 'package:emababyspa/utils/logger_utils.dart';
 import 'package:emababyspa/features/operating_schedule/controllers/operating_schedule_controller.dart';
 import 'package:emababyspa/features/time_slot/controllers/time_slot_controller.dart';
 import 'package:emababyspa/features/session/controllers/session_controller.dart';
+import 'package:intl/intl.dart';
+import 'package:table_calendar/table_calendar.dart';
 
 class ScheduleController extends GetxController {
   final SchedulerRepository _schedulerRepository;
@@ -26,7 +28,10 @@ class ScheduleController extends GetxController {
   final RxString errorMessage = ''.obs;
   final Rx<ScheduleGenerationResult?> lastGenerationResult =
       Rx<ScheduleGenerationResult?>(null);
-
+  final Rx<DateTime> selectedDate = DateTime.now().obs;
+  final Rx<DateTime> focusedDate = DateTime.now().obs;
+  final Rx<CalendarFormat> calendarFormat = CalendarFormat.week.obs;
+  final RxBool isDataLoaded = false.obs;
   // Add observable state for operating schedules
   final RxList<OperatingSchedule> operatingSchedules =
       <OperatingSchedule>[].obs;
@@ -45,6 +50,13 @@ class ScheduleController extends GetxController {
   void onInit() {
     super.onInit();
     fetchOperatingSchedules();
+  }
+
+  void resetScheduleState() {
+    isDataLoaded.value = false;
+    selectedDate.value = DateTime.now();
+    focusedDate.value = DateTime.now();
+    refreshScheduleData(selectedDate.value);
   }
 
   /// Fetch operating schedules directly using the repository
@@ -104,6 +116,33 @@ class ScheduleController extends GetxController {
       _logger.error('Error getting operating schedule by date: $e');
       return null;
     }
+  }
+
+  Future<void> refreshScheduleData(DateTime date) async {
+    isDataLoaded.value = false;
+    final formattedDate = DateFormat('yyyy-MM-dd').format(date);
+
+    // Reset data sebelum load
+    operatingScheduleController.schedulesList.clear();
+    timeSlotController.timeSlots.clear();
+    sessionController.sessions.clear();
+
+    // Load operating schedule
+    await operatingScheduleController.fetchAllSchedules(date: formattedDate);
+
+    // Cari schedule untuk tanggal ini
+    final schedule = operatingScheduleController.schedulesList.firstWhereOrNull(
+      (s) => _isSameDate(s.date.toIso8601String(), formattedDate),
+    );
+
+    if (schedule != null) {
+      // Load time slots
+      await timeSlotController.fetchTimeSlotsByScheduleId(schedule.id);
+      // Load sessions
+      await sessionController.fetchSessionsByDate(date);
+    }
+
+    isDataLoaded.value = true;
   }
 
   /// Create a new operating schedule directly
@@ -905,6 +944,11 @@ class ScheduleController extends GetxController {
   String _getTodayFormatted() {
     final now = DateTime.now();
     return "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+  }
+
+  bool _isSameDate(String? apiDate, String targetDate) {
+    if (apiDate == null) return false;
+    return apiDate.contains(targetDate);
   }
 
   // Get dates from a list of schedule IDs by looking them up in the controller

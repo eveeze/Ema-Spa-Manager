@@ -1,6 +1,8 @@
 // lib/common/widgets/app_button.dart
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:emababyspa/common/theme/color_theme.dart';
+import 'package:emababyspa/features/theme/controllers/theme_controller.dart';
 
 enum AppButtonType { primary, secondary, outline, text }
 
@@ -37,6 +39,9 @@ class _AppButtonState extends State<AppButton>
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
   bool _isPressed = false;
+
+  // Get theme controller instance
+  ThemeController get themeController => Get.find<ThemeController>();
 
   @override
   void initState() {
@@ -78,12 +83,16 @@ class _AppButtonState extends State<AppButton>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _scaleAnimation,
-      builder: (context, child) {
-        return Transform.scale(
-          scale: _scaleAnimation.value,
-          child: _buildButton(),
+    return GetBuilder<ThemeController>(
+      builder: (controller) {
+        return AnimatedBuilder(
+          animation: _scaleAnimation,
+          builder: (context, child) {
+            return Transform.scale(
+              scale: _scaleAnimation.value,
+              child: _buildButton(),
+            );
+          },
         );
       },
     );
@@ -116,19 +125,28 @@ class _AppButtonState extends State<AppButton>
   }
 
   Widget _buildPrimaryButton() {
+    final isDark = themeController.isDarkMode;
+    final primaryColor =
+        isDark ? ColorTheme.primaryLightDark : ColorTheme.primary;
+    final primaryDark =
+        isDark
+            ? ColorTheme.primaryLightDark.withValues(alpha: 0.8)
+            : ColorTheme.primaryDark;
+    final textColor = isDark ? Colors.black : Colors.white;
+
     return Container(
       width: widget.isFullWidth ? double.infinity : null,
       height: _getHeight(),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [ColorTheme.primary, ColorTheme.primaryDark],
+          colors: [primaryColor, primaryDark],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(_getBorderRadius()),
         boxShadow: [
           BoxShadow(
-            color: ColorTheme.primary.withValues(alpha: 0.3),
+            color: primaryColor.withValues(alpha: isDark ? 0.4 : 0.3),
             blurRadius: _isPressed ? 8 : 12,
             offset: _isPressed ? const Offset(0, 2) : const Offset(0, 4),
             spreadRadius: _isPressed ? 0 : 1,
@@ -140,12 +158,12 @@ class _AppButtonState extends State<AppButton>
         child: InkWell(
           onTap: widget.isLoading ? null : widget.onPressed,
           borderRadius: BorderRadius.circular(_getBorderRadius()),
-          splashColor: Colors.white.withValues(alpha: 0.2),
-          highlightColor: Colors.white.withValues(alpha: 0.1),
+          splashColor: textColor.withValues(alpha: 0.2),
+          highlightColor: textColor.withValues(alpha: 0.1),
           child: Container(
             padding: _getPadding(),
             alignment: Alignment.center,
-            child: _buildButtonContent(Colors.white),
+            child: _buildButtonContent(textColor),
           ),
         ),
       ),
@@ -153,22 +171,24 @@ class _AppButtonState extends State<AppButton>
   }
 
   Widget _buildSecondaryButton() {
+    final isDark = themeController.isDarkMode;
+    final secondaryColor =
+        isDark ? ColorTheme.secondaryDark : ColorTheme.secondary;
+    final textColor = isDark ? ColorTheme.textPrimaryDark : Colors.white;
+
     return Container(
       width: widget.isFullWidth ? double.infinity : null,
       height: _getHeight(),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            ColorTheme.secondary,
-            ColorTheme.secondary.withValues(alpha: 0.9),
-          ],
+          colors: [secondaryColor, secondaryColor.withValues(alpha: 0.9)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(_getBorderRadius()),
         boxShadow: [
           BoxShadow(
-            color: ColorTheme.secondary.withValues(alpha: 0.25),
+            color: secondaryColor.withValues(alpha: 0.25),
             blurRadius: _isPressed ? 6 : 10,
             offset: _isPressed ? const Offset(0, 2) : const Offset(0, 3),
             spreadRadius: 0,
@@ -180,12 +200,12 @@ class _AppButtonState extends State<AppButton>
         child: InkWell(
           onTap: widget.isLoading ? null : widget.onPressed,
           borderRadius: BorderRadius.circular(_getBorderRadius()),
-          splashColor: Colors.white.withValues(alpha: 0.2),
-          highlightColor: Colors.white.withValues(alpha: 0.1),
+          splashColor: textColor.withValues(alpha: 0.2),
+          highlightColor: textColor.withValues(alpha: 0.1),
           child: Container(
             padding: _getPadding(),
             alignment: Alignment.center,
-            child: _buildButtonContent(Colors.white),
+            child: _buildButtonContent(textColor),
           ),
         ),
       ),
@@ -193,22 +213,26 @@ class _AppButtonState extends State<AppButton>
   }
 
   Widget _buildOutlinedButton() {
+    final isDark = themeController.isDarkMode;
+    final primaryColor =
+        isDark ? ColorTheme.primaryLightDark : ColorTheme.primary;
+    final backgroundColor =
+        isDark ? ColorTheme.surfaceDark : Colors.transparent;
+    final pressedColor = primaryColor.withValues(alpha: 0.05);
+
     return Container(
       width: widget.isFullWidth ? double.infinity : null,
       height: _getHeight(),
       decoration: BoxDecoration(
-        color:
-            _isPressed
-                ? ColorTheme.primary.withValues(alpha: 0.05)
-                : Colors.transparent,
-        border: Border.all(color: ColorTheme.primary, width: 1.5),
+        color: _isPressed ? pressedColor : backgroundColor,
+        border: Border.all(color: primaryColor, width: 1.5),
         borderRadius: BorderRadius.circular(_getBorderRadius()),
         boxShadow:
             _isPressed
                 ? []
                 : [
                   BoxShadow(
-                    color: ColorTheme.primary.withValues(alpha: 0.1),
+                    color: primaryColor.withValues(alpha: isDark ? 0.15 : 0.1),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                     spreadRadius: 0,
@@ -220,12 +244,12 @@ class _AppButtonState extends State<AppButton>
         child: InkWell(
           onTap: widget.isLoading ? null : widget.onPressed,
           borderRadius: BorderRadius.circular(_getBorderRadius()),
-          splashColor: ColorTheme.primary.withValues(alpha: 0.1),
-          highlightColor: ColorTheme.primary.withValues(alpha: 0.05),
+          splashColor: primaryColor.withValues(alpha: 0.1),
+          highlightColor: primaryColor.withValues(alpha: 0.05),
           child: Container(
             padding: _getPadding(),
             alignment: Alignment.center,
-            child: _buildButtonContent(ColorTheme.primary),
+            child: _buildButtonContent(primaryColor),
           ),
         ),
       ),
@@ -233,14 +257,18 @@ class _AppButtonState extends State<AppButton>
   }
 
   Widget _buildTextButton() {
+    final isDark = themeController.isDarkMode;
+    final primaryColor =
+        isDark ? ColorTheme.primaryLightDark : ColorTheme.primary;
+    final backgroundColor =
+        isDark ? ColorTheme.surfaceDark : Colors.transparent;
+    final pressedColor = primaryColor.withValues(alpha: 0.08);
+
     return Container(
       width: widget.isFullWidth ? double.infinity : null,
       height: _getHeight(),
       decoration: BoxDecoration(
-        color:
-            _isPressed
-                ? ColorTheme.primary.withValues(alpha: 0.08)
-                : Colors.transparent,
+        color: _isPressed ? pressedColor : backgroundColor,
         borderRadius: BorderRadius.circular(_getBorderRadius()),
       ),
       child: Material(
@@ -248,12 +276,12 @@ class _AppButtonState extends State<AppButton>
         child: InkWell(
           onTap: widget.isLoading ? null : widget.onPressed,
           borderRadius: BorderRadius.circular(_getBorderRadius()),
-          splashColor: ColorTheme.primary.withValues(alpha: 0.12),
-          highlightColor: ColorTheme.primary.withValues(alpha: 0.06),
+          splashColor: primaryColor.withValues(alpha: 0.12),
+          highlightColor: primaryColor.withValues(alpha: 0.06),
           child: Container(
             padding: _getPadding(),
             alignment: Alignment.center,
-            child: _buildButtonContent(ColorTheme.primary),
+            child: _buildButtonContent(primaryColor),
           ),
         ),
       ),

@@ -9,7 +9,7 @@ class ColorTheme {
     0xFFCFE9F2,
   ); // Light blue for hover states
   static const Color primaryDark = Color(
-    0xFF61A5C2,
+    0xFF2C7DA0,
   ); // Deep blue for pressed states
   static const Color secondary = Color(
     0xFF61A5C2,

@@ -19,6 +19,7 @@ class SessionController extends GetxController {
   final RxList<Session> sessions = <Session>[].obs;
   final Rx<Session?> currentSession = Rx<Session?>(null);
   final RxList<Session> availableSessions = <Session>[].obs;
+  final RxString _lastOperationDetails = ''.obs;
 
   // Date selection
   final Rx<DateTime> selectedDate = DateTime.now().obs;
@@ -36,6 +37,7 @@ class SessionController extends GetxController {
   String? _currentTimeSlotId;
   String? _currentContext; // 'schedule', 'timeslot', 'staff', etc.
   Map<String, dynamic> _lastFetchParams = {};
+  String get lastOperationDetails => _lastOperationDetails.value;
 
   // Data change listeners - untuk notifikasi antar views
   final RxBool dataChanged = false.obs;
@@ -52,10 +54,20 @@ class SessionController extends GetxController {
     fetchSessions();
   }
 
+  void resetSessionState() {
+    sessions.clear();
+    currentSession.value = null;
+    availableSessions.clear();
+  }
+
   // Set current context for better data management
   void _setContext(String context, {String? timeSlotId}) {
     _currentContext = context;
     _currentTimeSlotId = timeSlotId;
+  }
+
+  void notifyDataChange(String operation, String timeSlotId) {
+    _lastOperationDetails.value = '$operation:$timeSlotId';
   }
 
   // Format date to ISO string (YYYY-MM-DD)
@@ -302,7 +314,7 @@ class SessionController extends GetxController {
       await _refreshCurrentContext();
 
       _showSuccessSnackbar('Sesi berhasil dibuat');
-      _notifyDataChange('create');
+      notifyDataChange('create', timeSlotId);
       return true;
     } catch (e) {
       _handleError(e, 'Terjadi kesalahan saat membuat sesi');
@@ -441,7 +453,7 @@ class SessionController extends GetxController {
       }
 
       _showSuccessSnackbar('Sesi berhasil diperbarui');
-      _notifyDataChange('update');
+      notifyDataChange('update', timeSlotId!);
       return true;
     } catch (e) {
       _handleError(e, 'Terjadi kesalahan saat memperbarui sesi');
@@ -501,8 +513,8 @@ class SessionController extends GetxController {
           backgroundColor: ColorTheme.success.withValues(alpha: 0.1),
           colorText: ColorTheme.success,
         );
-
-        _notifyDataChange('delete');
+        notifyDataChange('delete', currentTimeSlotId ?? '');
+        return true;
       }
       return success;
     } catch (e) {
@@ -578,6 +590,7 @@ class SessionController extends GetxController {
     try {
       isLoading.value = true;
       clearError();
+      sessions.clear(); // Clear existing data
 
       _setContext('schedule');
       selectedDate.value = date;

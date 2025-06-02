@@ -1,4 +1,4 @@
-import 'package:emababyspa/features/time_slot/widgets/time_slot_dialog.dart';
+// lib/features/schedule/views/schedule_view.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -13,6 +13,7 @@ import 'package:emababyspa/features/session/controllers/session_controller.dart'
 import 'package:emababyspa/features/time_slot/controllers/time_slot_controller.dart';
 import 'package:emababyspa/utils/app_routes.dart';
 import 'package:emababyspa/features/operating_schedule/widgets/operating_schedule_dialog.dart';
+import 'package:emababyspa/features/time_slot/widgets/time_slot_dialog.dart';
 import 'package:emababyspa/utils/timezone_utils.dart';
 
 class ScheduleView extends GetView<ScheduleController> {
@@ -20,238 +21,32 @@ class ScheduleView extends GetView<ScheduleController> {
 
   @override
   Widget build(BuildContext context) {
-    // Initialize controllers
-    final operatingScheduleController = Get.find<OperatingScheduleController>();
-    final timeSlotController = Get.find<TimeSlotController>();
-    Get.find<SessionController>();
-    // For tracking selected date
-    final selectedDate = DateTime.now().obs;
-    final focusedDate = DateTime.now().obs;
-
-    // For tracking calendar format
-    final calendarFormat = CalendarFormat.week.obs;
-
-    // For tracking if data is loaded
-    final isDataLoaded = false.obs;
-
-    // Load initial data for today
-    _loadScheduleData(
-      selectedDate.value,
-      operatingScheduleController,
-      timeSlotController,
-      isDataLoaded,
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.refreshScheduleData(controller.selectedDate.value);
+    });
 
     return MainLayout(
       child: Scaffold(
-        body: Obx(
-          () =>
-              controller.isLoading.value || controller.isGenerating.value
-                  ? const Center(
-                    child: LoadingWidget(
-                      color: ColorTheme.primary,
-                      fullScreen: true,
-                      message: "Loading...",
-                      size: LoadingSize.medium,
-                    ),
-                  )
-                  : _buildContent(
-                    context,
-                    selectedDate,
-                    focusedDate,
-                    calendarFormat,
-                    operatingScheduleController,
-                    timeSlotController,
-                    isDataLoaded,
-                  ),
-        ),
+        body: Obx(() {
+          if (controller.isLoading.value || controller.isGenerating.value) {
+            return const Center(
+              child: LoadingWidget(
+                color: ColorTheme.primary,
+                fullScreen: true,
+                message: "Loading...",
+                size: LoadingSize.medium,
+              ),
+            );
+          }
+
+          return _buildContent(
+            context,
+            Get.find<OperatingScheduleController>(),
+            Get.find<TimeSlotController>(),
+            Get.find<SessionController>(),
+          );
+        }),
         floatingActionButton: _buildFloatingActionButton(),
-      ),
-    );
-  }
-
-  Future<void> _loadScheduleData(
-    DateTime date,
-    OperatingScheduleController operatingScheduleController,
-    TimeSlotController timeSlotController,
-    RxBool isDataLoaded,
-  ) async {
-    isDataLoaded.value = false;
-
-    // Format date for API
-    final formattedDate = DateFormat('yyyy-MM-dd').format(date);
-
-    // Load operating schedule for the selected date
-    await operatingScheduleController.fetchAllSchedules(date: formattedDate);
-
-    // Load sessions for the selected date
-    final sessionController = Get.find<SessionController>();
-    await sessionController.fetchSessionsByDate(date);
-
-    // Get schedule ID for the selected date if exists
-    final schedule = operatingScheduleController.schedulesList.firstWhereOrNull(
-      (schedule) => _isSameDate(
-        DateFormat('yyyy-MM-dd').format(schedule.date),
-        formattedDate,
-      ),
-    );
-
-    if (schedule != null) {
-      // Use the new method to load time slots for this schedule
-      await timeSlotController.fetchTimeSlotsByScheduleId(schedule.id);
-    } else {
-      // Clear time slots if no schedule exists
-      timeSlotController.timeSlots.clear();
-    }
-
-    isDataLoaded.value = true;
-  }
-
-  void _deleteSchedule(dynamic schedule) async {
-    final operatingScheduleController = Get.find<OperatingScheduleController>();
-    final timeSlotController = Get.find<TimeSlotController>();
-
-    // Close the confirmation dialog
-    Get.back();
-
-    try {
-      // Delete the schedule
-      final success = await operatingScheduleController.deleteOperatingSchedule(
-        schedule.id,
-      );
-
-      // Important: Always close the loading dialog before showing any other dialog
-      if (Get.isDialogOpen ?? false) {
-        Get.back();
-      }
-
-      if (success) {
-        // Fetch updated data without showing loading indicator
-        final formattedDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
-        await operatingScheduleController.fetchAllSchedules(
-          date: formattedDate,
-        );
-
-        // Get session controller and fetch sessions without loading indicator
-        final sessionController = Get.find<SessionController>();
-        await sessionController.fetchSessionsByDate(DateTime.now());
-
-        // Clear time slots since we deleted the schedule
-        timeSlotController.timeSlots.clear();
-
-        // Show success message
-        Get.snackbar(
-          'Success',
-          'Jadwal operasional berhasil dihapus',
-          backgroundColor: ColorTheme.success.withValues(alpha: 0.1),
-          colorText: ColorTheme.success,
-        );
-      } else {
-        // Show error message for unsuccessful deletion
-        Get.snackbar(
-          'Error',
-          'Gagal menghapus jadwal operasional',
-          backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
-          colorText: ColorTheme.error,
-        );
-      }
-    } catch (e) {
-      // Make sure to close loading dialog in case of exception
-      if (Get.isDialogOpen ?? false) {
-        Get.back();
-      }
-
-      // Show error message
-      Get.snackbar(
-        'Error',
-        'Gagal menghapus jadwal operasional: ${e.toString()}',
-        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
-        colorText: ColorTheme.error,
-      );
-    }
-  }
-
-  void _showDeleteConfirmationDialog(dynamic schedule) {
-    Get.dialog(
-      Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.red.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.warning_amber_rounded,
-                  size: 48,
-                  color: Colors.red.shade700,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'Hapus Jadwal Operasional',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: ColorTheme.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Yakin ingin menghapus jadwal operasional ini? Semua slot waktu dan sesi yang terkait juga akan dihapus.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, color: ColorTheme.textSecondary),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  // Cancel button
-                  ElevatedButton(
-                    onPressed: () => Get.back(),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey.shade200,
-                      foregroundColor: ColorTheme.textPrimary,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Text('Batal'),
-                  ),
-                  // Delete button
-                  ElevatedButton(
-                    onPressed: () => _deleteSchedule(schedule),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Text('Hapus'),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -262,25 +57,28 @@ class ScheduleView extends GetView<ScheduleController> {
 
     // Handle ISO date format (2025-05-17T00:00:00.000Z)
     if (apiDate.contains('T')) {
-      // Extract just the date part from the ISO string
       final datePart = apiDate.split('T')[0];
       return datePart == targetDate;
     }
 
-    // Handle simple date format
     return apiDate == targetDate;
+  }
+
+  Widget _buildFloatingActionButton() {
+    return FloatingActionButton(
+      onPressed: () => Get.toNamed(AppRoutes.operatingScheduleForm),
+      backgroundColor: ColorTheme.primary,
+      tooltip: 'Add Operating Schedule',
+      child: const Icon(Icons.add, color: Colors.white),
+    );
   }
 
   Widget _buildContent(
     BuildContext context,
-    Rx<DateTime> selectedDate,
-    Rx<DateTime> focusedDate,
-    Rx<CalendarFormat> calendarFormat,
     OperatingScheduleController operatingScheduleController,
     TimeSlotController timeSlotController,
-    RxBool isDataLoaded,
+    SessionController sessionController,
   ) {
-    final sessionController = Get.find<SessionController>();
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -294,46 +92,31 @@ class ScheduleView extends GetView<ScheduleController> {
         children: [
           _buildHeader(),
           const SizedBox(height: 12),
-          _buildTableCalendar(
-            selectedDate,
-            focusedDate,
-            calendarFormat,
-            operatingScheduleController,
-            timeSlotController,
-            isDataLoaded,
-          ),
+          _buildTableCalendar(operatingScheduleController, timeSlotController),
           const SizedBox(height: 12),
           Expanded(
-            child: Obx(
-              () =>
-                  isDataLoaded.value
-                      ? _buildDailySchedule(
-                        context,
-                        selectedDate.value,
-                        operatingScheduleController,
-                        timeSlotController,
-                        sessionController,
-                      )
-                      : Center(
-                        child: LoadingWidget(
-                          color: ColorTheme.primary,
-                          size: LoadingSize.small,
-                          message: "Loading schedule data...",
-                        ),
-                      ),
-            ),
+            child: Obx(() {
+              if (!controller.isDataLoaded.value) {
+                return Center(
+                  child: LoadingWidget(
+                    color: ColorTheme.primary,
+                    size: LoadingSize.small,
+                    message: "Loading schedule data...",
+                  ),
+                );
+              }
+
+              return _buildDailySchedule(
+                context,
+                controller.selectedDate.value,
+                operatingScheduleController,
+                timeSlotController,
+                sessionController,
+              );
+            }),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildFloatingActionButton() {
-    return FloatingActionButton(
-      onPressed: () => Get.toNamed(AppRoutes.operatingScheduleForm),
-      backgroundColor: ColorTheme.primary,
-      tooltip: 'Add Operating Schedule',
-      child: const Icon(Icons.add, color: Colors.white),
     );
   }
 
@@ -374,12 +157,8 @@ class ScheduleView extends GetView<ScheduleController> {
   }
 
   Widget _buildTableCalendar(
-    Rx<DateTime> selectedDate,
-    Rx<DateTime> focusedDate,
-    Rx<CalendarFormat> calendarFormat,
     OperatingScheduleController operatingScheduleController,
     TimeSlotController timeSlotController,
-    RxBool isDataLoaded,
   ) {
     return Obx(() {
       return Container(
@@ -401,26 +180,21 @@ class ScheduleView extends GetView<ScheduleController> {
           child: TableCalendar(
             firstDay: DateTime.now().subtract(const Duration(days: 365)),
             lastDay: DateTime.now().add(const Duration(days: 365)),
-            focusedDay: focusedDate.value,
-            calendarFormat: calendarFormat.value,
+            focusedDay: controller.focusedDate.value,
+            calendarFormat: controller.calendarFormat.value,
             selectedDayPredicate: (day) {
-              return isSameDay(selectedDate.value, day);
+              return isSameDay(controller.selectedDate.value, day);
             },
             onDaySelected: (selectedDay, focusedDay) {
-              selectedDate.value = selectedDay;
-              focusedDate.value = focusedDay;
-              _loadScheduleData(
-                selectedDay,
-                operatingScheduleController,
-                timeSlotController,
-                isDataLoaded,
-              );
+              controller.selectedDate.value = selectedDay;
+              controller.focusedDate.value = focusedDay;
+              controller.refreshScheduleData(selectedDay);
             },
             onFormatChanged: (format) {
-              calendarFormat.value = format;
+              controller.calendarFormat.value = format;
             },
             onPageChanged: (focusedDay) {
-              focusedDate.value = focusedDay;
+              controller.focusedDate.value = focusedDay;
             },
             calendarStyle: CalendarStyle(
               todayDecoration: BoxDecoration(
@@ -442,10 +216,8 @@ class ScheduleView extends GetView<ScheduleController> {
             ),
             calendarBuilders: CalendarBuilders(
               defaultBuilder: (context, day, focusedDay) {
-                // Format day to check against schedule
                 final formattedDay = DateFormat('yyyy-MM-dd').format(day);
 
-                // Use our helper function to check for schedules
                 final hasSchedule = operatingScheduleController.schedulesList
                     .any(
                       (schedule) => _isSameDate(
@@ -454,7 +226,6 @@ class ScheduleView extends GetView<ScheduleController> {
                       ),
                     );
 
-                // Same for holiday check
                 final isHoliday = operatingScheduleController.schedulesList.any(
                   (schedule) =>
                       _isSameDate(
@@ -465,7 +236,6 @@ class ScheduleView extends GetView<ScheduleController> {
                 );
 
                 if (isHoliday) {
-                  // Holiday style
                   return Container(
                     margin: const EdgeInsets.all(4.0),
                     alignment: Alignment.center,
@@ -482,7 +252,6 @@ class ScheduleView extends GetView<ScheduleController> {
                     ),
                   );
                 } else if (hasSchedule) {
-                  // Has schedule style
                   return Container(
                     margin: const EdgeInsets.all(4.0),
                     alignment: Alignment.center,
@@ -502,10 +271,8 @@ class ScheduleView extends GetView<ScheduleController> {
                 return null;
               },
               markerBuilder: (context, date, events) {
-                // Format date to check against schedule
                 final formattedDate = DateFormat('yyyy-MM-dd').format(date);
 
-                // Use our helper function to find the schedule
                 final schedule = operatingScheduleController.schedulesList
                     .firstWhereOrNull(
                       (s) =>
@@ -523,7 +290,6 @@ class ScheduleView extends GetView<ScheduleController> {
 
                 if (slots.isEmpty) return const SizedBox.shrink();
 
-                // Show markers based on number of time slots with a more attractive design
                 return Positioned(
                   bottom: 1,
                   child: Row(
@@ -620,25 +386,22 @@ class ScheduleView extends GetView<ScheduleController> {
     DateTime selectedDate,
     OperatingScheduleController operatingScheduleController,
     TimeSlotController timeSlotController,
-    SessionController sessionController, // Add this parameter
+    SessionController sessionController,
   ) {
     final formattedDate = DateFormat('yyyy-MM-dd').format(selectedDate);
 
-    // Use our helper function to find the schedule
     final schedule = operatingScheduleController.schedulesList.firstWhereOrNull(
-      (schedule) => _isSameDate(schedule.date.toIso8601String(), formattedDate),
+      (s) => _isSameDate(s.date.toIso8601String(), formattedDate),
     );
 
     if (schedule == null) {
       return _buildNoScheduleView(formattedDate, selectedDate);
     }
 
-    // Check if this is a holiday
     if (schedule.isHoliday == true) {
       return _buildHolidayView(schedule);
     }
 
-    // Find time slots for this schedule
     final timeSlots =
         timeSlotController.timeSlots
             .where((slot) => slot.operatingScheduleId == schedule.id)
@@ -648,7 +411,6 @@ class ScheduleView extends GetView<ScheduleController> {
       return _buildNoTimeSlotsView(schedule);
     }
 
-    // Sort time slots by start time
     timeSlots.sort((a, b) => a.startTime.compareTo(b.startTime));
 
     return Column(
@@ -671,8 +433,6 @@ class ScheduleView extends GetView<ScheduleController> {
               final timeSlot = timeSlots[index];
 
               return Obx(() {
-                // Tambahkan Obx di sini
-                // Dapatkan sesi secara reaktif
                 final sessionsForSlot =
                     sessionController.sessions
                         .where((session) => session.timeSlotId == timeSlot.id)
@@ -696,7 +456,6 @@ class ScheduleView extends GetView<ScheduleController> {
     );
   }
 
-  // Modify the _buildAddTimeSlotButton method in ScheduleView
   Widget _buildAddTimeSlotButton(dynamic scheduleId) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -717,11 +476,9 @@ class ScheduleView extends GetView<ScheduleController> {
           color: Colors.transparent,
           child: InkWell(
             onTap: () async {
-              // First, make sure time slots are up-to-date
               final timeSlotController = Get.find<TimeSlotController>();
               await timeSlotController.fetchTimeSlotsByScheduleId(scheduleId);
 
-              // Then show the TimeSlotDialog with the schedule ID
               showDialog(
                 context: Get.context!,
                 builder:
@@ -834,7 +591,6 @@ class ScheduleView extends GetView<ScheduleController> {
                   ),
                 ],
               ),
-              // Delete button
               IconButton(
                 onPressed: () => _showDeleteConfirmationDialog(schedule),
                 icon: Icon(
@@ -881,7 +637,6 @@ class ScheduleView extends GetView<ScheduleController> {
     );
   }
 
-  // Helper function to format time slots for display
   String _formatTimeSlot(String isoTimeString) {
     return TimeZoneUtil.formatISOToIndonesiaTime(isoTimeString);
   }
@@ -892,16 +647,10 @@ class ScheduleView extends GetView<ScheduleController> {
     List<dynamic> sessions,
     SessionController sessionController,
   ) {
-    // Get total sessions and booked sessions count from actual session data
     final int totalSessions = sessions.length;
     final int bookedSessions =
         sessions.where((session) => session.isBooked == true).length;
-
-    // Determine if all sessions are booked
     final bool allBooked = totalSessions > 0 && bookedSessions == totalSessions;
-
-    // Use the TimeSlotController to format the time if needed
-    Get.find<TimeSlotController>();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -921,12 +670,22 @@ class ScheduleView extends GetView<ScheduleController> {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: () {
-              // Navigate to time slot details page directly
-              Get.toNamed(
+            onTap: () async {
+              // Simpan tanggal yang sedang dilihat
+              final currentDate = controller.selectedDate.value;
+
+              await Get.toNamed(
                 AppRoutes.timeSlotDetail,
                 arguments: {'timeSlot': timeSlot},
               );
+
+              // Reset state saat kembali
+              controller.resetScheduleState();
+              Get.find<TimeSlotController>().resetTimeSlotState();
+              Get.find<SessionController>().resetSessionState();
+
+              // Refresh data untuk tanggal yang sama
+              controller.refreshScheduleData(currentDate);
             },
             child: Container(
               padding: const EdgeInsets.all(2),
@@ -947,7 +706,6 @@ class ScheduleView extends GetView<ScheduleController> {
                 ),
                 child: Row(
                   children: [
-                    // Time column
                     Container(
                       width: 70,
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -978,7 +736,6 @@ class ScheduleView extends GetView<ScheduleController> {
                         ],
                       ),
                     ),
-                    // Main content column
                     Expanded(
                       child: Container(
                         padding: const EdgeInsets.symmetric(
@@ -990,7 +747,6 @@ class ScheduleView extends GetView<ScheduleController> {
                           children: [
                             Row(
                               children: [
-                                // Session count icon
                                 Container(
                                   width: 32,
                                   height: 32,
@@ -1017,7 +773,6 @@ class ScheduleView extends GetView<ScheduleController> {
                                   ),
                                 ),
                                 const SizedBox(width: 12),
-                                // Session statistics
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -1032,7 +787,6 @@ class ScheduleView extends GetView<ScheduleController> {
                                       ),
                                     ),
                                     const SizedBox(height: 4),
-                                    // Progress bar for availability
                                     if (totalSessions > 0)
                                       SizedBox(
                                         width: 120,
@@ -1061,7 +815,6 @@ class ScheduleView extends GetView<ScheduleController> {
                                 ),
                               ],
                             ),
-                            // Bottom section with status
                             Padding(
                               padding: const EdgeInsets.only(
                                 top: 8.0,
@@ -1247,7 +1000,6 @@ class ScheduleView extends GetView<ScheduleController> {
                   },
                 ),
                 const SizedBox(width: 12),
-                // Delete button
                 AppButton(
                   text: 'Hapus Jadwal',
                   icon: Icons.delete_outline,
@@ -1318,29 +1070,23 @@ class ScheduleView extends GetView<ScheduleController> {
                   text: 'Generate Slot Waktu',
                   icon: Icons.add_alarm,
                   onPressed: () async {
-                    // Get the current date from the schedule
                     final scheduleDate = schedule.date;
-
-                    // Use the new TimeSlotController method to generate time slots
                     final timeSlotController = Get.find<TimeSlotController>();
 
-                    // Generate fixed interval time slots (7:00 AM to 3:00 PM with 1-hour slots)
                     await timeSlotController.generateFixedIntervalTimeSlots(
                       operatingScheduleId: schedule.id,
                       startDate: scheduleDate,
-                      firstSlotStart: TimeOfDay(hour: 7, minute: 0),
-                      lastSlotEnd: TimeOfDay(hour: 15, minute: 0),
-                      slotDuration: Duration(minutes: 60),
+                      firstSlotStart: const TimeOfDay(hour: 7, minute: 0),
+                      lastSlotEnd: const TimeOfDay(hour: 15, minute: 0),
+                      slotDuration: const Duration(minutes: 60),
                     );
 
-                    // Refresh the UI with the new slots
                     await timeSlotController.fetchTimeSlotsByScheduleId(
                       schedule.id,
                     );
                   },
                 ),
                 const SizedBox(width: 12),
-                // Delete button
                 AppButton(
                   text: 'Hapus Jadwal',
                   icon: Icons.delete_outline,
@@ -1353,5 +1099,142 @@ class ScheduleView extends GetView<ScheduleController> {
         ),
       ),
     );
+  }
+
+  void _showDeleteConfirmationDialog(dynamic schedule) {
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.warning_amber_rounded,
+                  size: 48,
+                  color: Colors.red.shade700,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Hapus Jadwal Operasional',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: ColorTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Yakin ingin menghapus jadwal operasional ini? Semua slot waktu dan sesi yang terkait juga akan dihapus.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, color: ColorTheme.textSecondary),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton(
+                    onPressed: () => Get.back(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey.shade200,
+                      foregroundColor: ColorTheme.textPrimary,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text('Batal'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => _deleteSchedule(schedule),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text('Hapus'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _deleteSchedule(dynamic schedule) async {
+    final operatingScheduleController = Get.find<OperatingScheduleController>();
+    final timeSlotController = Get.find<TimeSlotController>();
+
+    Get.back();
+
+    try {
+      final success = await operatingScheduleController.deleteOperatingSchedule(
+        schedule.id,
+      );
+
+      if (Get.isDialogOpen ?? false) {
+        Get.back();
+      }
+
+      if (success) {
+        final formattedDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
+        await operatingScheduleController.fetchAllSchedules(
+          date: formattedDate,
+        );
+
+        final sessionController = Get.find<SessionController>();
+        await sessionController.fetchSessionsByDate(DateTime.now());
+
+        timeSlotController.timeSlots.clear();
+
+        Get.snackbar(
+          'Success',
+          'Jadwal operasional berhasil dihapus',
+          backgroundColor: ColorTheme.success.withValues(alpha: 0.1),
+          colorText: ColorTheme.success,
+        );
+      } else {
+        Get.snackbar(
+          'Error',
+          'Gagal menghapus jadwal operasional',
+          backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
+          colorText: ColorTheme.error,
+        );
+      }
+    } catch (e) {
+      if (Get.isDialogOpen ?? false) {
+        Get.back();
+      }
+
+      Get.snackbar(
+        'Error',
+        'Gagal menghapus jadwal operasional: ${e.toString()}',
+        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
+        colorText: ColorTheme.error,
+      );
+    }
   }
 }

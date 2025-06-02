@@ -1,4 +1,5 @@
 // lib/bindings/app_bindings.dart
+import 'package:emababyspa/features/theme/controllers/theme_controller.dart';
 import 'package:get/get.dart';
 import 'package:emababyspa/data/api/api_client.dart';
 import 'package:emababyspa/utils/storage_utils.dart';
@@ -17,6 +18,8 @@ class AppBindings extends Bindings {
       () => AuthRepository(provider: Get.find<AuthProvider>()),
       fenix: true,
     );
+    Get.put(ThemeController(), permanent: true);
+
     if (!Get.isRegistered<LoggerUtils>()) {
       Get.put(LoggerUtils(), permanent: true);
     }

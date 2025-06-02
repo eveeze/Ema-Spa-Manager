@@ -26,8 +26,18 @@ class _TimeSlotViewState extends State<TimeSlotView> {
     super.initState();
     final args = Get.arguments as Map<String, dynamic>;
     final timeSlot = args['timeSlot'];
+    controller.selectedTimeSlot.value = timeSlot;
+
     // Fetch sessions using controller
     sessionController.fetchSessions(timeSlotId: timeSlot.id);
+  }
+
+  @override
+  void dispose() {
+    // Reset state saat keluar dari view
+    controller.clearSelectedTimeSlot();
+    sessionController.resetSessionState();
+    super.dispose();
   }
 
   @override
@@ -105,7 +115,7 @@ class _TimeSlotViewState extends State<TimeSlotView> {
     return RefreshIndicator(
       onRefresh: () async {
         // Refresh data when pulled down
-        await controller.fetchTimeSlotById(timeSlot.id);
+        await controller.refreshSelectedTimeSlot(timeSlot.id);
         await sessionController.fetchSessions(timeSlotId: timeSlot.id);
       },
       child: Container(
@@ -125,17 +135,30 @@ class _TimeSlotViewState extends State<TimeSlotView> {
               children: [
                 _buildDateHeader(dateFormatted),
                 const SizedBox(height: 16),
-                // Use Obx to reactively update time slot header with session stats
-                Obx(
-                  () => _buildTimeSlotHeader(
-                    startTime,
-                    endTime,
-                    timeSlot,
-                    sessionController.sessions,
-                  ),
-                ),
+                // Gunakan Obx untuk reactive update dari selectedTimeSlot dan sessions
+                Obx(() {
+                  // Gunakan selectedTimeSlot dari controller jika tersedia, fallback ke argument
+                  final currentTimeSlot =
+                      controller.selectedTimeSlot.value ?? timeSlot;
+                  final currentSessions = sessionController.sessions;
+
+                  // Format ulang waktu jika timeSlot berubah
+                  final currentStartTime =
+                      TimeZoneUtil.formatISOToIndonesiaTime(
+                        currentTimeSlot.startTime.toIso8601String(),
+                      );
+                  final currentEndTime = TimeZoneUtil.formatISOToIndonesiaTime(
+                    currentTimeSlot.endTime.toIso8601String(),
+                  );
+
+                  return _buildTimeSlotHeader(
+                    currentStartTime,
+                    currentEndTime,
+                    currentTimeSlot,
+                    currentSessions,
+                  );
+                }),
                 const SizedBox(height: 24),
-                // Use Obx for reactive session list updates
                 _buildSessionsSection(context, timeSlot),
               ],
             ),
@@ -698,14 +721,29 @@ class _TimeSlotViewState extends State<TimeSlotView> {
     if (result == true) {
       final success = await sessionController.deleteSession(session.id);
       if (success) {
-        // Refresh data setelah penghapusan
-        await sessionController.refreshSessions(session.timeSlotId);
-        // Paksa update ScheduleView
-        Get.find<ScheduleController>().refreshData(
-          specificTimeSlotId: session.timeSlotId,
+        // Refresh sessions
+        await sessionController.fetchSessions(timeSlotId: session.timeSlotId);
+
+        // Update ScheduleController jika perlu
+        if (Get.isRegistered<ScheduleController>()) {
+          Get.find<ScheduleController>().refreshData(
+            specificTimeSlotId: session.timeSlotId,
+          );
+        }
+
+        return true;
+      } else {
+        // Show error message
+        Get.snackbar(
+          'Error',
+          sessionController.errorMessage.value.isNotEmpty
+              ? sessionController.errorMessage.value
+              : 'Failed to delete session',
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
         );
       }
-      return success;
     }
     return false;
   }
@@ -741,19 +779,18 @@ class _TimeSlotViewState extends State<TimeSlotView> {
               onPressed: () async {
                 Navigator.of(context).pop();
 
-                // Simpan timeSlotId sebelum dihapus
                 final timeSlotId = timeSlot.id;
-
                 final success = await controller.deleteTimeSlot(timeSlotId);
+
                 if (success) {
-                  // Refresh data di ScheduleController dengan method yang lebih komprehensif
+                  // Clear selectedTimeSlot setelah delete
+                  controller.clearSelectedTimeSlot();
+
+                  // Refresh data di ScheduleController
                   final scheduleController = Get.find<ScheduleController>();
-                  await scheduleController
-                      .fetchScheduleData(); // Gunakan method baru
+                  await scheduleController.fetchScheduleData();
 
-                  // Kembali ke halaman sebelumnya
                   Get.back();
-
                   Get.snackbar(
                     'Success',
                     'Time slot deleted successfully',
@@ -764,7 +801,9 @@ class _TimeSlotViewState extends State<TimeSlotView> {
                 } else {
                   Get.snackbar(
                     'Error',
-                    'Failed to delete time slot',
+                    controller.errorMessage.value.isNotEmpty
+                        ? controller.errorMessage.value
+                        : 'Failed to delete time slot',
                     backgroundColor: Colors.red,
                     colorText: Colors.white,
                     snackPosition: SnackPosition.BOTTOM,

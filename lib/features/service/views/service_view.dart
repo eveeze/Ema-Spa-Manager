@@ -1,9 +1,11 @@
+// lib/features/service/views/service_view.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:emababyspa/common/theme/color_theme.dart';
 import 'package:emababyspa/common/widgets/custom_appbar.dart';
 import 'package:emababyspa/common/widgets/empty_state_widget.dart';
 import 'package:emababyspa/features/service/controllers/service_controller.dart';
+import 'package:emababyspa/features/theme/controllers/theme_controller.dart';
 import 'package:emababyspa/common/layouts/main_layout.dart';
 
 class ServiceView extends GetView<ServiceController> {
@@ -11,97 +13,285 @@ class ServiceView extends GetView<ServiceController> {
 
   @override
   Widget build(BuildContext context) {
+    // Get theme controller instance
+    final themeController = Get.find<ThemeController>();
+
     return MainLayout(
-      child: Scaffold(
-        backgroundColor: ColorTheme.background,
-        appBar: const CustomAppBar(
-          title: 'Service Management',
-          showBackButton: false,
-        ),
-        body: SafeArea(
-          child: RefreshIndicator(
-            onRefresh: () async {
-              await controller.refreshData();
-            },
-            color: ColorTheme.primary,
-            backgroundColor: Colors.white,
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    ColorTheme.primary.withValues(alpha: 0.02),
-                    Colors.transparent,
-                  ],
-                  stops: const [0.0, 0.3],
+      child: Obx(() {
+        final isDark = themeController.isDarkMode;
+
+        return Scaffold(
+          backgroundColor:
+              isDark ? ColorTheme.backgroundDark : ColorTheme.background,
+          appBar: CustomAppBar(
+            title: 'Service Management',
+            showBackButton: false,
+            actions: [
+              // Enhanced theme toggle button with cycle functionality
+              Container(
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  color: (isDark ? Colors.white : Colors.black).withValues(
+                    alpha: 0.1,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: PopupMenuButton<ThemeMode>(
+                  onSelected: (ThemeMode themeMode) {
+                    themeController.changeThemeMode(themeMode);
+                  },
+                  itemBuilder:
+                      (context) => [
+                        PopupMenuItem(
+                          value: ThemeMode.system,
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.brightness_auto,
+                                color:
+                                    themeController.isSystemMode
+                                        ? (isDark
+                                            ? ColorTheme.primaryLightDark
+                                            : ColorTheme.primary)
+                                        : (isDark
+                                            ? ColorTheme.textSecondaryDark
+                                            : ColorTheme.textSecondary),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Sistem',
+                                style: TextStyle(
+                                  color:
+                                      themeController.isSystemMode
+                                          ? (isDark
+                                              ? ColorTheme.primaryLightDark
+                                              : ColorTheme.primary)
+                                          : (isDark
+                                              ? ColorTheme.textPrimaryDark
+                                              : ColorTheme.textPrimary),
+                                  fontWeight:
+                                      themeController.isSystemMode
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: ThemeMode.light,
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.light_mode_rounded,
+                                color:
+                                    themeController.isLightMode &&
+                                            !themeController.isSystemMode
+                                        ? (isDark
+                                            ? ColorTheme.primaryLightDark
+                                            : ColorTheme.primary)
+                                        : (isDark
+                                            ? ColorTheme.textSecondaryDark
+                                            : ColorTheme.textSecondary),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Terang',
+                                style: TextStyle(
+                                  color:
+                                      themeController.isLightMode &&
+                                              !themeController.isSystemMode
+                                          ? (isDark
+                                              ? ColorTheme.primaryLightDark
+                                              : ColorTheme.primary)
+                                          : (isDark
+                                              ? ColorTheme.textPrimaryDark
+                                              : ColorTheme.textPrimary),
+                                  fontWeight:
+                                      themeController.isLightMode &&
+                                              !themeController.isSystemMode
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: ThemeMode.dark,
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.dark_mode_rounded,
+                                color:
+                                    themeController.isDarkMode &&
+                                            !themeController.isSystemMode
+                                        ? (isDark
+                                            ? ColorTheme.primaryLightDark
+                                            : ColorTheme.primary)
+                                        : (isDark
+                                            ? ColorTheme.textSecondaryDark
+                                            : ColorTheme.textSecondary),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Gelap',
+                                style: TextStyle(
+                                  color:
+                                      themeController.isDarkMode &&
+                                              !themeController.isSystemMode
+                                          ? (isDark
+                                              ? ColorTheme.primaryLightDark
+                                              : ColorTheme.primary)
+                                          : (isDark
+                                              ? ColorTheme.textPrimaryDark
+                                              : ColorTheme.textPrimary),
+                                  fontWeight:
+                                      themeController.isDarkMode &&
+                                              !themeController.isSystemMode
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      child: Icon(
+                        themeController.themeModeIcon,
+                        key: ValueKey(themeController.themeMode),
+                        color: isDark ? Colors.white70 : Colors.white,
+                        size: 22,
+                      ),
+                    ),
+                  ),
                 ),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Obx(() {
-                  if (controller.isLoading.value &&
-                      controller.services.isEmpty &&
-                      controller.serviceCategories.isEmpty &&
-                      controller.staff.isEmpty) {
-                    return _buildLoadingState();
-                  }
+            ],
+          ),
+          body: SafeArea(
+            child: RefreshIndicator(
+              onRefresh: () async {
+                await controller.refreshData();
+              },
+              color: isDark ? ColorTheme.primaryLightDark : ColorTheme.primary,
+              backgroundColor: isDark ? ColorTheme.surfaceDark : Colors.white,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors:
+                        isDark
+                            ? [
+                              ColorTheme.primaryLightDark.withValues(
+                                alpha: 0.05,
+                              ),
+                              Colors.transparent,
+                            ]
+                            : [
+                              ColorTheme.primary.withValues(alpha: 0.03),
+                              Colors.transparent,
+                            ],
+                    stops: const [0.0, 0.4],
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20.0,
+                    vertical: 16.0,
+                  ),
+                  child: Obx(() {
+                    if (controller.isLoading.value &&
+                        controller.services.isEmpty &&
+                        controller.serviceCategories.isEmpty &&
+                        controller.staff.isEmpty) {
+                      return _buildLoadingState(isDark);
+                    }
 
-                  if (controller.serviceError.isNotEmpty &&
-                      controller.categoryError.isNotEmpty &&
-                      controller.staffError.isNotEmpty) {
-                    return EmptyStateWidget(
-                      title: 'Connection Error',
-                      message:
-                          'Unable to load data. Please check your connection and try again.',
-                      icon: Icons.error_outline_rounded,
-                      buttonLabel: 'Refresh',
-                      onButtonPressed: controller.refreshData,
-                      fullScreen: true,
-                    );
-                  }
+                    if (controller.serviceError.isNotEmpty &&
+                        controller.categoryError.isNotEmpty &&
+                        controller.staffError.isNotEmpty) {
+                      return EmptyStateWidget(
+                        title: 'Connection Error',
+                        message:
+                            'Unable to load data. Please check your connection and try again.',
+                        icon: Icons.error_outline_rounded,
+                        buttonLabel: 'Refresh',
+                        onButtonPressed: controller.refreshData,
+                        fullScreen: true,
+                      );
+                    }
 
-                  return _buildServiceContent();
-                }),
+                    return _buildServiceContent(isDark);
+                  }),
+                ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      }),
     );
   }
 
-  Widget _buildLoadingState() {
+  Widget _buildLoadingState(bool isDark) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
+              color: isDark ? ColorTheme.surfaceDark : Colors.white,
+              borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: ColorTheme.primary.withValues(alpha: 0.1),
-                  blurRadius: 20,
-                  spreadRadius: 5,
+                  color:
+                      isDark
+                          ? Colors.black.withValues(alpha: 0.3)
+                          : ColorTheme.primary.withValues(alpha: 0.08),
+                  blurRadius: 24,
+                  spreadRadius: 0,
+                  offset: const Offset(0, 8),
                 ),
               ],
+              border:
+                  isDark
+                      ? Border.all(
+                        color: ColorTheme.borderDark.withValues(alpha: 0.3),
+                      )
+                      : null,
             ),
-            child: CircularProgressIndicator(
-              strokeWidth: 3,
-              valueColor: AlwaysStoppedAnimation<Color>(ColorTheme.primary),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Loading Dashboard...',
-            style: TextStyle(
-              fontSize: 16,
-              color: ColorTheme.textSecondary,
-              fontFamily: 'JosefinSans',
-              fontWeight: FontWeight.w500,
+            child: Column(
+              children: [
+                SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      isDark ? ColorTheme.primaryLightDark : ColorTheme.primary,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'Loading Dashboard...',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color:
+                        isDark
+                            ? ColorTheme.textSecondaryDark
+                            : ColorTheme.textSecondary,
+                    fontFamily: 'JosefinSans',
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -109,128 +299,179 @@ class ServiceView extends GetView<ServiceController> {
     );
   }
 
-  Widget _buildServiceContent() {
+  Widget _buildServiceContent(bool isDark) {
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Animated Header Section
-          TweenAnimationBuilder<double>(
+          // Enhanced Header Section with better hierarchy
+          _buildAnimatedSection(
+            duration: const Duration(milliseconds: 600),
+            delay: 0,
+            child: _buildHeaderSection(isDark),
+          ),
+
+          const SizedBox(height: 28),
+
+          // Statistics Section with improved visual hierarchy
+          _buildAnimatedSection(
             duration: const Duration(milliseconds: 800),
-            tween: Tween(begin: 0.0, end: 1.0),
-            builder: (context, value, child) {
-              return Transform.translate(
-                offset: Offset(0, 20 * (1 - value)),
-                child: Opacity(opacity: value, child: _buildHeaderSection()),
-              );
-            },
+            delay: 200,
+            child: _buildStatsSection(isDark),
           ),
 
           const SizedBox(height: 32),
 
-          // Animated Statistics Cards
-          TweenAnimationBuilder<double>(
+          // Management Section with modern cards
+          _buildAnimatedSection(
             duration: const Duration(milliseconds: 1000),
-            tween: Tween(begin: 0.0, end: 1.0),
-            builder: (context, value, child) {
-              return Transform.translate(
-                offset: Offset(0, 30 * (1 - value)),
-                child: Opacity(opacity: value, child: _buildStatsSection()),
-              );
-            },
+            delay: 400,
+            child: _buildManagementSection(isDark),
           ),
 
-          const SizedBox(height: 40),
-
-          // Animated Management Section
-          TweenAnimationBuilder<double>(
-            duration: const Duration(milliseconds: 1200),
-            tween: Tween(begin: 0.0, end: 1.0),
-            builder: (context, value, child) {
-              return Transform.translate(
-                offset: Offset(0, 40 * (1 - value)),
-                child: Opacity(
-                  opacity: value,
-                  child: _buildManagementSection(),
-                ),
-              );
-            },
-          ),
-
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
         ],
       ),
     );
   }
 
-  Widget _buildHeaderSection() {
+  Widget _buildAnimatedSection({
+    required Duration duration,
+    required int delay,
+    required Widget child,
+  }) {
+    return TweenAnimationBuilder<double>(
+      duration: duration,
+      tween: Tween(begin: 0.0, end: 1.0),
+      builder: (context, value, _) {
+        return AnimatedOpacity(
+          opacity: value,
+          duration: Duration(milliseconds: delay),
+          child: Transform.translate(
+            offset: Offset(0, 30 * (1 - value)),
+            child: child,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildHeaderSection(bool isDark) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Colors.white, ColorTheme.primary.withValues(alpha: 0.02)],
+          colors:
+              isDark
+                  ? [
+                    ColorTheme.surfaceDark,
+                    ColorTheme.surfaceDark.withValues(alpha: 0.8),
+                  ]
+                  : [Colors.white, ColorTheme.primary.withValues(alpha: 0.02)],
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color:
+              isDark
+                  ? ColorTheme.borderDark.withValues(alpha: 0.2)
+                  : Colors.transparent,
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color:
+                isDark
+                    ? Colors.black.withValues(alpha: 0.2)
+                    : Colors.black.withValues(alpha: 0.04),
             blurRadius: 20,
-            offset: const Offset(0, 4),
+            offset: const Offset(0, 8),
+            spreadRadius: 0,
           ),
+          if (!isDark)
+            BoxShadow(
+              color: ColorTheme.primary.withValues(alpha: 0.05),
+              blurRadius: 40,
+              offset: const Offset(0, 16),
+              spreadRadius: -4,
+            ),
         ],
       ),
       child: Row(
         children: [
+          // Enhanced icon container
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  ColorTheme.primary,
-                  ColorTheme.primary.withValues(alpha: 0.8),
-                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors:
+                    isDark
+                        ? [
+                          ColorTheme.primaryLightDark,
+                          ColorTheme.primaryLightDark.withValues(alpha: 0.8),
+                        ]
+                        : [ColorTheme.primary, ColorTheme.primaryDark],
               ),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: ColorTheme.primary.withValues(alpha: 0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
+                  color: (isDark
+                          ? ColorTheme.primaryLightDark
+                          : ColorTheme.primary)
+                      .withValues(alpha: 0.3),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
                 ),
               ],
             ),
             child: const Icon(
-              Icons.dashboard_rounded,
+              Icons.dashboard_customize_rounded,
               color: Colors.white,
-              size: 28,
+              size: 32,
             ),
           ),
-          const SizedBox(width: 20),
+
+          const SizedBox(width: 24),
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Main title with better hierarchy
                 Text(
                   'Service Dashboard',
                   style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: ColorTheme.textPrimary,
+                    fontSize: 32,
+                    fontWeight: FontWeight.w700,
+                    color:
+                        isDark
+                            ? ColorTheme.textPrimaryDark
+                            : ColorTheme.textPrimary,
                     fontFamily: 'JosefinSans',
-                    letterSpacing: -0.5,
+                    letterSpacing: -0.8,
+                    height: 1.1,
                   ),
                 ),
-                const SizedBox(height: 8),
+
+                const SizedBox(height: 12),
+
+                // Subtitle with improved contrast
                 Text(
-                  'Manage your spa services, staff, and categories with ease',
+                  'Comprehensive management of your spa services, staff, and categories',
                   style: TextStyle(
-                    fontSize: 15,
-                    color: ColorTheme.textSecondary,
+                    fontSize: 16,
+                    color:
+                        isDark
+                            ? ColorTheme.textSecondaryDark
+                            : ColorTheme.textSecondary,
                     fontFamily: 'JosefinSans',
-                    height: 1.4,
+                    fontWeight: FontWeight.w400,
+                    height: 1.5,
+                    letterSpacing: 0.2,
                   ),
                 ),
               ],
@@ -241,62 +482,96 @@ class ServiceView extends GetView<ServiceController> {
     );
   }
 
-  Widget _buildStatsSection() {
+  Widget _buildStatsSection(bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Section title with better hierarchy
         Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 16),
-          child: Text(
-            'Quick Overview',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: ColorTheme.textPrimary,
-              fontFamily: 'JosefinSans',
-            ),
+          padding: const EdgeInsets.only(left: 4, bottom: 20),
+          child: Row(
+            children: [
+              Container(
+                width: 4,
+                height: 24,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors:
+                        isDark
+                            ? [
+                              ColorTheme.primaryLightDark,
+                              ColorTheme.primaryLightDark.withValues(
+                                alpha: 0.6,
+                              ),
+                            ]
+                            : [ColorTheme.primary, ColorTheme.primaryDark],
+                  ),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Analytics Overview',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color:
+                      isDark
+                          ? ColorTheme.textPrimaryDark
+                          : ColorTheme.textPrimary,
+                  fontFamily: 'JosefinSans',
+                  letterSpacing: -0.3,
+                ),
+              ),
+            ],
           ),
         ),
+
+        // Stats cards with improved layout
         Row(
           children: [
             Expanded(
               child: Obx(
-                () => _buildStatCard(
+                () => _buildEnhancedStatCard(
                   title: 'Services',
                   count: controller.serviceCount.toString(),
                   icon: Icons.spa_rounded,
-                  color: ColorTheme.primary,
+                  color:
+                      isDark ? ColorTheme.primaryLightDark : ColorTheme.primary,
                   isLoading: controller.isLoadingServices.value,
                   hasError: controller.serviceError.isNotEmpty,
                   onRetry: controller.refreshServices,
+                  isDark: isDark,
                 ),
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             Expanded(
               child: Obx(
-                () => _buildStatCard(
+                () => _buildEnhancedStatCard(
                   title: 'Staff',
                   count: controller.staffCount.toString(),
                   icon: Icons.people_rounded,
-                  color: ColorTheme.info,
+                  color: isDark ? ColorTheme.infoDark : ColorTheme.info,
                   isLoading: controller.isLoadingStaff.value,
                   hasError: controller.staffError.isNotEmpty,
                   onRetry: controller.refreshStaff,
+                  isDark: isDark,
                 ),
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             Expanded(
               child: Obx(
-                () => _buildStatCard(
+                () => _buildEnhancedStatCard(
                   title: 'Categories',
                   count: controller.categoryCount.toString(),
                   icon: Icons.category_rounded,
-                  color: ColorTheme.success,
+                  color: isDark ? ColorTheme.successDark : ColorTheme.success,
                   isLoading: controller.isLoadingCategories.value,
                   hasError: controller.categoryError.isNotEmpty,
                   onRetry: controller.refreshCategories,
+                  isDark: isDark,
                 ),
               ),
             ),
@@ -306,50 +581,83 @@ class ServiceView extends GetView<ServiceController> {
     );
   }
 
-  Widget _buildManagementSection() {
+  Widget _buildManagementSection(bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Section title
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 20),
-          child: Text(
-            'Management Tools',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: ColorTheme.textPrimary,
-              fontFamily: 'JosefinSans',
-            ),
+          child: Row(
+            children: [
+              Container(
+                width: 4,
+                height: 24,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors:
+                        isDark
+                            ? [
+                              ColorTheme.primaryLightDark,
+                              ColorTheme.primaryLightDark.withValues(
+                                alpha: 0.6,
+                              ),
+                            ]
+                            : [ColorTheme.primary, ColorTheme.primaryDark],
+                  ),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Management Tools',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color:
+                      isDark
+                          ? ColorTheme.textPrimaryDark
+                          : ColorTheme.textPrimary,
+                  fontFamily: 'JosefinSans',
+                  letterSpacing: -0.3,
+                ),
+              ),
+            ],
           ),
         ),
-        _buildManagementCard(
+
+        // Management cards
+        _buildEnhancedManagementCard(
           title: 'Manage Services',
-          subtitle: 'Add, edit or delete spa services',
+          subtitle: 'Add, edit, or delete spa services and treatments',
           icon: Icons.spa_rounded,
-          color: ColorTheme.primary,
+          color: isDark ? ColorTheme.primaryLightDark : ColorTheme.primary,
           onTap: controller.navigateToManageServices,
+          isDark: isDark,
         ),
-        const SizedBox(height: 16),
-        _buildManagementCard(
+        const SizedBox(height: 12),
+        _buildEnhancedManagementCard(
           title: 'Manage Staff',
-          subtitle: 'Add, edit or delete staff members',
+          subtitle: 'Handle staff members and their assignments',
           icon: Icons.people_rounded,
-          color: ColorTheme.info,
+          color: isDark ? ColorTheme.infoDark : ColorTheme.info,
           onTap: controller.navigateToManageStaff,
+          isDark: isDark,
         ),
-        const SizedBox(height: 16),
-        _buildManagementCard(
+        const SizedBox(height: 12),
+        _buildEnhancedManagementCard(
           title: 'Manage Categories',
-          subtitle: 'Add, edit or delete service categories',
+          subtitle: 'Organize and categorize your service offerings',
           icon: Icons.category_rounded,
-          color: ColorTheme.success,
+          color: isDark ? ColorTheme.successDark : ColorTheme.success,
           onTap: controller.navigateToManageCategories,
+          isDark: isDark,
         ),
       ],
     );
   }
 
-  Widget _buildStatCard({
+  Widget _buildEnhancedStatCard({
     required String title,
     required String count,
     required IconData icon,
@@ -357,38 +665,38 @@ class ServiceView extends GetView<ServiceController> {
     required bool isLoading,
     required bool hasError,
     required VoidCallback onRetry,
+    required bool isDark,
   }) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
+    return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Colors.white, color.withValues(alpha: 0.02)],
+        color: isDark ? ColorTheme.surfaceDark : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color:
+              isDark
+                  ? ColorTheme.borderDark.withValues(alpha: 0.3)
+                  : color.withValues(alpha: 0.1),
+          width: 1,
         ),
-        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: color.withValues(alpha: 0.08),
-            blurRadius: 15,
+            color:
+                isDark
+                    ? Colors.black.withValues(alpha: 0.2)
+                    : color.withValues(alpha: 0.08),
+            blurRadius: 16,
             offset: const Offset(0, 4),
             spreadRadius: 0,
           ),
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
         ],
-        border: Border.all(color: color.withValues(alpha: 0.08), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Icon container
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
@@ -396,24 +704,18 @@ class ServiceView extends GetView<ServiceController> {
                   color.withValues(alpha: 0.08),
                 ],
               ),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: color.withValues(alpha: 0.2),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(icon, color: color, size: 24),
           ),
+
           const SizedBox(height: 16),
 
+          // Count or loading/error state
           if (isLoading)
-            Container(
+            SizedBox(
               height: 28,
               width: 28,
-              padding: const EdgeInsets.all(4),
               child: CircularProgressIndicator(
                 strokeWidth: 2.5,
                 valueColor: AlwaysStoppedAnimation<Color>(color),
@@ -423,25 +725,29 @@ class ServiceView extends GetView<ServiceController> {
             GestureDetector(
               onTap: onRetry,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
-                  color: ColorTheme.error.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  color: (isDark ? ColorTheme.errorDark : ColorTheme.error)
+                      .withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       Icons.refresh_rounded,
-                      color: ColorTheme.error,
+                      color: isDark ? ColorTheme.errorDark : ColorTheme.error,
                       size: 16,
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 6),
                     Text(
                       'Retry',
                       style: TextStyle(
                         fontSize: 12,
-                        color: ColorTheme.error,
+                        color: isDark ? ColorTheme.errorDark : ColorTheme.error,
                         fontFamily: 'JosefinSans',
                         fontWeight: FontWeight.w600,
                       ),
@@ -454,23 +760,31 @@ class ServiceView extends GetView<ServiceController> {
             Text(
               count,
               style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: ColorTheme.textPrimary,
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                color:
+                    isDark
+                        ? ColorTheme.textPrimaryDark
+                        : ColorTheme.textPrimary,
                 fontFamily: 'JosefinSans',
                 letterSpacing: -0.5,
               ),
             ),
 
           const SizedBox(height: 8),
+
+          // Title
           Text(
             title,
             style: TextStyle(
-              fontSize: 13,
-              color: ColorTheme.textSecondary,
+              fontSize: 14,
+              color:
+                  isDark
+                      ? ColorTheme.textSecondaryDark
+                      : ColorTheme.textSecondary,
               fontFamily: 'JosefinSans',
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.2,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.3,
             ),
           ),
         ],
@@ -478,48 +792,49 @@ class ServiceView extends GetView<ServiceController> {
     );
   }
 
-  Widget _buildManagementCard({
+  Widget _buildEnhancedManagementCard({
     required String title,
     required String subtitle,
     required IconData icon,
     required Color color,
     required VoidCallback onTap,
+    required bool isDark,
   }) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         splashColor: color.withValues(alpha: 0.1),
         highlightColor: color.withValues(alpha: 0.05),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.all(20),
+        child: Container(
+          padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Colors.white, color.withValues(alpha: 0.01)],
+            color: isDark ? ColorTheme.surfaceDark : Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color:
+                  isDark
+                      ? ColorTheme.borderDark.withValues(alpha: 0.3)
+                      : color.withValues(alpha: 0.08),
+              width: 1,
             ),
-            borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 12,
-                offset: const Offset(0, 3),
-              ),
-              BoxShadow(
-                color: color.withValues(alpha: 0.05),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
+                color:
+                    isDark
+                        ? Colors.black.withValues(alpha: 0.15)
+                        : Colors.black.withValues(alpha: 0.04),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
               ),
             ],
-            border: Border.all(color: color.withValues(alpha: 0.06), width: 1),
           ),
           child: Row(
             children: [
+              // Enhanced icon container
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
@@ -529,18 +844,14 @@ class ServiceView extends GetView<ServiceController> {
                       color.withValues(alpha: 0.08),
                     ],
                   ),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withValues(alpha: 0.2),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(icon, color: color, size: 28),
               ),
+
               const SizedBox(width: 20),
+
+              // Content
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -548,35 +859,50 @@ class ServiceView extends GetView<ServiceController> {
                     Text(
                       title,
                       style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
-                        color: ColorTheme.textPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color:
+                            isDark
+                                ? ColorTheme.textPrimaryDark
+                                : ColorTheme.textPrimary,
                         fontFamily: 'JosefinSans',
                         letterSpacing: -0.2,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
                     Text(
                       subtitle,
                       style: TextStyle(
-                        fontSize: 13,
-                        color: ColorTheme.textSecondary,
+                        fontSize: 14,
+                        color:
+                            isDark
+                                ? ColorTheme.textSecondaryDark
+                                : ColorTheme.textSecondary,
                         fontFamily: 'JosefinSans',
-                        height: 1.3,
+                        fontWeight: FontWeight.w400,
+                        height: 1.4,
                       ),
                     ),
                   ],
                 ),
               ),
+
+              // Arrow icon
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: ColorTheme.textSecondary.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(8),
+                  color: (isDark
+                          ? ColorTheme.textSecondaryDark
+                          : ColorTheme.textSecondary)
+                      .withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   Icons.arrow_forward_ios_rounded,
-                  color: ColorTheme.textSecondary,
+                  color:
+                      isDark
+                          ? ColorTheme.textSecondaryDark
+                          : ColorTheme.textSecondary,
                   size: 16,
                 ),
               ),

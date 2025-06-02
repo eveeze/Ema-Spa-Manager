@@ -1,6 +1,8 @@
 // lib/common/widgets/custom_bottom_navigation.dart
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:emababyspa/common/theme/color_theme.dart';
+import 'package:emababyspa/features/theme/controllers/theme_controller.dart';
 import 'package:flutter/services.dart';
 
 class NavItem {
@@ -27,7 +29,7 @@ class CustomBottomNavigation extends StatefulWidget {
   final Color? backgroundColor;
   final Color? activeColor;
   final Color? inactiveColor;
-  final bool isNavigating; // Add navigation state awareness
+  final bool isNavigating;
 
   const CustomBottomNavigation({
     super.key,
@@ -60,16 +62,18 @@ class _CustomBottomNavigationState extends State<CustomBottomNavigation>
 
   // Performance optimizations
   DateTime _lastTapTime = DateTime.now();
-  static const Duration _tapDebounceTime = Duration(
-    milliseconds: 200,
-  ); // Reduced for responsiveness
+  static const Duration _tapDebounceTime = Duration(milliseconds: 200);
 
   // State management
   bool _isInitialized = false;
 
+  // Theme controller
+  late ThemeController _themeController;
+
   @override
   void initState() {
     super.initState();
+    _themeController = Get.find<ThemeController>();
     _initializeAnimations();
 
     // Defer initial animation to next frame for better performance
@@ -84,12 +88,12 @@ class _CustomBottomNavigationState extends State<CustomBottomNavigation>
   void _initializeAnimations() {
     // Slide indicator - optimized timing
     _slideController = AnimationController(
-      duration: const Duration(milliseconds: 300), // Faster for responsiveness
+      duration: const Duration(milliseconds: 300),
       vsync: this,
     );
     _slideAnimation = CurvedAnimation(
       parent: _slideController,
-      curve: Curves.easeOutCubic, // Smoother curve
+      curve: Curves.easeOutCubic,
     );
 
     // Scale animation - subtle and fast
@@ -141,9 +145,74 @@ class _CustomBottomNavigationState extends State<CustomBottomNavigation>
     });
   }
 
+  // Enhanced theme-aware color getters using ThemeController
+  Color _getBackgroundColor() {
+    if (widget.backgroundColor != null) return widget.backgroundColor!;
+
+    // PERBAIKAN: Gunakan warna yang sama dengan scaffold background
+    return _themeController.isDarkMode
+        ? ColorTheme
+            .backgroundDark // Gunakan background yang sama dengan halaman
+        : ColorTheme.background; // Gunakan background yang sama dengan halaman
+  }
+
+  Color _getActiveColor() {
+    if (widget.activeColor != null) return widget.activeColor!;
+
+    return _themeController.isDarkMode
+        ? ColorTheme.primaryLightDark
+        : ColorTheme.bottomNavActive;
+  }
+
+  Color _getInactiveColor() {
+    if (widget.inactiveColor != null) return widget.inactiveColor!;
+
+    return _themeController.isDarkMode
+        ? ColorTheme.textTertiaryDark
+        : ColorTheme.bottomNavInactive;
+  }
+
+  Color _getShadowColor() {
+    return _themeController.isDarkMode
+        ? Colors.black.withValues(
+          alpha: 0.2,
+        ) // Kurangi opacity shadow di dark mode
+        : Colors.black.withValues(
+          alpha: 0.08,
+        ); // Kurangi opacity di light mode juga
+  }
+
+  Color _getBorderColor() {
+    return _themeController.isDarkMode
+        ? Colors
+            .transparent // Hilangkan border di dark mode untuk seamless look
+        : ColorTheme.border.withValues(
+          alpha: 0.3,
+        ); // Kurangi opacity border di light mode
+  }
+
+  Color _getGradientStartColor() {
+    final bgColor = _getBackgroundColor();
+    return _themeController.isDarkMode
+        ? bgColor // Gunakan warna solid yang sama untuk seamless
+        : bgColor.withValues(alpha: 0.98);
+  }
+
+  Color _getIndicatorShadowColor() {
+    final activeColor = _getActiveColor();
+    return _themeController.isDarkMode
+        ? activeColor.withValues(alpha: 0.3) // Kurangi opacity
+        : activeColor.withValues(alpha: 0.4);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return _buildNavContainer(context);
+    return Obx(() {
+      // Listen to theme changes
+      _themeController.isDarkMode; // This ensures rebuild on theme change
+
+      return _buildNavContainer(context);
+    });
   }
 
   Widget _buildNavContainer(BuildContext context) {
@@ -158,7 +227,7 @@ class _CustomBottomNavigationState extends State<CustomBottomNavigation>
           decoration: _buildBackgroundDecoration(),
           child: Container(
             padding: EdgeInsets.only(
-              top: 12, // Reduced padding for better proportions
+              top: 12,
               bottom: bottomPadding > 0 ? bottomPadding + 8 : 16,
               left: 8,
               right: 8,
@@ -173,38 +242,69 @@ class _CustomBottomNavigationState extends State<CustomBottomNavigation>
   }
 
   BoxDecoration _buildShadowDecoration() {
+    final shadowColor = _getShadowColor();
+
     return BoxDecoration(
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.1),
-          blurRadius: widget.elevation,
-          spreadRadius: 0,
-          offset: const Offset(0, -4),
-        ),
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.05),
-          blurRadius: widget.elevation / 2,
-          spreadRadius: 0,
-          offset: const Offset(0, -2),
-        ),
-      ],
+      boxShadow:
+          _themeController.isDarkMode
+              ? [
+                // Shadow yang lebih subtle untuk dark mode
+                BoxShadow(
+                  color: shadowColor,
+                  blurRadius: widget.elevation * 0.6, // Kurangi blur radius
+                  spreadRadius: 0,
+                  offset: const Offset(0, -2), // Kurangi offset
+                ),
+              ]
+              : [
+                BoxShadow(
+                  color: shadowColor,
+                  blurRadius: widget.elevation,
+                  spreadRadius: 0,
+                  offset: const Offset(0, -4),
+                ),
+                BoxShadow(
+                  color: shadowColor.withValues(alpha: 0.06),
+                  blurRadius: widget.elevation / 2,
+                  spreadRadius: 0,
+                  offset: const Offset(0, -2),
+                ),
+              ],
     );
   }
 
   BoxDecoration _buildBackgroundDecoration() {
-    final bgColor = widget.backgroundColor ?? Colors.white;
+    final bgColor = _getBackgroundColor();
+    final gradientStart = _getGradientStartColor();
+
     return BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [bgColor.withValues(alpha: 0.98), bgColor],
+      // PERBAIKAN: Gunakan solid color untuk dark mode, gradient untuk light mode
+      color: _themeController.isDarkMode ? bgColor : null,
+      gradient:
+          _themeController.isDarkMode
+              ? null // Tidak ada gradient di dark mode untuk seamless
+              : LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [gradientStart, bgColor],
+              ),
+      // Enhanced border for better definition
+      border: Border(
+        top: BorderSide(
+          color: _getBorderColor(),
+          width:
+              _themeController.isDarkMode
+                  ? 0.0
+                  : 0.5, // Hilangkan border di dark mode
+        ),
       ),
     );
   }
 
   Widget _buildSlideIndicator(double screenWidth) {
     final itemWidth = (screenWidth - 16) / widget.items.length;
-    final activeColor = widget.activeColor ?? ColorTheme.primary;
+    final activeColor = _getActiveColor();
+    final shadowColor = _getIndicatorShadowColor();
 
     return AnimatedBuilder(
       animation: _slideAnimation,
@@ -214,16 +314,22 @@ class _CustomBottomNavigationState extends State<CustomBottomNavigation>
           left: widget.currentIndex * itemWidth + (itemWidth * 0.3),
           child: Container(
             width: itemWidth * 0.4,
-            height: 3,
+            height:
+                _themeController.isDarkMode
+                    ? 3
+                    : 3, // Sama tinggi untuk konsistensi
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [activeColor, activeColor.withValues(alpha: 0.7)],
+                colors:
+                    _themeController.isDarkMode
+                        ? [activeColor, activeColor.withValues(alpha: 0.7)]
+                        : [activeColor, activeColor.withValues(alpha: 0.7)],
               ),
               borderRadius: BorderRadius.circular(2),
               boxShadow: [
                 BoxShadow(
-                  color: activeColor.withValues(alpha: 0.4),
-                  blurRadius: 6,
+                  color: shadowColor,
+                  blurRadius: _themeController.isDarkMode ? 6 : 6, // Konsisten
                   spreadRadius: 0,
                 ),
               ],
@@ -248,17 +354,20 @@ class _CustomBottomNavigationState extends State<CustomBottomNavigation>
   Widget _buildNavItem(int index) {
     final isActive = index == widget.currentIndex;
     final navItem = widget.items[index];
-    final activeColor = widget.activeColor ?? ColorTheme.primary;
-    final inactiveColor =
-        widget.inactiveColor ?? ColorTheme.textSecondary.withValues(alpha: 0.7);
+    final activeColor = _getActiveColor();
+    final inactiveColor = _getInactiveColor();
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: () => _handleTap(index),
         borderRadius: BorderRadius.circular(24),
-        splashColor: activeColor.withValues(alpha: 0.15),
-        highlightColor: activeColor.withValues(alpha: 0.08),
+        splashColor: activeColor.withValues(
+          alpha: _themeController.isDarkMode ? 0.15 : 0.15, // Konsisten
+        ),
+        highlightColor: activeColor.withValues(
+          alpha: _themeController.isDarkMode ? 0.08 : 0.08, // Konsisten
+        ),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 250),
           curve: Curves.easeOutCubic,
@@ -288,16 +397,35 @@ class _CustomBottomNavigationState extends State<CustomBottomNavigation>
       gradient: LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [
-          activeColor.withValues(alpha: 0.08),
-          activeColor.withValues(alpha: 0.04),
-        ],
+        colors:
+            _themeController.isDarkMode
+                ? [
+                  activeColor.withValues(alpha: 0.15), // Kurangi opacity
+                  activeColor.withValues(alpha: 0.08),
+                ]
+                : [
+                  activeColor.withValues(alpha: 0.08),
+                  activeColor.withValues(alpha: 0.04),
+                ],
       ),
       borderRadius: BorderRadius.circular(24),
       border: Border.all(
-        color: activeColor.withValues(alpha: 0.15),
-        width: 1.0,
+        color: activeColor.withValues(
+          alpha: _themeController.isDarkMode ? 0.25 : 0.15, // Kurangi opacity
+        ),
+        width: 1.0, // Konsisten
       ),
+      // Add subtle shadow for active item in dark mode
+      boxShadow:
+          _themeController.isDarkMode
+              ? [
+                BoxShadow(
+                  color: activeColor.withValues(alpha: 0.08), // Kurangi opacity
+                  blurRadius: 6,
+                  spreadRadius: 0,
+                ),
+              ]
+              : null,
     );
   }
 
@@ -325,10 +453,18 @@ class _CustomBottomNavigationState extends State<CustomBottomNavigation>
                     isActive
                         ? BoxDecoration(
                           gradient: RadialGradient(
-                            colors: [
-                              activeColor.withValues(alpha: 0.12),
-                              activeColor.withValues(alpha: 0.03),
-                            ],
+                            colors:
+                                _themeController.isDarkMode
+                                    ? [
+                                      activeColor.withValues(
+                                        alpha: 0.18,
+                                      ), // Kurangi opacity
+                                      activeColor.withValues(alpha: 0.06),
+                                    ]
+                                    : [
+                                      activeColor.withValues(alpha: 0.12),
+                                      activeColor.withValues(alpha: 0.03),
+                                    ],
                           ),
                           shape: BoxShape.circle,
                         )
@@ -368,7 +504,7 @@ class _CustomBottomNavigationState extends State<CustomBottomNavigation>
       builder: (context, value, child) {
         return Icon(
           isActive ? navItem.activeIcon : navItem.icon,
-          size: widget.iconSize + (value * 1.5),
+          size: widget.iconSize + (value * 1.5), // Konsisten untuk semua theme
           color: Color.lerp(inactiveColor, activeColor, value),
         );
       },
@@ -388,15 +524,15 @@ class _CustomBottomNavigationState extends State<CustomBottomNavigation>
         return Text(
           navItem.label,
           style: TextStyle(
-            fontSize: 10 + (value * 1.0),
+            fontSize: 10 + (value * 1.0), // Konsisten untuk semua theme
             fontWeight: FontWeight.lerp(
               FontWeight.w500,
-              FontWeight.w600,
+              FontWeight.w600, // Konsisten untuk semua theme
               value,
             ),
             color: Color.lerp(inactiveColor, activeColor, value),
             fontFamily: 'JosefinSans',
-            letterSpacing: value * 0.2,
+            letterSpacing: value * 0.2, // Konsisten
             height: 1.1,
           ),
           maxLines: 1,
@@ -423,8 +559,8 @@ class _CustomBottomNavigationState extends State<CustomBottomNavigation>
       return;
     }
 
-    // Immediate haptic feedback
-    HapticFeedback.lightImpact();
+    // Enhanced haptic feedback based on theme
+    HapticFeedback.lightImpact(); // Konsisten untuk semua theme
 
     // Immediate visual feedback
     _rippleController.forward().then((_) {
@@ -438,30 +574,43 @@ class _CustomBottomNavigationState extends State<CustomBottomNavigation>
   }
 }
 
-// Optimized clipper with caching
+// Enhanced clipper with theme-aware styling
 class BottomNavClipper extends CustomClipper<Path> {
-  static Path? _cachedPath;
+  static Path? _cachedLightPath;
+  static Path? _cachedDarkPath;
   static Size? _cachedSize;
 
   @override
   Path getClip(Size size) {
-    // Cache path for performance
-    if (_cachedPath != null && _cachedSize == size) {
-      return _cachedPath!;
+    final themeController = Get.find<ThemeController>();
+    final isDark = themeController.isDarkMode;
+
+    // Use different cached paths for different themes
+    if (_cachedSize == size) {
+      if (isDark && _cachedDarkPath != null) {
+        return _cachedDarkPath!;
+      } else if (!isDark && _cachedLightPath != null) {
+        return _cachedLightPath!;
+      }
     }
 
     final path = Path();
-    const double radius = 28.0;
-    const double centerCurveHeight = 6.0;
+    final radius =
+        isDark ? 24.0 : 28.0; // Kurangi radius untuk seamless look di dark mode
+    final centerCurveHeight =
+        isDark ? 4.0 : 6.0; // Kurangi curve untuk seamless
 
     // Start from top-left
     path.moveTo(0, radius);
     path.quadraticBezierTo(0, 0, radius, 0);
 
-    // Top edge with subtle center curve
+    // Top edge with theme-aware center curve
     final centerX = size.width / 2;
-    path.lineTo(centerX - 50, 0);
-    path.quadraticBezierTo(centerX, centerCurveHeight, centerX + 50, 0);
+    final curveWidth =
+        isDark ? 40.0 : 50.0; // Kurangi curve width untuk seamless
+
+    path.lineTo(centerX - curveWidth, 0);
+    path.quadraticBezierTo(centerX, centerCurveHeight, centerX + curveWidth, 0);
 
     // Continue to top-right
     path.lineTo(size.width - radius, 0);
@@ -473,8 +622,12 @@ class BottomNavClipper extends CustomClipper<Path> {
     path.lineTo(0, radius);
     path.close();
 
-    // Cache for reuse
-    _cachedPath = path;
+    // Cache based on theme
+    if (isDark) {
+      _cachedDarkPath = path;
+    } else {
+      _cachedLightPath = path;
+    }
     _cachedSize = size;
 
     return path;

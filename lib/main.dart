@@ -1,5 +1,4 @@
 // main.dart
-import 'package:emababyspa/features/dashboard/views/dashboard_view.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -21,10 +20,9 @@ class MyApp extends StatelessWidget {
     return GetMaterialApp(
       title: 'Ema Spa Manager',
       debugShowCheckedModeBanner: false,
-      home: DashboardView(),
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.light,
+      themeMode: ThemeMode.system,
       initialBinding: AppBindings(),
       initialRoute: AppRoutes.splash,
       getPages: AppRoutes.pages,

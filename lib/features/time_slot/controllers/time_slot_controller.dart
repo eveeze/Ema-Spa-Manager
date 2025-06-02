@@ -35,6 +35,12 @@ class TimeSlotController extends GetxController {
     return "${dateTime.toIso8601String()}Z";
   }
 
+  void resetTimeSlotState() {
+    timeSlots.clear();
+    selectedTimeSlot.value = null;
+    availableTimeSlots.clear();
+  }
+
   /// Create a new time slot
   Future<TimeSlot?> createTimeSlot({
     required String operatingScheduleId,
@@ -336,6 +342,7 @@ class TimeSlotController extends GetxController {
   Future<void> fetchTimeSlotsByScheduleId(String scheduleId) async {
     isLoading.value = true;
     errorMessage.value = '';
+    timeSlots.clear(); // Clear existing data
 
     try {
       final fetchedTimeSlots = await _repository.getTimeSlotsByScheduleId(
@@ -425,6 +432,10 @@ class TimeSlotController extends GetxController {
     } finally {
       isUpdating.value = false;
     }
+  }
+
+  Future<void> refreshSelectedTimeSlot(String id) async {
+    await fetchTimeSlotById(id);
   }
 
   /// Delete time slot
