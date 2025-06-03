@@ -57,11 +57,11 @@ class ServiceCategoryEditView extends GetView<ServiceCategoryController> {
                       isDark
                           ? [
                             ColorTheme.backgroundDark,
-                            ColorTheme.backgroundDark.withOpacity(0.95),
+                            ColorTheme.backgroundDark.withValues(alpha: 0.95),
                           ]
                           : [
                             ColorTheme.background,
-                            ColorTheme.background.withOpacity(0.98),
+                            ColorTheme.background.withValues(alpha: 0.98),
                           ],
                 ),
               ),
@@ -80,24 +80,28 @@ class ServiceCategoryEditView extends GetView<ServiceCategoryController> {
                         decoration: BoxDecoration(
                           color:
                               isDark
-                                  ? ColorTheme.surfaceDark.withOpacity(0.6)
-                                  : Colors.white.withOpacity(0.8),
+                                  ? ColorTheme.surfaceDark.withValues(
+                                    alpha: 0.6,
+                                  )
+                                  : Colors.white.withValues(alpha: 0.8),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color:
                                 isDark
-                                    ? ColorTheme.primaryLightDark.withOpacity(
-                                      0.2,
+                                    ? ColorTheme.primaryLightDark.withValues(
+                                      alpha: 0.2,
                                     )
-                                    : ColorTheme.primary.withOpacity(0.1),
+                                    : ColorTheme.primary.withValues(alpha: 0.1),
                             width: 1,
                           ),
                           boxShadow: [
                             BoxShadow(
                               color:
                                   isDark
-                                      ? Colors.black.withOpacity(0.3)
-                                      : ColorTheme.primary.withOpacity(0.08),
+                                      ? Colors.black.withValues(alpha: 0.3)
+                                      : ColorTheme.primary.withValues(
+                                        alpha: 0.08,
+                                      ),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                               spreadRadius: 0,
@@ -116,7 +120,7 @@ class ServiceCategoryEditView extends GetView<ServiceCategoryController> {
                                           ? [
                                             ColorTheme.primaryLightDark,
                                             ColorTheme.primaryLightDark
-                                                .withOpacity(0.8),
+                                                .withValues(alpha: 0.8),
                                           ]
                                           : [
                                             ColorTheme.primary,
@@ -129,7 +133,7 @@ class ServiceCategoryEditView extends GetView<ServiceCategoryController> {
                                     color: (isDark
                                             ? ColorTheme.primaryLightDark
                                             : ColorTheme.primary)
-                                        .withOpacity(0.3),
+                                        .withValues(alpha: 0.3),
                                     blurRadius: 8,
                                     offset: const Offset(0, 2),
                                   ),
@@ -220,24 +224,28 @@ class ServiceCategoryEditView extends GetView<ServiceCategoryController> {
                             decoration: BoxDecoration(
                               color:
                                   isDark
-                                      ? ColorTheme.surfaceDark.withOpacity(0.6)
-                                      : Colors.white.withOpacity(0.9),
+                                      ? ColorTheme.surfaceDark.withValues(
+                                        alpha: 0.6,
+                                      )
+                                      : Colors.white.withValues(alpha: 0.9),
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
                                 color:
                                     isDark
                                         ? ColorTheme.primaryLightDark
-                                            .withOpacity(0.15)
-                                        : ColorTheme.primary.withOpacity(0.08),
+                                            .withValues(alpha: 0.15)
+                                        : ColorTheme.primary.withValues(
+                                          alpha: 0.08,
+                                        ),
                                 width: 1,
                               ),
                               boxShadow: [
                                 BoxShadow(
                                   color:
                                       isDark
-                                          ? Colors.black.withOpacity(0.2)
-                                          : ColorTheme.primary.withOpacity(
-                                            0.06,
+                                          ? Colors.black.withValues(alpha: 0.2)
+                                          : ColorTheme.primary.withValues(
+                                            alpha: 0.06,
                                           ),
                                   blurRadius: 16,
                                   offset: const Offset(0, 6),
@@ -406,8 +414,8 @@ class ServiceCategoryEditView extends GetView<ServiceCategoryController> {
               colors: [
                 Colors.transparent,
                 isDark
-                    ? ColorTheme.primaryLightDark.withOpacity(0.3)
-                    : ColorTheme.primary.withOpacity(0.2),
+                    ? ColorTheme.primaryLightDark.withValues(alpha: 0.3)
+                    : ColorTheme.primary.withValues(alpha: 0.2),
                 Colors.transparent,
               ],
             ),
@@ -464,15 +472,15 @@ class ServiceCategoryEditView extends GetView<ServiceCategoryController> {
         decoration: BoxDecoration(
           color:
               isDark
-                  ? ColorTheme.surfaceDark.withOpacity(0.6)
-                  : Colors.white.withOpacity(0.9),
+                  ? ColorTheme.surfaceDark.withValues(alpha: 0.6)
+                  : Colors.white.withValues(alpha: 0.9),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
               color:
                   isDark
-                      ? Colors.black.withOpacity(0.3)
-                      : ColorTheme.primary.withOpacity(0.1),
+                      ? Colors.black.withValues(alpha: 0.3)
+                      : ColorTheme.primary.withValues(alpha: 0.1),
               blurRadius: 16,
               offset: const Offset(0, 6),
             ),
@@ -524,19 +532,19 @@ class ServiceCategoryEditView extends GetView<ServiceCategoryController> {
         decoration: BoxDecoration(
           color:
               isDark
-                  ? ColorTheme.surfaceDark.withOpacity(0.8)
-                  : Colors.white.withOpacity(0.95),
+                  ? ColorTheme.surfaceDark.withValues(alpha: 0.8)
+                  : Colors.white.withValues(alpha: 0.95),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: ColorTheme.error.withOpacity(0.2),
+            color: ColorTheme.error.withValues(alpha: 0.2),
             width: 1,
           ),
           boxShadow: [
             BoxShadow(
               color:
                   isDark
-                      ? Colors.black.withOpacity(0.4)
-                      : ColorTheme.error.withOpacity(0.1),
+                      ? Colors.black.withValues(alpha: 0.4)
+                      : ColorTheme.error.withValues(alpha: 0.1),
               blurRadius: 20,
               offset: const Offset(0, 8),
               spreadRadius: 0,
@@ -550,7 +558,7 @@ class ServiceCategoryEditView extends GetView<ServiceCategoryController> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: ColorTheme.error.withOpacity(0.1),
+                color: ColorTheme.error.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(

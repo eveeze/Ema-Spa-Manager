@@ -1,6 +1,7 @@
 //utils/app_routes.dart
 
 import 'package:emababyspa/features/reservation/bindings/reservation_bindings.dart';
+import 'package:emababyspa/features/reservation/views/reservation_detail_view.dart';
 import 'package:emababyspa/features/reservation/views/reservation_form_view.dart';
 import 'package:emababyspa/features/service/views/service_edit_view.dart';
 import 'package:emababyspa/features/service/views/service_form_view.dart';
@@ -166,6 +167,12 @@ class AppRoutes {
       name: reservationForm,
       page: () => ReservationFormView(),
       binding: ReservationBindings(),
+    ),
+    GetPage(
+      name: reservationDetail, // Make sure this constant is used
+      page: () => const ReservationDetailView(), // Add this page
+      binding:
+          ReservationBindings(), // Assuming ReservationBindings is appropriate
     ),
     // Rute detail dan form akan ditambahkan disini
   ];

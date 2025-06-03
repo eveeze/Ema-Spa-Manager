@@ -480,11 +480,12 @@ class _SessionDetailViewState extends State<SessionDetailView> {
                         text: 'View Reservation',
                         icon: Icons.visibility,
                         onPressed: () {
+                          // Navigasi dengan pattern yang konsisten dengan halaman lain
                           Get.toNamed(
-                            AppRoutes.reservationDetail,
-                            arguments: {
-                              'reservation': currentSession.reservation,
-                            },
+                            AppRoutes.reservationDetail.replaceAll(
+                              ':id',
+                              currentSession.reservation!.id,
+                            ),
                           );
                         },
                       ),

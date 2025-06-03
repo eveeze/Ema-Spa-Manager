@@ -41,8 +41,9 @@ class Reservation extends Equatable {
   final String? customerName;
   final String? serviceName;
   final String? staffName;
-  final DateTime? sessionDate;
-  final String? sessionTime;
+  final DateTime? sessionDate; // Stores the date part of the session
+  final String?
+  sessionTime; // Stores the time part (can be pre-formatted or ISO for later parsing)
 
   const Reservation({
     required this.id,
@@ -82,7 +83,7 @@ class Reservation extends Equatable {
         if (statusStr.toUpperCase() == 'PENDING_PAYMENT') {
           return ReservationStatus.PENDING_PAYMENT;
         }
-        return ReservationStatus.PENDING;
+        return ReservationStatus.PENDING; // Default fallback
       }
     }
 
@@ -94,21 +95,34 @@ class Reservation extends Equatable {
     final timeSlotData = sessionData?['timeSlot'];
     final operatingScheduleData = timeSlotData?['operatingSchedule'];
 
-    String? extractedSessionTime;
-    if (timeSlotData?['startTime'] != null &&
-        timeSlotData?['endTime'] != null) {
+    String?
+    extractedSessionTime; // For cases where API might send separate startTime and endTime at root
+    // This specific 'extractedSessionTime' is from root keys, not the nested ones.
+    // The nested startTime/endTime are handled later in the sessionTime assignment.
+    if (json['startTime'] != null && json['endTime'] != null) {
+      // Check root level startTime/endTime
       try {
-        final startTime = DateTime.parse(timeSlotData['startTime']);
-        final endTime = DateTime.parse(timeSlotData['endTime']);
-        // Simple time formatting, adjust as needed for your UI
+        final startTime = DateTime.parse(json['startTime']);
+        final endTime = DateTime.parse(json['endTime']);
         final sh = startTime.hour.toString().padLeft(2, '0');
         final sm = startTime.minute.toString().padLeft(2, '0');
         final eh = endTime.hour.toString().padLeft(2, '0');
         final em = endTime.minute.toString().padLeft(2, '0');
         extractedSessionTime = '$sh:$sm - $eh:$em';
       } catch (e) {
-        // ignore
+        // ignore: avoid_print
+        print(
+          'Error parsing root startTime/endTime for extractedSessionTime: $e',
+        );
       }
+    }
+
+    DateTime? parsedSessionDate;
+    if (operatingScheduleData?['date'] != null) {
+      parsedSessionDate = DateTime.tryParse(operatingScheduleData['date']);
+    } else if (timeSlotData?['startTime'] != null) {
+      // Fallback: try to get date from timeSlot's startTime if operatingSchedule date is missing
+      parsedSessionDate = DateTime.tryParse(timeSlotData['startTime']);
     }
 
     return Reservation(
@@ -140,18 +154,19 @@ class Reservation extends Equatable {
           json['updatedAt'] != null
               ? DateTime.parse(json['updatedAt'])
               : DateTime.now(),
-      // NEW: Populate from potentially nested data or direct fields
+      // Populate from potentially nested data or direct fields
       customerName: json['customerName'] ?? customerData?['name'],
       serviceName: json['serviceName'] ?? serviceData?['name'],
       staffName: json['staffName'] ?? staffData?['name'],
-      sessionDate:
-          operatingScheduleData?['date'] != null
-              ? DateTime.tryParse(operatingScheduleData['date'])
-              : null,
+      sessionDate: parsedSessionDate, // Use the parsed date
+      // Order of preference for sessionTime:
+      // 1. Direct 'sessionTime' from JSON (could be pre-formatted by API for lists).
+      // 2. 'extractedSessionTime' (if API provides 'startTime' and 'endTime' at root).
+      // 3. Raw 'startTime' from nested 'timeSlot' (this will be an ISO string for later formatting).
       sessionTime:
           json['sessionTime'] ??
           extractedSessionTime ??
-          sessionData?['timeSlot']?['startTime'], // Example, adjust as per actual API response for lists
+          timeSlotData?['startTime'], // Correctly uses timeSlotData from above
     );
   }
 

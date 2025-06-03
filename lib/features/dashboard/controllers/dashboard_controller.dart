@@ -2,230 +2,223 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:emababyspa/data/models/owner.dart';
+import 'package:emababyspa/data/models/reservation.dart'; // Import Reservation model
 import 'package:emababyspa/utils/storage_utils.dart';
-import 'package:emababyspa/common/widgets/custom_bottom_navigation.dart';
+import 'package:emababyspa/features/reservation/controllers/reservation_controller.dart';
+import 'package:intl/intl.dart'; // For date formatting
 
 class DashboardController extends GetxController {
   final StorageUtils _storageUtils = StorageUtils();
-
-  // Track the currently selected tab
-  final RxInt selectedIndex = 0.obs;
-
-  // Navigation state management
-  final RxBool isNavigating = false.obs;
-  final RxString currentRoute = '/dashboard'.obs;
+  late final ReservationController _reservationController;
 
   // Owner data
   final Rx<Owner?> owner = Rx<Owner?>(null);
 
-  // Performance optimization - cache navigation items
-  late final List<NavItem> navigationItems;
+  // Dashboard specific data
+  final RxString todayAppointments = '0'.obs;
+  final RxString activeClients = '0'.obs;
+  final RxString completedSessions = '0'.obs;
+  final RxList<Map<String, dynamic>> recentActivities =
+      <Map<String, dynamic>>[].obs;
 
-  // Route mapping for faster lookup
-  static const Map<int, String> _routeMap = {
-    0: '/dashboard',
-    1: '/schedule',
-    2: '/services',
-    3: '/statistics',
-    4: '/account',
-  };
+  // Dashboard summary data
+  final RxString totalRevenueToday = 'Rp 0'.obs;
+  final RxString upcomingReservationsTodayCount = '0'.obs;
 
-  // Reverse mapping for route to index
-  static const Map<String, int> _indexMap = {
-    '/dashboard': 0,
-    '/schedule': 1,
-    '/services': 2,
-    '/statistics': 3,
-    '/account': 4,
-  };
+  // NEW: For the upcoming reservations carousel
+  final RxList<Reservation> upcomingReservationsTodayList = <Reservation>[].obs;
+  final RxInt currentUpcomingReservationIndex = 0.obs;
+  final RxBool isLoadingUpcomingCarousel =
+      false.obs; // Specific loader for this section
+
+  // Loading states
+  final RxBool isLoadingOwner = false.obs;
+  final RxBool isLoadingStats = false.obs;
+  final RxBool isLoadingActivities = false.obs;
+  final RxBool isLoadingRevenue = false.obs;
+  // isLoadingUpcomingReservationsToday can be reused or use isLoadingUpcomingCarousel
 
   @override
   void onInit() {
     super.onInit();
-    _initializeNavigationItems();
-    _initializeCurrentRoute();
+    _reservationController = Get.find<ReservationController>();
     loadOwnerData();
-    _setupRouteListener();
-  }
-
-  void _initializeNavigationItems() {
-    navigationItems = [
-      NavItem(
-        label: 'Dashboard',
-        icon: Icons.home_outlined,
-        activeIcon: Icons.home_rounded,
-      ),
-      NavItem(
-        label: 'Jadwal',
-        icon: Icons.calendar_month_outlined,
-        activeIcon: Icons.calendar_month_rounded,
-      ),
-      NavItem(
-        label: 'Layanan',
-        icon: Icons.spa_outlined,
-        activeIcon: Icons.spa_rounded,
-      ),
-      NavItem(
-        label: 'Statistik',
-        icon: Icons.bar_chart_outlined,
-        activeIcon: Icons.bar_chart_rounded,
-      ),
-      NavItem(
-        label: 'Akun',
-        icon: Icons.person_outline_rounded,
-        activeIcon: Icons.person_rounded,
-      ),
-    ];
-  }
-
-  void _initializeCurrentRoute() {
-    final currentRouteName = Get.currentRoute;
-    currentRoute.value = currentRouteName;
-    selectedIndex.value = _indexMap[currentRouteName] ?? 0;
-  }
-
-  void _setupRouteListener() {
-    // Listen to route changes to keep bottom nav in sync
-    ever(currentRoute, (String route) {
-      final index = _indexMap[route];
-      if (index != null && selectedIndex.value != index) {
-        selectedIndex.value = index;
-      }
-    });
+    loadDashboardData();
   }
 
   void loadOwnerData() async {
     try {
+      isLoadingOwner.value = true;
       owner.value = _storageUtils.getOwner();
     } catch (e) {
       debugPrint('Error loading owner data: $e');
-      // Handle error gracefully
+    } finally {
+      isLoadingOwner.value = false;
     }
   }
 
-  /// Enhanced tab change with better performance and error handling
-  Future<void> changeTab(int index) async {
-    // Validation checks
-    if (!_isValidIndex(index)) {
-      debugPrint('Invalid tab index: $index');
-      return;
-    }
-
-    // Prevent duplicate navigation
-    if (_isDuplicateNavigation(index)) {
-      return;
-    }
-
-    // Set navigation state
-    isNavigating.value = true;
+  Future<void> loadDashboardData() async {
+    // Set all relevant loading flags to true at the beginning
+    isLoadingStats.value = true;
+    isLoadingActivities.value = true;
+    isLoadingRevenue.value = true;
+    isLoadingUpcomingCarousel.value = true; // Use specific loader
 
     try {
-      // Update selected index immediately for UI responsiveness
-      selectedIndex.value = index;
-
-      final targetRoute = _routeMap[index]!;
-      currentRoute.value = targetRoute;
-
-      // Use more efficient navigation method
-      await _navigateToRoute(targetRoute);
+      // Parallelize fetching where possible, or sequence if dependent
+      await Future.wait([
+        _loadDashboardStats(),
+        _loadRecentActivities(),
+        _loadTodayRevenue(),
+        _loadUpcomingReservationsTodayForCarousel(), // Updated method name
+      ]);
     } catch (e) {
-      debugPrint('Navigation error: $e');
-      // Revert index on error
-      _revertToCurrentRoute();
+      debugPrint('Error loading dashboard data: $e');
+      // Set default/error values for each piece of data if needed
+      totalRevenueToday.value = 'Rp 0';
+      upcomingReservationsTodayCount.value = '0';
+      upcomingReservationsTodayList.clear();
+      // etc.
     } finally {
-      // Reset navigation state
-      isNavigating.value = false;
+      // Set all relevant loading flags to false at the end
+      isLoadingStats.value = false;
+      isLoadingActivities.value = false;
+      isLoadingRevenue.value = false;
+      isLoadingUpcomingCarousel.value = false; // Use specific loader
     }
   }
 
-  bool _isValidIndex(int index) {
-    return index >= 0 &&
-        index < navigationItems.length &&
-        _routeMap.containsKey(index);
-  }
-
-  bool _isDuplicateNavigation(int index) {
-    return selectedIndex.value == index || isNavigating.value;
-  }
-
-  Future<void> _navigateToRoute(String route) async {
-    // Use offNamed instead of offAllNamed for better performance
-    // Only clear navigation stack if really necessary
-    if (_shouldClearNavigationStack(route)) {
-      await Get.offAllNamed(route);
-    } else {
-      await Get.offNamed(route);
+  Future<void> _loadDashboardStats() async {
+    try {
+      await Future.delayed(const Duration(milliseconds: 500));
+      todayAppointments.value = '5';
+      activeClients.value = '28';
+      completedSessions.value = '142';
+    } catch (e) {
+      debugPrint('Error loading dashboard stats: $e');
+      todayAppointments.value = '0';
+      activeClients.value = '0';
+      completedSessions.value = '0';
     }
   }
 
-  bool _shouldClearNavigationStack(String route) {
-    // Only clear stack for major navigation changes
-    // This improves performance by maintaining page state when possible
-    return route == '/dashboard' || Get.previousRoute.isEmpty;
-  }
-
-  void _revertToCurrentRoute() {
-    final currentRouteName = Get.currentRoute;
-    final correctIndex = _indexMap[currentRouteName] ?? 0;
-    selectedIndex.value = correctIndex;
-    currentRoute.value = currentRouteName;
-  }
-
-  /// Quick navigation without full page replacement (for performance)
-  void quickNavigateToTab(int index) {
-    if (!_isValidIndex(index) || _isDuplicateNavigation(index)) {
-      return;
+  Future<void> _loadRecentActivities() async {
+    try {
+      await Future.delayed(const Duration(milliseconds: 300));
+      recentActivities.clear();
+      // Add example data if needed
+    } catch (e) {
+      debugPrint('Error loading recent activities: $e');
+      recentActivities.clear();
     }
-
-    selectedIndex.value = index;
-    final targetRoute = _routeMap[index]!;
-
-    // Use toNamed for faster navigation that doesn't replace the entire stack
-    Get.toNamed(targetRoute);
   }
 
-  /// Check if a specific tab is currently active
-  bool isTabActive(int index) {
-    return selectedIndex.value == index;
+  Future<void> _loadTodayRevenue() async {
+    try {
+      await Future.delayed(const Duration(milliseconds: 400));
+      totalRevenueToday.value = 'Rp 1.250.000';
+    } catch (e) {
+      debugPrint('Error loading today\'s revenue: $e');
+      totalRevenueToday.value = 'Rp 0';
+    }
   }
 
-  /// Get the route for a specific tab index
-  String? getRouteForTab(int index) {
-    return _routeMap[index];
+  // UPDATED: Load upcoming reservations for today for the carousel
+  Future<void> _loadUpcomingReservationsTodayForCarousel() async {
+    isLoadingUpcomingCarousel.value = true; // Set specific loader
+    try {
+      final now = DateTime.now();
+      // Fetch all reservations for the day (or a reasonable limit like 20-30 if there could be too many)
+      // The ReservationController will store them in upcomingDayReservationList
+      await _reservationController.fetchUpcomingReservationsForDay(
+        date: now,
+        limit: 50, // Fetch more items for the carousel
+        isRefresh: true,
+      );
+      upcomingReservationsTodayList.assignAll(
+        _reservationController.upcomingDayReservationList,
+      );
+      upcomingReservationsTodayCount.value =
+          _reservationController.upcomingDayTotalItems.value
+              .toString(); // This can still be used for the summary card
+      if (upcomingReservationsTodayList.isNotEmpty) {
+        currentUpcomingReservationIndex.value = 0;
+      } else {
+        currentUpcomingReservationIndex.value = -1; // Indicate no items
+      }
+    } catch (e) {
+      debugPrint('Error loading upcoming reservations for today carousel: $e');
+      upcomingReservationsTodayList.clear();
+      upcomingReservationsTodayCount.value = '0';
+      currentUpcomingReservationIndex.value = -1;
+    } finally {
+      isLoadingUpcomingCarousel.value = false; // Clear specific loader
+    }
   }
 
-  /// Enhanced sign out with proper cleanup
+  // NEW: Methods for carousel navigation
+  void nextUpcomingReservation() {
+    if (upcomingReservationsTodayList.isNotEmpty) {
+      currentUpcomingReservationIndex.value =
+          (currentUpcomingReservationIndex.value + 1) %
+          upcomingReservationsTodayList.length;
+    }
+  }
+
+  void previousUpcomingReservation() {
+    if (upcomingReservationsTodayList.isNotEmpty) {
+      currentUpcomingReservationIndex.value =
+          (currentUpcomingReservationIndex.value -
+              1 +
+              upcomingReservationsTodayList.length) %
+          upcomingReservationsTodayList.length;
+    }
+  }
+
+  // NEW: Getter for the currently selected reservation for the carousel
+  Rx<Reservation?> get currentReservationForCarousel {
+    if (upcomingReservationsTodayList.isNotEmpty &&
+        currentUpcomingReservationIndex.value >= 0 &&
+        currentUpcomingReservationIndex.value <
+            upcomingReservationsTodayList.length) {
+      return Rx<Reservation?>(
+        upcomingReservationsTodayList[currentUpcomingReservationIndex.value],
+      );
+    }
+    return Rx<Reservation?>(null);
+  }
+
   Future<void> signOut() async {
     try {
-      isNavigating.value = true;
-
-      // Clear storage
       await _storageUtils.clearAll();
-
-      // Reset controller state
-      selectedIndex.value = 0;
       owner.value = null;
-      currentRoute.value = '/login';
-
-      // Navigate to login
+      todayAppointments.value = '0';
+      activeClients.value = '0';
+      completedSessions.value = '0';
+      totalRevenueToday.value = 'Rp 0';
+      upcomingReservationsTodayCount.value = '0';
+      recentActivities.clear();
+      upcomingReservationsTodayList.clear(); // NEW
+      currentUpcomingReservationIndex.value = 0; // NEW
       await Get.offAllNamed('/login');
     } catch (e) {
       debugPrint('Sign out error: $e');
-      // Handle error gracefully
-    } finally {
-      isNavigating.value = false;
     }
   }
 
-  /// Refresh current page data
   Future<void> refreshCurrentPage() async {
-    loadOwnerData();
-    // Add other refresh logic as needed
+    await loadDashboardData();
   }
+
+  bool get isLoading => // Combined loading state
+      isLoadingOwner.value ||
+      isLoadingStats.value ||
+      isLoadingActivities.value ||
+      isLoadingRevenue.value ||
+      isLoadingUpcomingCarousel.value; // Include the new loader
 
   @override
   void onClose() {
-    // Clean up resources
     super.onClose();
   }
 }

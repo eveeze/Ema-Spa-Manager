@@ -28,13 +28,25 @@ class ApiEndpoints {
   // Reservations
   static const String reservations = '/reservations';
   static const String reservationsOwner = '$reservations/owner';
+  static const String reservationsOwnerById = '$reservationsOwner/{id}';
+  static const String reservationsOwnerStatusById =
+      '$reservationsOwner/{id}/status'; // Matches route: /owner/{id}/status
   static const String manualReservations = '$reservationsOwner/manual';
   static const String reservationsAnalytics = '$reservations/analytics';
   static const String ownerPayment = '$reservationsOwner/payment';
   static const String reservationsOwnerUpcoming = '$reservationsOwner/upcoming';
   static const String reservationsOwnerDashboardUpcomingByDay =
       '$reservationsOwner/dashboard/upcoming-by-day';
-
+  static const String ownerSpecificPaymentMethods =
+      '$reservations/owner/payment-methods'; // Matches route: /owner/payment-methods
+  static const String manualReservationsPaymentProofById =
+      '$manualReservations/{id}/payment-proof'; // Matches route: /manual/{id}/payment-proof
+  static const String ownerPaymentVerifyById =
+      '$reservationsOwner/payment/{id}/verify';
+  static const String reservationsOwnerPaymentDetailsById =
+      '$reservationsOwner/payment/{id}';
+  static const String manualReservationsPaymentUpdateById =
+      '$manualReservations/{id}/payment'; // Matches route: /manual/{id}/payment
   // Payments
   static const String payments = '/payments';
   static const String paymentDetail = '/payments/{id}';

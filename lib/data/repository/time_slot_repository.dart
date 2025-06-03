@@ -2,6 +2,7 @@
 import 'package:emababyspa/data/api/api_exception.dart';
 import 'package:emababyspa/data/providers/time_slot_provider.dart';
 import 'package:emababyspa/data/models/time_slot.dart';
+import 'package:intl/intl.dart'; // For date formatting
 
 class TimeSlotRepository {
   final TimeSlotProvider _provider;
@@ -9,25 +10,33 @@ class TimeSlotRepository {
   TimeSlotRepository({required TimeSlotProvider provider})
     : _provider = provider;
 
+  /// Helper to format DateTime to "YYYY-MM-DDTHH:mm:ss.SSS" (local time string)
+  String _formatDateTimeToLocalApiString(DateTime dateTime) {
+    return DateFormat("yyyy-MM-ddTHH:mm:ss.SSS").format(dateTime);
+  }
+
   /// Create a new time slot
   Future<TimeSlot> createTimeSlot({
     required String operatingScheduleId,
-    required DateTime startTime,
-    required DateTime endTime,
+    required DateTime startTime, // Expecting local DateTime from Controller
+    required DateTime endTime, // Expecting local DateTime from Controller
   }) async {
     try {
-      // Validate inputs
       if (startTime.isAfter(endTime)) {
         throw ApiException(message: 'Waktu mulai harus sebelum waktu selesai');
       }
-
+      // The provider should convert startTime and endTime (local DateTime)
+      // to the specific string format the backend API expects.
+      // For example, if "YYYY-MM-DDTHH:mm:ss.SSS" is needed:
+      // final String startTimeString = _formatDateTimeToLocalApiString(startTime);
+      // final String endTimeString = _formatDateTimeToLocalApiString(endTime);
+      // Then pass these strings to the provider.
+      // Here, we pass DateTime objects, assuming provider handles it.
       final data = await _provider.createTimeSlot(
         operatingScheduleId: operatingScheduleId,
-        startTime:
-            startTime, // The provider should handle ISO conversion with Z
-        endTime: endTime,
+        startTime: startTime, // Pass DateTime; provider formats if needed
+        endTime: endTime, // Pass DateTime; provider formats if needed
       );
-
       return TimeSlot.fromJson(data);
     } catch (e) {
       if (e is ApiException) rethrow;
@@ -40,43 +49,52 @@ class TimeSlotRepository {
   /// Create multiple time slots at once
   Future<List<TimeSlot>> createMultipleTimeSlots({
     required String operatingScheduleId,
-    required List<Map<String, dynamic>> timeSlots,
+    required List<Map<String, dynamic>>
+    timeSlots, // Expects 'startTime'/'endTime' as DateTime objects
   }) async {
     try {
-      // Validate time slot format and ensure all have proper formatting
-      for (var i = 0; i < timeSlots.length; i++) {
-        var slot = timeSlots[i];
-        if (!slot.containsKey('startTime') || !slot.containsKey('endTime')) {
+      final List<Map<String, dynamic>> processedTimeSlots = [];
+      for (final slotData in timeSlots) {
+        if (!slotData.containsKey('startTime') ||
+            slotData['startTime'] is! DateTime ||
+            !slotData.containsKey('endTime') ||
+            slotData['endTime'] is! DateTime) {
           throw ApiException(
-            message: 'Setiap time slot harus memiliki startTime dan endTime',
+            message:
+                'Setiap time slot harus memiliki startTime dan endTime sebagai objek DateTime.',
+          );
+        }
+        final DateTime slotStartTime = slotData['startTime'] as DateTime;
+        final DateTime slotEndTime = slotData['endTime'] as DateTime;
+
+        if (slotStartTime.isAfter(slotEndTime)) {
+          throw ApiException(
+            message:
+                'Dalam batch: Waktu mulai harus sebelum waktu selesai untuk semua slot.',
           );
         }
 
-        // Ensure Z suffix if values are strings
-        if (slot['startTime'] is String && !slot['startTime'].endsWith('Z')) {
-          final startTime = slot['startTime'] as String;
-          timeSlots[i]['startTime'] =
-              "$startTime${startTime.endsWith('.000') ? 'Z' : '.000Z'}";
-        }
-
-        if (slot['endTime'] is String && !slot['endTime'].endsWith('Z')) {
-          final endTime = slot['endTime'] as String;
-          timeSlots[i]['endTime'] =
-              "$endTime${endTime.endsWith('.000') ? 'Z' : '.000Z'}";
-        }
+        processedTimeSlots.add({
+          'startTime': _formatDateTimeToLocalApiString(slotStartTime),
+          'endTime': _formatDateTimeToLocalApiString(slotEndTime),
+          // Include other properties from slotData if necessary
+          ...slotData
+            ..remove('startTime')
+            ..remove('endTime'),
+        });
       }
 
       final List<dynamic> timeSlotsJson = await _provider
           .createMultipleTimeSlots(
             operatingScheduleId: operatingScheduleId,
-            timeSlots: timeSlots,
+            timeSlots:
+                processedTimeSlots, // List of maps with formatted date strings
           );
-
       return timeSlotsJson.map((json) => TimeSlot.fromJson(json)).toList();
     } catch (e) {
       if (e is ApiException) rethrow;
       throw ApiException(
-        message: 'Gagal membuat jadwal baru. Silakan coba lagi nanti.',
+        message: 'Gagal membuat beberapa jadwal baru. Silakan coba lagi nanti.',
       );
     }
   }
@@ -84,8 +102,8 @@ class TimeSlotRepository {
   /// Get all time slots with optional filtering
   Future<List<TimeSlot>> getAllTimeSlots({
     String? operatingScheduleId,
-    String? date,
-    String? startTime,
+    String? date, // Expected "YYYY-MM-DD"
+    String? startTime, // Filter criteria, format depends on backend API
     String? endTime,
   }) async {
     try {
@@ -95,7 +113,6 @@ class TimeSlotRepository {
         startTime: startTime,
         endTime: endTime,
       );
-
       return timeSlotsJson.map((json) => TimeSlot.fromJson(json)).toList();
     } catch (e) {
       if (e is ApiException) rethrow;
@@ -127,23 +144,24 @@ class TimeSlotRepository {
     } catch (e) {
       if (e is ApiException) rethrow;
       throw ApiException(
-        message: 'Gagal mengambil data jadwal. Silakan coba lagi nanti.',
+        message:
+            'Gagal mengambil data jadwal berdasarkan ID jadwal operasi. Silakan coba lagi nanti.',
       );
     }
   }
 
   /// Get available time slots by date
   Future<List<TimeSlot>> getAvailableTimeSlots(String date) async {
+    // date "YYYY-MM-DD"
     try {
-      // Validate date format
-      try {
-        DateTime.parse(date);
-      } catch (e) {
-        throw ApiException(
-          message: 'Format tanggal tidak valid. Gunakan format YYYY-MM-DD',
-        );
-      }
-
+      // Basic validation, more robust validation can be added
+      DateTime.parse(date);
+    } catch (e) {
+      throw ApiException(
+        message: 'Format tanggal tidak valid. Gunakan format YYYY-MM-DD.',
+      );
+    }
+    try {
       final List<dynamic> timeSlotsJson = await _provider.getAvailableTimeSlots(
         date,
       );
@@ -160,26 +178,25 @@ class TimeSlotRepository {
   Future<TimeSlot> updateTimeSlot({
     required String id,
     String? operatingScheduleId,
-    DateTime? startTime,
-    DateTime? endTime,
+    DateTime? startTime, // Expecting local DateTime from Controller
+    DateTime? endTime, // Expecting local DateTime from Controller
   }) async {
     try {
-      // Validate times if both are provided
       if (startTime != null && endTime != null) {
         if (startTime.isAfter(endTime)) {
           throw ApiException(
-            message: 'Waktu mulai harus sebelum waktu selesai',
+            message:
+                'Waktu mulai harus sebelum waktu selesai saat memperbarui.',
           );
         }
       }
-
+      // Similar to createTimeSlot, provider handles DateTime to String conversion for API.
       final data = await _provider.updateTimeSlot(
         id: id,
         operatingScheduleId: operatingScheduleId,
-        startTime: startTime,
-        endTime: endTime,
+        startTime: startTime, // Pass DateTime; provider formats if needed
+        endTime: endTime, // Pass DateTime; provider formats if needed
       );
-
       return TimeSlot.fromJson(data);
     } catch (e) {
       if (e is ApiException) rethrow;
@@ -193,8 +210,7 @@ class TimeSlotRepository {
   Future<bool> deleteTimeSlot(String id) async {
     try {
       final result = await _provider.deleteTimeSlot(id);
-      return result !=
-          null; // If we got a non-null result, deletion was successful
+      return result != null; // Assuming provider returns non-null on success
     } catch (e) {
       if (e is ApiException) rethrow;
       throw ApiException(

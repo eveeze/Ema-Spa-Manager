@@ -5,17 +5,18 @@ import 'package:emababyspa/common/theme/color_theme.dart';
 import 'package:emababyspa/common/widgets/app_button.dart';
 import 'package:emababyspa/features/time_slot/controllers/time_slot_controller.dart';
 import 'package:emababyspa/features/operating_schedule/controllers/operating_schedule_controller.dart';
-import 'package:emababyspa/common/utils/date_utils.dart' as app_date_utils;
 import 'package:emababyspa/data/models/time_slot.dart';
+import 'package:emababyspa/data/models/operating_schedule.dart'; // For OperatingSchedule type hint
+import 'package:emababyspa/common/utils/date_utils.dart' as app_date_utils;
 
 class TimeSlotDialog extends StatefulWidget {
   final String operatingScheduleId;
-  final TimeSlot? timeSlot; // Add optional time slot for editing
+  final TimeSlot? timeSlot; // For editing
 
   const TimeSlotDialog({
     super.key,
     required this.operatingScheduleId,
-    this.timeSlot, // Optional parameter for editing existing time slots
+    this.timeSlot,
   });
 
   @override
@@ -27,31 +28,31 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
   final OperatingScheduleController _scheduleController =
       Get.find<OperatingScheduleController>();
 
-  // Time values
   late TimeOfDay _startTime;
   late TimeOfDay _endTime;
 
-  // Dialog mode - create or edit
   bool get isEditMode => widget.timeSlot != null;
 
   @override
   void initState() {
     super.initState();
+    _timeSlotController.clearErrors();
 
-    if (isEditMode) {
-      // Initialize with existing time slot values
+    if (isEditMode && widget.timeSlot != null) {
+      // TimeSlot times are UTC, convert to local TimeOfDay for pickers
+      final DateTime localStartTime = widget.timeSlot!.startTime.toLocal();
+      final DateTime localEndTime = widget.timeSlot!.endTime.toLocal();
       _startTime = TimeOfDay(
-        hour: widget.timeSlot!.startTime.hour,
-        minute: widget.timeSlot!.startTime.minute,
+        hour: localStartTime.hour,
+        minute: localStartTime.minute,
       );
       _endTime = TimeOfDay(
-        hour: widget.timeSlot!.endTime.hour,
-        minute: widget.timeSlot!.endTime.minute,
+        hour: localEndTime.hour,
+        minute: localEndTime.minute,
       );
     } else {
-      // Default values for new time slot
-      _startTime = TimeOfDay(hour: 8, minute: 0);
-      _endTime = TimeOfDay(hour: 9, minute: 0);
+      _startTime = const TimeOfDay(hour: 8, minute: 0); // Default for new
+      _endTime = const TimeOfDay(hour: 9, minute: 0); // Default for new
     }
   }
 
@@ -73,36 +74,39 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(
-              alpha: 26,
-            ), // Fixed .withOpacity(0.1)
-            spreadRadius: 5,
-            blurRadius: 10,
+            color: Colors.black.withValues(alpha: 0.1), // Standard opacity
+            spreadRadius: 2, // Reduced spread
+            blurRadius: 8, // Reduced blur
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildHeader(),
-          const SizedBox(height: 24),
-          _buildTimeSelectors(context),
-          const SizedBox(height: 20),
-          _buildActionButtons(),
-          // Show error message if any
-          Obx(() {
-            return _timeSlotController.errorMessage.isNotEmpty
-                ? Padding(
-                  padding: const EdgeInsets.only(top: 16),
-                  child: Text(
-                    _timeSlotController.errorMessage.value,
-                    style: TextStyle(color: Colors.red.shade700),
-                    textAlign: TextAlign.center,
-                  ),
-                )
-                : const SizedBox.shrink();
-          }),
-        ],
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildHeader(),
+            const SizedBox(height: 24),
+            _buildTimeSelectors(context),
+            const SizedBox(height: 20),
+            _buildActionButtons(),
+            Obx(() {
+              return _timeSlotController.errorMessage.isNotEmpty
+                  ? Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: Text(
+                      _timeSlotController.errorMessage.value,
+                      style: TextStyle(
+                        color: Colors.red.shade700,
+                        fontSize: 14,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  )
+                  : const SizedBox.shrink();
+            }),
+          ],
+        ),
       ),
     );
   }
@@ -114,12 +118,12 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: ColorTheme.primary.withValues(
-              alpha: 26,
-            ), // Fixed .withOpacity(0.1)
+              alpha: 0.1,
+            ), // Standard opacity
             shape: BoxShape.circle,
           ),
           child: Icon(
-            Icons.access_time_rounded,
+            Icons.access_time_filled_rounded, // Changed Icon
             size: 36,
             color: ColorTheme.primary,
           ),
@@ -128,7 +132,7 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
         Text(
           isEditMode ? 'Edit Time Slot' : 'Add New Time Slot',
           style: TextStyle(
-            fontSize: 22,
+            fontSize: 20, // Adjusted size
             fontWeight: FontWeight.bold,
             color: ColorTheme.textPrimary,
           ),
@@ -136,10 +140,13 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
         const SizedBox(height: 8),
         Text(
           isEditMode
-              ? 'Update the start and end time for this slot'
-              : 'Set the start and end time for the new slot',
+              ? 'Update the start and end time for this slot.'
+              : 'Set the start and end time for the new slot.',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 16, color: ColorTheme.textSecondary),
+          style: TextStyle(
+            fontSize: 15,
+            color: ColorTheme.textSecondary,
+          ), // Adjusted size
         ),
       ],
     );
@@ -148,25 +155,22 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
   Widget _buildTimeSelectors(BuildContext context) {
     return Column(
       children: [
-        // Start Time Selector
         _buildTimeSelectorField(
           context: context,
           label: 'Start Time',
-          icon: Icons.play_circle_outline_rounded,
+          icon: Icons.schedule_rounded, // Changed icon
           time: _startTime,
           onTap: () => _selectTime(context, true),
         ),
         const SizedBox(height: 16),
-        // End Time Selector
         _buildTimeSelectorField(
           context: context,
           label: 'End Time',
-          icon: Icons.stop_circle_outlined,
+          icon: Icons.update_rounded, // Changed icon
           time: _endTime,
           onTap: () => _selectTime(context, false),
         ),
-        const SizedBox(height: 8),
-        // Duration Display
+        const SizedBox(height: 12), // Adjusted spacing
         _buildDurationDisplay(),
       ],
     );
@@ -179,23 +183,26 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
     required TimeOfDay time,
     required VoidCallback onTap,
   }) {
-    // Convert TimeOfDay to DateTime for formatting
-    final DateTime tempDate = DateTime(2000, 1, 1, time.hour, time.minute);
-    final timeString = app_date_utils.DateUtils.formatTime(tempDate);
+    // Create a DateTime just for formatting TimeOfDay with app_date_utils
+    final DateTime tempDateTime = DateTime(2000, 1, 1, time.hour, time.minute);
+    final String timeString = app_date_utils.DateUtils.formatTime(tempDateTime);
 
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ), // Adjusted padding
         decoration: BoxDecoration(
-          color: Colors.grey.shade100,
+          color: Colors.grey.shade50, // Softer background
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.grey.shade300),
         ),
         child: Row(
           children: [
-            Icon(icon, color: ColorTheme.primary),
+            Icon(icon, color: ColorTheme.primary, size: 22), // Adjusted size
             const SizedBox(width: 12),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -203,23 +210,27 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
                 Text(
                   label,
                   style: TextStyle(
-                    fontSize: 14,
-                    color: ColorTheme.textSecondary,
+                    fontSize: 13,
+                    color: ColorTheme.textSecondary.withValues(alpha: 0.8),
                   ),
-                ),
-                const SizedBox(height: 4),
+                ), // Adjusted style
+                const SizedBox(height: 3),
                 Text(
                   timeString,
                   style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
                     color: ColorTheme.textPrimary,
-                  ),
+                  ), // Adjusted style
                 ),
               ],
             ),
             const Spacer(),
-            Icon(Icons.arrow_drop_down, color: ColorTheme.textSecondary),
+            Icon(
+              Icons.arrow_drop_down_rounded,
+              color: ColorTheme.textSecondary,
+              size: 28,
+            ), // Adjusted size
           ],
         ),
       ),
@@ -227,46 +238,66 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
   }
 
   Widget _buildDurationDisplay() {
-    // Calculate duration in minutes
-    final int startMinutes = _startTime.hour * 60 + _startTime.minute;
-    final int endMinutes = _endTime.hour * 60 + _endTime.minute;
-    int durationMinutes = endMinutes - startMinutes;
+    final DateTime nowDate = DateTime.now(); // Base for today's date context
+    DateTime startDt = DateTime(
+      nowDate.year,
+      nowDate.month,
+      nowDate.day,
+      _startTime.hour,
+      _startTime.minute,
+    );
+    DateTime endDt = DateTime(
+      nowDate.year,
+      nowDate.month,
+      nowDate.day,
+      _endTime.hour,
+      _endTime.minute,
+    );
 
-    // Handle cases where end time is on the next day
-    if (durationMinutes < 0) {
-      durationMinutes += 24 * 60; // Add a full day worth of minutes
+    // If TimeOfDay for end is earlier than or same as start, assume it's next day for duration calc
+    if (_endTime.hour < _startTime.hour ||
+        (_endTime.hour == _startTime.hour &&
+            _endTime.minute <= _startTime.minute)) {
+      endDt = endDt.add(const Duration(days: 1));
     }
 
-    // Create duration object for formatting
-    final duration = Duration(minutes: durationMinutes);
-    final durationText = app_date_utils.DateUtils.formatDuration(duration);
-
-    // Display warning for invalid duration
-    final bool isValid = durationMinutes > 0;
+    final Duration duration = endDt.difference(startDt);
+    final bool isValid = duration.inMinutes > 0;
+    final String durationText =
+        isValid ? app_date_utils.DateUtils.formatDuration(duration) : "N/A";
 
     return Container(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
       decoration: BoxDecoration(
-        color: isValid ? Colors.green.shade50 : Colors.red.shade50,
+        color:
+            isValid
+                ? Colors.teal.withValues(alpha: 0.05)
+                : Colors.red.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: isValid ? Colors.green.shade300 : Colors.red.shade300,
+          color:
+              isValid
+                  ? Colors.teal.withValues(alpha: 0.3)
+                  : Colors.red.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            isValid ? Icons.check_circle_outline : Icons.warning_amber_rounded,
-            color: isValid ? Colors.green : Colors.red,
-            size: 20,
+            isValid ? Icons.timer_outlined : Icons.error_outline_rounded,
+            color: isValid ? Colors.teal.shade600 : Colors.red.shade600,
+            size: 18,
           ),
           const SizedBox(width: 8),
           Text(
-            isValid ? 'Duration: $durationText' : 'Invalid time range',
+            isValid
+                ? 'Duration: $durationText'
+                : 'End time must be after start',
             style: TextStyle(
-              color: isValid ? Colors.green.shade700 : Colors.red.shade700,
+              color: isValid ? Colors.teal.shade700 : Colors.red.shade700,
               fontWeight: FontWeight.w500,
+              fontSize: 13,
             ),
           ),
         ],
@@ -280,15 +311,14 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
           isEditMode
               ? _timeSlotController.isUpdating.value
               : _timeSlotController.isCreating.value;
-
       return Row(
         children: [
           Expanded(
             child: AppButton(
               text: 'Cancel',
-              onPressed: () => Get.back(),
+              onPressed: isLoading ? null : () => Get.back(),
               type: AppButtonType.outline,
-              icon: Icons.close,
+              icon: Icons.close_rounded,
             ),
           ),
           const SizedBox(width: 12),
@@ -297,7 +327,10 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
               text: isEditMode ? 'Update' : 'Save',
               onPressed: isLoading ? null : _saveTimeSlot,
               isLoading: isLoading,
-              icon: isEditMode ? Icons.update : Icons.save,
+              icon:
+                  isEditMode
+                      ? Icons.check_circle_outline_rounded
+                      : Icons.save_alt_rounded,
             ),
           ),
         ],
@@ -305,9 +338,8 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
     });
   }
 
-  Future<void> _selectTime(BuildContext context, bool isStartTime) async {
-    final TimeOfDay initialTime = isStartTime ? _startTime : _endTime;
-
+  Future<void> _selectTime(BuildContext context, bool isStartSelection) async {
+    final TimeOfDay initialTime = isStartSelection ? _startTime : _endTime;
     final TimeOfDay? pickedTime = await showTimePicker(
       context: context,
       initialTime: initialTime,
@@ -327,10 +359,9 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
         );
       },
     );
-
     if (pickedTime != null) {
       setState(() {
-        if (isStartTime) {
+        if (isStartSelection) {
           _startTime = pickedTime;
         } else {
           _endTime = pickedTime;
@@ -339,18 +370,22 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
     }
   }
 
-  // Get the schedule date from the operating schedule
   DateTime _getScheduleDate() {
-    final schedule = _scheduleController.schedulesList.firstWhere(
-      (schedule) => schedule.id == widget.operatingScheduleId,
-      orElse: () => throw Exception('Operating schedule not found'),
-    );
+    final OperatingSchedule? schedule = _scheduleController.schedulesList
+        .firstWhereOrNull((s) => s.id == widget.operatingScheduleId);
+    if (schedule == null) {
+      _timeSlotController.errorMessage.value =
+          'Jadwal operasi tidak ditemukan. Menggunakan tanggal hari ini.';
+      // Return current date, ensuring its time components are zeroed out for consistency if needed.
+      final now = DateTime.now();
+      return DateTime(now.year, now.month, now.day);
+    }
+    // schedule.date is already a local DateTime (date part only usually from API)
     return schedule.date;
   }
 
-  // Create DateTime objects from TimeOfDay values
   List<DateTime> _createDateTimeValues() {
-    final DateTime scheduleDate = _getScheduleDate();
+    final DateTime scheduleDate = _getScheduleDate(); // This is a local date
 
     DateTime startDateTime = DateTime(
       scheduleDate.year,
@@ -358,7 +393,7 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
       scheduleDate.day,
       _startTime.hour,
       _startTime.minute,
-    );
+    ); // Local DateTime
 
     DateTime endDateTime = DateTime(
       scheduleDate.year,
@@ -366,156 +401,112 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
       scheduleDate.day,
       _endTime.hour,
       _endTime.minute,
-    );
+    ); // Local DateTime
 
-    // Handle next day end time
-    if (endDateTime.isBefore(startDateTime)) {
-      // Add a day to the end time
+    // If end TimeOfDay is earlier than or same as start TimeOfDay, assume end is on the next day.
+    if (_endTime.hour < _startTime.hour ||
+        (_endTime.hour == _startTime.hour &&
+            _endTime.minute <= _startTime.minute)) {
       endDateTime = endDateTime.add(const Duration(days: 1));
     }
-
     return [startDateTime, endDateTime];
   }
 
   bool _validateTimeRange() {
-    // Calculate duration in minutes
-    final int startMinutes = _startTime.hour * 60 + _startTime.minute;
-    final int endMinutes = _endTime.hour * 60 + _endTime.minute;
-    int durationMinutes = endMinutes - startMinutes;
+    _timeSlotController.clearErrors(); // Clear previous before new validation
+    final List<DateTime> dateTimeValues = _createDateTimeValues();
+    final DateTime localStartDateTime = dateTimeValues[0];
+    final DateTime localEndDateTime = dateTimeValues[1];
 
-    // Handle cases where end time is on the next day
-    if (durationMinutes < 0) {
-      durationMinutes += 24 * 60; // Add a full day worth of minutes
-    }
-
-    if (durationMinutes <= 0) {
-      Get.snackbar(
-        'Invalid Time Range',
-        'End time must be after start time',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.shade100,
-        colorText: Colors.red.shade900,
-        margin: const EdgeInsets.all(16),
-      );
+    if (!localEndDateTime.isAfter(localStartDateTime)) {
+      _timeSlotController.errorMessage.value =
+          'Waktu selesai harus setelah waktu mulai.';
       return false;
     }
 
-    // Check for overlapping time slots if creating a new slot
-    if (!isEditMode) {
-      // Create a temporary time slot for overlap check
-      final dateTimeValues = _createDateTimeValues();
-      final tempTimeSlot = TimeSlot(
-        id: 'temp',
-        operatingScheduleId: widget.operatingScheduleId,
-        startTime: dateTimeValues[0],
-        endTime: dateTimeValues[1],
-        // Add the required parameters
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        sessions: const [], // Empty sessions list
-      );
+    // Overlap Check:
+    // TimeSlot model stores UTC. Proposed slot needs to be UTC for hasOverlap.
+    final TimeSlot proposedSlotForCheck = TimeSlot(
+      id:
+          isEditMode
+              ? widget.timeSlot!.id
+              : 'temp-${DateTime.now().millisecondsSinceEpoch}',
+      operatingScheduleId: widget.operatingScheduleId,
+      startTime: localStartDateTime.toUtc(), // Convert to UTC for hasOverlap
+      endTime: localEndDateTime.toUtc(), // Convert to UTC for hasOverlap
+      createdAt:
+          (isEditMode ? widget.timeSlot!.createdAt : DateTime.now().toUtc()),
+      updatedAt: DateTime.now().toUtc(),
+      sessions: const [],
+    );
 
-      // Get current time slots for this schedule
-      final currentSlots =
-          _timeSlotController.timeSlots
-              .where(
-                (slot) =>
-                    slot.operatingScheduleId == widget.operatingScheduleId,
-              )
-              .toList();
+    List<TimeSlot> existingSlotsForSchedule =
+        _timeSlotController.timeSlots
+            .where((s) => s.operatingScheduleId == widget.operatingScheduleId)
+            .toList();
 
-      // Skip overlap check for back-to-back slots
-      bool isBackToBack = false;
-      for (var slot in currentSlots) {
-        // Check if this slot ends exactly when our new slot starts
-        if (slot.endTime.isAtSameMomentAs(tempTimeSlot.startTime)) {
-          isBackToBack = true;
-          break;
-        }
-        // Check if our new slot ends exactly when another slot starts
-        if (tempTimeSlot.endTime.isAtSameMomentAs(slot.startTime)) {
-          isBackToBack = true;
-          break;
-        }
-      }
-
-      // Only check for overlaps if it's not a back-to-back slot situation
-      if (!isBackToBack) {
-        // Add our temporary slot and check for overlaps
-        final allSlots = [...currentSlots, tempTimeSlot];
-        if (_timeSlotController.hasOverlap(allSlots)) {
-          Get.snackbar(
-            'Time Slot Overlap',
-            'This time slot overlaps with an existing one',
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.red.shade100,
-            colorText: Colors.red.shade900,
-            margin: const EdgeInsets.all(16),
-          );
-          return false;
-        }
-      }
+    // If editing, exclude the current slot being edited from the overlap check list
+    if (isEditMode) {
+      existingSlotsForSchedule.removeWhere((s) => s.id == widget.timeSlot!.id);
     }
 
+    final List<TimeSlot> slotsToEvaluate = [
+      ...existingSlotsForSchedule,
+      proposedSlotForCheck,
+    ];
+
+    if (_timeSlotController.hasOverlap(slotsToEvaluate)) {
+      _timeSlotController.errorMessage.value =
+          'Slot waktu ini tumpang tindih dengan slot yang sudah ada.';
+      return false;
+    }
     return true;
   }
 
-  // Validate the time selection
-
   Future<void> _saveTimeSlot() async {
-    // Clear any previous error messages
-    _timeSlotController.clearErrors();
-
-    // Validate time range
     if (!_validateTimeRange()) {
-      return;
+      return; // Error message is set by _validateTimeRange
     }
 
-    // Get the date-time values
-    final dateTimeValues = _createDateTimeValues();
-    final startDateTime = dateTimeValues[0];
-    final endDateTime = dateTimeValues[1];
+    final List<DateTime> localDateTimeValues = _createDateTimeValues();
+    final DateTime localStart = localDateTimeValues[0]; // Local DateTime
+    final DateTime localEnd = localDateTimeValues[1]; // Local DateTime
 
-    // Create or update the time slot
-    if (isEditMode) {
-      final result = await _timeSlotController.updateTimeSlot(
+    TimeSlot? result;
+    if (isEditMode && widget.timeSlot != null) {
+      result = await _timeSlotController.updateTimeSlot(
         id: widget.timeSlot!.id,
-        startTime: startDateTime,
-        endTime: endDateTime,
+        startTime: localStart, // Pass local DateTime
+        endTime: localEnd, // Pass local DateTime
+        operatingScheduleId:
+            widget.operatingScheduleId, // Pass in case it can be changed
       );
-
-      if (result != null) {
-        Get.back(); // Close the dialog
-        Get.snackbar(
-          'Success',
-          'Time slot updated successfully',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green.shade100,
-          colorText: Colors.green.shade900,
-          margin: const EdgeInsets.all(16),
-        );
-      }
     } else {
-      // Create new time slot
-      final result = await _timeSlotController.createTimeSlot(
+      result = await _timeSlotController.createTimeSlot(
         operatingScheduleId: widget.operatingScheduleId,
-        startTime: startDateTime,
-        endTime: endDateTime,
+        startTime: localStart, // Pass local DateTime
+        endTime: localEnd, // Pass local DateTime
       );
-
-      if (result != null) {
-        Get.back(); // Close the dialog
-        Get.snackbar(
-          'Success',
-          'Time slot created successfully',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green.shade100,
-          colorText: Colors.green.shade900,
-          margin: const EdgeInsets.all(16),
-        );
-      }
     }
 
-    // If there's an error message from the controller, it will be shown in the dialog
+    if (result != null && _timeSlotController.errorMessage.isEmpty) {
+      Get.back(); // Close dialog
+      Get.snackbar(
+        'Berhasil',
+        isEditMode
+            ? 'Slot waktu berhasil diperbarui.'
+            : 'Slot waktu berhasil dibuat.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green.withValues(alpha: 0.9),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(12),
+        borderRadius: 8,
+        icon: const Icon(Icons.check_circle, color: Colors.white),
+      );
+      // No need to call fetchTimeSlotsByScheduleId here, as it's done within the controller methods.
+    }
+    // If error, it will be displayed in the dialog via Obx
   }
 }
+
+extension _FirstWhereOrNull<E> on Iterable<E> {}

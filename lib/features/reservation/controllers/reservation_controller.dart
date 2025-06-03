@@ -2,6 +2,8 @@
 import 'package:get/get.dart';
 import 'dart:io';
 import 'package:emababyspa/data/models/reservation.dart';
+import 'package:emababyspa/data/models/payment.dart'; // Added for type hinting
+import 'package:emababyspa/data/models/payment_method.dart'; // Added
 import 'package:emababyspa/data/repository/reservation_repository.dart';
 import 'package:emababyspa/common/theme/color_theme.dart';
 import 'package:emababyspa/utils/logger_utils.dart';
@@ -15,7 +17,8 @@ class ReservationController extends GetxController {
     : _reservationRepository = reservationRepository;
 
   // Observable state
-  final RxList<dynamic> reservationList = <dynamic>[].obs;
+  final RxList<dynamic> reservationList =
+      <dynamic>[].obs; // Existing: Stays dynamic for now
   final RxBool isLoading = false.obs;
   final RxBool isFormSubmitting = false.obs;
   final RxBool isStatusUpdating = false.obs;
@@ -24,7 +27,7 @@ class ReservationController extends GetxController {
   final Rx<Reservation?> selectedReservation = Rx<Reservation?>(null);
   final RxMap<String, dynamic> reservationAnalytics = <String, dynamic>{}.obs;
 
-  // Filter state
+  // Filter state for fetchFilteredReservations
   final RxString selectedStatus = ''.obs;
   final Rx<DateTime?> selectedStartDate = Rx<DateTime?>(null);
   final Rx<DateTime?> selectedEndDate = Rx<DateTime?>(null);
@@ -34,11 +37,40 @@ class ReservationController extends GetxController {
   final RxInt totalItems = 0.obs;
   final RxBool hasMoreData = true.obs;
 
-  @override
-  void onInit() {
-    super.onInit();
-    fetchFilteredReservations();
-  }
+  // --- NEW: State for Upcoming Reservations (General) ---
+  final RxList<Reservation> upcomingReservationList = <Reservation>[].obs;
+  final RxBool isLoadingUpcoming = false.obs;
+  final RxString upcomingErrorMessage = ''.obs;
+  final RxInt upcomingCurrentPage = 1.obs;
+  final RxInt upcomingTotalPages = 1.obs;
+  final RxInt upcomingTotalItems = 0.obs;
+  final RxBool upcomingHasMoreData = true.obs;
+  final RxString upcomingSelectedStaffId =
+      ''.obs; // If filtering by staff is needed for this view
+
+  // --- NEW: State for Upcoming Reservations (For a Specific Day) ---
+  final RxList<Reservation> upcomingDayReservationList = <Reservation>[].obs;
+  final RxBool isLoadingUpcomingDay = false.obs;
+  final RxString upcomingDayErrorMessage = ''.obs;
+  final RxInt upcomingDayCurrentPage = 1.obs;
+  final RxInt upcomingDayTotalPages = 1.obs;
+  final RxInt upcomingDayTotalItems = 0.obs;
+  final RxBool upcomingDayHasMoreData = true.obs;
+
+  // --- NEW: State for Owner Payment Methods ---
+  final RxList<PaymentMethodModel> ownerPaymentMethods =
+      <PaymentMethodModel>[].obs;
+  final RxBool isLoadingPaymentMethods = false.obs;
+  final RxString paymentMethodsErrorMessage = ''.obs;
+
+  // --- NEW: State for Owner Payment Details of a Reservation ---
+  final Rx<Payment?> selectedPaymentDetails = Rx<Payment?>(null);
+  final Rx<Reservation?> reservationForPaymentDetails = Rx<Reservation?>(null);
+  final RxBool isLoadingPaymentDetails = false.obs;
+  final RxString paymentDetailsErrorMessage = ''.obs;
+
+  // --- NEW: State for Updating Manual Reservation Payment Status ---
+  final RxBool isUpdatingManualPayment = false.obs;
 
   // Fetch filtered reservations for owner
   Future<void> fetchFilteredReservations({
@@ -49,6 +81,7 @@ class ReservationController extends GetxController {
       if (isRefresh) {
         currentPage.value = 1;
         hasMoreData.value = true;
+        reservationList.clear(); // Clear list on refresh
       }
 
       if (!hasMoreData.value && !isRefresh) return;
@@ -65,29 +98,28 @@ class ReservationController extends GetxController {
         limit: limit,
       );
 
-      if (response['data'] != null) {
-        final List<dynamic> newReservations = response['data'] as List<dynamic>;
+      // Assuming response['data'] is List<Reservation> from repository
+      final List<Reservation> newReservations =
+          response['data'] as List<Reservation>;
 
-        if (isRefresh || currentPage.value == 1) {
-          reservationList.value = newReservations;
-        } else {
-          reservationList.addAll(newReservations);
-        }
-
-        // Update pagination info
-        totalPages.value = response['pagination']?['totalPages'] ?? 1;
-        totalItems.value = response['pagination']?['totalItems'] ?? 0;
-        hasMoreData.value = currentPage.value < totalPages.value;
+      if (isRefresh || currentPage.value == 1) {
+        // Convert to JSON if reservationList remains dynamic, or assign directly if it becomes RxList<Reservation>
+        reservationList.value = newReservations.map((r) => r.toJson()).toList();
+      } else {
+        reservationList.addAll(newReservations.map((r) => r.toJson()).toList());
       }
+
+      totalPages.value = response['pagination']?['totalPages'] ?? 1;
+      totalItems.value = response['pagination']?['totalItems'] ?? 0;
+      hasMoreData.value = currentPage.value < totalPages.value;
     } catch (e) {
       errorMessage.value = 'Failed to load reservations. Please try again.';
-      _logger.error('Error fetching reservations: $e');
+      _logger.error('Error fetching filtered reservations: $e');
     } finally {
       isLoading.value = false;
     }
   }
 
-  // Load more reservations (pagination)
   Future<void> loadMoreReservations() async {
     if (hasMoreData.value && !isLoading.value) {
       currentPage.value++;
@@ -95,12 +127,10 @@ class ReservationController extends GetxController {
     }
   }
 
-  // Refresh data
   Future<void> refreshData() async {
     await fetchFilteredReservations(isRefresh: true);
   }
 
-  // Apply filters
   Future<void> applyFilters({
     String? status,
     DateTime? startDate,
@@ -111,68 +141,60 @@ class ReservationController extends GetxController {
     selectedStartDate.value = startDate;
     selectedEndDate.value = endDate;
     selectedStaffId.value = staffId ?? '';
-
     await fetchFilteredReservations(isRefresh: true);
   }
 
-  // Clear filters
   Future<void> clearFilters() async {
     selectedStatus.value = '';
     selectedStartDate.value = null;
     selectedEndDate.value = null;
     selectedStaffId.value = '';
-
     await fetchFilteredReservations(isRefresh: true);
   }
 
-  // Get reservation by ID
   Future<void> fetchReservationById(String id) async {
     try {
       isLoading.value = true;
       errorMessage.value = '';
-
       if (id.isEmpty) {
         throw Exception("Reservation ID is required");
       }
-
       final reservation = await _reservationRepository.getReservationById(id);
       selectedReservation.value = reservation;
     } catch (e) {
       errorMessage.value =
           'Failed to fetch reservation details: ${e.toString()}';
       _logger.error('Error fetching reservation by ID: $e');
+      selectedReservation.value = null;
     } finally {
       isLoading.value = false;
     }
   }
 
-  // Update reservation status
   Future<void> updateReservationStatus(String id, String status) async {
     try {
       isStatusUpdating.value = true;
-
       final updatedReservation = await _reservationRepository
           .updateReservationStatus(id, status);
 
-      // Update the reservation in the list
       final index = reservationList.indexWhere((item) {
-        if (item is Map<String, dynamic>) {
-          return item['id'] == id;
+        if (item is Map<String, dynamic>) return item['id'] == id;
+        if (item is Reservation) {
+          return item.id == id; // Handle if list becomes typed
         }
         return false;
       });
 
       if (index != -1) {
-        reservationList[index] = updatedReservation.toJson();
+        reservationList[index] =
+            updatedReservation
+                .toJson(); // Assuming it needs to be map for dynamic list
         reservationList.refresh();
       }
 
-      // Update selected reservation if it's the same
       if (selectedReservation.value?.id == id) {
         selectedReservation.value = updatedReservation;
       }
-
-      // Show success message
       Get.snackbar(
         'Success',
         'Reservation status updated successfully',
@@ -180,7 +202,6 @@ class ReservationController extends GetxController {
         colorText: ColorTheme.success,
       );
     } catch (e) {
-      // Show error message
       Get.snackbar(
         'Error',
         'Failed to update reservation status',
@@ -193,8 +214,7 @@ class ReservationController extends GetxController {
     }
   }
 
-  // Create manual reservation
-  Future<void> createManualReservation({
+  Future<Map<String, dynamic>> createManualReservation({
     required String customerName,
     required String customerPhone,
     String? customerAddress,
@@ -212,75 +232,89 @@ class ReservationController extends GetxController {
     File? paymentProofFile,
   }) async {
     try {
-      isFormSubmitting.value = true;
-
-      final response = await _reservationRepository.createManualReservation(
-        customerName: customerName,
-        customerPhone: customerPhone,
-        customerAddress: customerAddress,
-        customerInstagram: customerInstagram,
-        babyName: babyName,
-        babyAge: babyAge,
-        parentNames: parentNames,
-        serviceId: serviceId,
-        sessionId: sessionId,
-        priceTierId: priceTierId,
-        notes: notes,
-        paymentMethod: paymentMethod,
-        isPaid: isPaid,
-        paymentNotes: paymentNotes,
-        paymentProofFile: paymentProofFile,
+      _logger.info(
+        'Repository: Creating manual reservation for $customerName (Owner).',
       );
 
-      if (response['reservation'] != null) {
-        // Add to beginning of list if successful
-        reservationList.insert(0, response['reservation']);
-        totalItems.value++;
+      final Map<String, dynamic> response = await _reservationRepository
+          .createManualReservation(
+            customerName: customerName,
+            customerPhone: customerPhone,
+            customerAddress: customerAddress,
+            customerInstagram: customerInstagram,
+            babyName: babyName,
+            babyAge: babyAge,
+            parentNames: parentNames,
+            serviceId: serviceId,
+            sessionId: sessionId,
+            priceTierId: priceTierId,
+            notes: notes,
+            paymentMethod: paymentMethod,
+            isPaid: isPaid,
+            paymentNotes: paymentNotes,
+            paymentProofFile: paymentProofFile,
+          );
 
-        // Show success message
+      // Validate the structure of response
+      if (response['reservation'] != null &&
+          response['reservation'] is Map<String, dynamic> &&
+          response['payment'] != null &&
+          response['payment'] is Map<String, dynamic> &&
+          response['customer'] !=
+              null /* You might want to add 'is Map<String, dynamic>' if customer is always a map */ ) {
+        final reservationData = response['reservation'] as Map<String, dynamic>;
+        final paymentData = response['payment'] as Map<String, dynamic>;
         Get.snackbar(
           'Success',
           'Manual reservation created successfully',
           backgroundColor: ColorTheme.success.withValues(alpha: 0.1),
           colorText: ColorTheme.success,
         );
-
-        // Navigate back
-        Get.back();
+        return {
+          'reservation': Reservation.fromJson(reservationData),
+          'payment': Payment.fromJson(paymentData),
+          'customer': response['customer'],
+        };
+      } else {
+        // If the structure from the provider isn't what we expect
+        _logger.error(
+          'Repository: createManualReservation - provider response structure not as expected: $response (Owner)',
+        );
+        throw Exception(
+          'Failed to parse reservation creation response from server. Unexpected structure.',
+        );
       }
     } on DioException catch (e) {
-      String errorMsg = 'Failed to create manual reservation';
-
-      if (e.response?.statusCode == 409) {
-        errorMsg = 'Session has already been booked by someone else';
-      } else if (e.response?.data != null &&
-          e.response!.data['message'] != null) {
-        errorMsg = e.response!.data['message'];
+      _logger.error(
+        'Repository DioException creating manual reservation: ${e.message} (Owner)',
+      );
+      final errorMessage = e.response?.data?['message']?.toString();
+      if (e.response?.statusCode == 400 &&
+          errorMessage != null &&
+          errorMessage.contains('Session is already booked')) {
+        _logger.error(
+          "Repository: Session is already booked. Client should handle this. (Owner)",
+        );
+        throw Exception(
+          "Session is already booked. Please select an available session.",
+        );
       }
-
-      // Show error message
-      Get.snackbar(
-        'Error',
-        errorMsg,
-        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
-        colorText: ColorTheme.error,
-      );
-      _logger.error('Error creating manual reservation: $e');
+      if (e.response?.statusCode == 409) {
+        _logger.error(
+          "Repository: Session is already booked by another customer (409). (Owner)",
+        );
+        throw Exception(
+          "Session is no longer available. Please select another session.",
+        );
+      }
+      rethrow; // Rethrow the original DioException if not specifically handled
     } catch (e) {
-      // Show error message
-      Get.snackbar(
-        'Error',
-        'Failed to create manual reservation',
-        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
-        colorText: ColorTheme.error,
-      );
-      _logger.error('Error creating manual reservation: $e');
-    } finally {
-      isFormSubmitting.value = false;
+      _logger.error('Repository error creating manual reservation: $e (Owner)');
+      // Rethrow the caught exception (could be the custom one from above or others)
+      rethrow;
     }
   }
 
-  // Upload payment proof for manual reservation
   Future<void> uploadManualPaymentProof(
     String reservationId,
     File paymentProofFile, {
@@ -288,11 +322,18 @@ class ReservationController extends GetxController {
   }) async {
     try {
       isPaymentUploading.value = true;
-
-      // Refresh the reservation list to show updated payment info
-      await refreshData();
-
-      // Show success message
+      // The repository now returns a Payment object.
+      // We might not directly use the returned Payment object here unless we want to update a specific part of the UI immediately with it.
+      await _reservationRepository.uploadManualPaymentProof(
+        reservationId,
+        paymentProofFile,
+        notes: notes,
+      );
+      await refreshData(); // Refresh the main list to show changes
+      // If the selectedReservation is the one affected, you might want to re-fetch it specifically
+      if (selectedReservation.value?.id == reservationId) {
+        await fetchReservationById(reservationId);
+      }
       Get.snackbar(
         'Success',
         'Payment proof uploaded successfully',
@@ -300,7 +341,6 @@ class ReservationController extends GetxController {
         colorText: ColorTheme.success,
       );
     } catch (e) {
-      // Show error message
       Get.snackbar(
         'Error',
         'Failed to upload payment proof',
@@ -313,13 +353,15 @@ class ReservationController extends GetxController {
     }
   }
 
-  // Verify manual payment
   Future<void> verifyManualPayment(String paymentId, bool isVerified) async {
     try {
-      // Refresh the reservation list to show updated payment status
-      await refreshData();
-
-      // Show success message
+      isStatusUpdating.value =
+          true; // Re-use for generic update operations, or create a new one
+      // Repository returns the updated Payment object.
+      await _reservationRepository.verifyManualPayment(paymentId, isVerified);
+      await refreshData(); // Refresh list
+      // Potentially re-fetch selected reservation if its payment was verified
+      // This depends on how `paymentId` relates to `selectedReservation.value`
       Get.snackbar(
         'Success',
         isVerified
@@ -329,7 +371,6 @@ class ReservationController extends GetxController {
         colorText: ColorTheme.success,
       );
     } catch (e) {
-      // Show error message
       Get.snackbar(
         'Error',
         'Failed to verify payment',
@@ -337,10 +378,11 @@ class ReservationController extends GetxController {
         colorText: ColorTheme.error,
       );
       _logger.error('Error verifying payment: $e');
+    } finally {
+      isStatusUpdating.value = false;
     }
   }
 
-  // Get reservation analytics
   Future<void> fetchReservationAnalytics(
     DateTime startDate,
     DateTime endDate,
@@ -348,20 +390,245 @@ class ReservationController extends GetxController {
     try {
       isLoading.value = true;
       errorMessage.value = '';
-
       final analytics = await _reservationRepository.getReservationAnalytics(
         startDate,
         endDate,
       );
-
       reservationAnalytics.value = analytics;
     } catch (e) {
       errorMessage.value = 'Failed to load reservation analytics.';
       _logger.error('Error fetching reservation analytics: $e');
+      reservationAnalytics.clear();
     } finally {
       isLoading.value = false;
     }
   }
+
+  // --- NEW METHODS START HERE ---
+
+  // Get upcoming reservations for Owner
+  Future<void> fetchUpcomingReservations({
+    String? staffId,
+    bool isRefresh = false,
+    int limit = 10,
+  }) async {
+    try {
+      if (isRefresh) {
+        upcomingCurrentPage.value = 1;
+        upcomingHasMoreData.value = true;
+        upcomingReservationList.clear();
+      }
+
+      if (!upcomingHasMoreData.value && !isRefresh) return;
+
+      isLoadingUpcoming.value = true;
+      upcomingErrorMessage.value = '';
+
+      final response = await _reservationRepository.getUpcomingReservations(
+        staffId:
+            staffId ??
+            (upcomingSelectedStaffId.value.isEmpty
+                ? null
+                : upcomingSelectedStaffId.value),
+        page: upcomingCurrentPage.value,
+        limit: limit,
+      );
+
+      final List<Reservation> newReservations =
+          response['data'] as List<Reservation>;
+      if (isRefresh || upcomingCurrentPage.value == 1) {
+        upcomingReservationList.assignAll(newReservations);
+      } else {
+        upcomingReservationList.addAll(newReservations);
+      }
+
+      upcomingTotalPages.value = response['pagination']?['totalPages'] ?? 1;
+      upcomingTotalItems.value = response['pagination']?['totalItems'] ?? 0;
+      upcomingHasMoreData.value =
+          upcomingCurrentPage.value < upcomingTotalPages.value;
+    } catch (e) {
+      upcomingErrorMessage.value = 'Failed to load upcoming reservations.';
+      _logger.error('Error fetching upcoming reservations: $e');
+    } finally {
+      isLoadingUpcoming.value = false;
+    }
+  }
+
+  Future<void> loadMoreUpcomingReservations({String? staffId}) async {
+    if (upcomingHasMoreData.value && !isLoadingUpcoming.value) {
+      upcomingCurrentPage.value++;
+      await fetchUpcomingReservations(staffId: staffId);
+    }
+  }
+
+  Future<void> refreshUpcomingReservations({String? staffId}) async {
+    upcomingSelectedStaffId.value = staffId ?? '';
+    await fetchUpcomingReservations(staffId: staffId, isRefresh: true);
+  }
+
+  // Get upcoming reservations for a specific day for Owner Dashboard
+  Future<void> fetchUpcomingReservationsForDay({
+    required DateTime date,
+    bool isRefresh = false,
+    int limit = 10,
+  }) async {
+    try {
+      if (isRefresh) {
+        upcomingDayCurrentPage.value = 1;
+        upcomingDayHasMoreData.value = true;
+        upcomingDayReservationList.clear();
+      }
+
+      if (!upcomingDayHasMoreData.value && !isRefresh) return;
+
+      isLoadingUpcomingDay.value = true;
+      upcomingDayErrorMessage.value = '';
+
+      final response = await _reservationRepository
+          .getUpcomingReservationsForDay(
+            date: date,
+            page: upcomingDayCurrentPage.value,
+            limit: limit,
+          );
+
+      final List<Reservation> newReservations =
+          response['data'] as List<Reservation>;
+      if (isRefresh || upcomingDayCurrentPage.value == 1) {
+        upcomingDayReservationList.assignAll(newReservations);
+      } else {
+        upcomingDayReservationList.addAll(newReservations);
+      }
+
+      upcomingDayTotalPages.value = response['pagination']?['totalPages'] ?? 1;
+      upcomingDayTotalItems.value = response['pagination']?['totalItems'] ?? 0;
+      upcomingDayHasMoreData.value =
+          upcomingDayCurrentPage.value < upcomingDayTotalPages.value;
+    } catch (e) {
+      upcomingDayErrorMessage.value =
+          'Failed to load reservations for the day.';
+      _logger.error('Error fetching upcoming reservations for day $date: $e');
+    } finally {
+      isLoadingUpcomingDay.value = false;
+    }
+  }
+
+  Future<void> loadMoreUpcomingReservationsForDay({
+    required DateTime date,
+  }) async {
+    if (upcomingDayHasMoreData.value && !isLoadingUpcomingDay.value) {
+      upcomingDayCurrentPage.value++;
+      await fetchUpcomingReservationsForDay(date: date);
+    }
+  }
+
+  Future<void> refreshUpcomingReservationsForDay({
+    required DateTime date,
+  }) async {
+    await fetchUpcomingReservationsForDay(date: date, isRefresh: true);
+  }
+
+  // Get Payment Methods for Owner
+  Future<void> fetchOwnerPaymentMethods() async {
+    try {
+      isLoadingPaymentMethods.value = true;
+      paymentMethodsErrorMessage.value = '';
+      ownerPaymentMethods.value =
+          await _reservationRepository.getOwnerPaymentMethods();
+    } catch (e) {
+      paymentMethodsErrorMessage.value = 'Failed to load payment methods.';
+      _logger.error('Error fetching owner payment methods: $e');
+      ownerPaymentMethods.clear();
+    } finally {
+      isLoadingPaymentMethods.value = false;
+    }
+  }
+
+  // Get Payment Details for a Reservation by Owner
+  Future<void> fetchOwnerPaymentDetails(String reservationId) async {
+    try {
+      isLoadingPaymentDetails.value = true;
+      paymentDetailsErrorMessage.value = '';
+      selectedPaymentDetails.value = null;
+      reservationForPaymentDetails.value = null;
+
+      final response = await _reservationRepository.getOwnerPaymentDetails(
+        reservationId,
+      );
+      // Repository returns Map<String, dynamic> with 'payment' and 'reservation'
+      selectedPaymentDetails.value = response['payment'] as Payment?;
+      reservationForPaymentDetails.value =
+          response['reservation'] as Reservation?;
+    } catch (e) {
+      paymentDetailsErrorMessage.value = 'Failed to load payment details.';
+      _logger.error(
+        'Error fetching owner payment details for $reservationId: $e',
+      );
+      selectedPaymentDetails.value = null;
+      reservationForPaymentDetails.value = null;
+    } finally {
+      isLoadingPaymentDetails.value = false;
+    }
+  }
+
+  // Update Manual Reservation Payment Status by Owner
+  Future<bool> updateManualReservationPaymentStatus(
+    String reservationId, {
+    String paymentMethod = 'CASH',
+    String? notes,
+  }) async {
+    try {
+      isUpdatingManualPayment.value = true;
+      // Repository returns a Map<String, dynamic> like { success: true, message: "..." }
+      final response = await _reservationRepository
+          .updateManualReservationPaymentStatus(
+            reservationId,
+            paymentMethod: paymentMethod,
+            notes: notes,
+          );
+
+      Get.snackbar(
+        'Success',
+        response['message'] as String? ??
+            'Payment status updated successfully!',
+        backgroundColor: ColorTheme.success.withValues(alpha: 0.1),
+        colorText: ColorTheme.success,
+      );
+      // Refresh relevant data
+      await refreshData(); // Refresh the main list
+      if (selectedReservation.value?.id == reservationId) {
+        await fetchReservationById(
+          reservationId,
+        ); // Refresh details if it was selected
+      }
+      // Also refresh payment details if they were being viewed for this reservation
+      if (reservationForPaymentDetails.value?.id == reservationId) {
+        await fetchOwnerPaymentDetails(reservationId);
+      }
+      return true;
+    } catch (e) {
+      String errorMessage = 'Failed to update payment status.';
+      if (e is DioException && e.response?.data is Map) {
+        errorMessage = e.response?.data['message'] ?? errorMessage;
+      } else if (e is Exception) {
+        // For custom exceptions thrown by repository
+        errorMessage = e.toString().replaceFirst("Exception: ", "");
+      }
+      Get.snackbar(
+        'Error',
+        errorMessage,
+        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
+        colorText: ColorTheme.error,
+      );
+      _logger.error(
+        'Error updating manual reservation payment status for $reservationId: $e',
+      );
+      return false;
+    } finally {
+      isUpdatingManualPayment.value = false;
+    }
+  }
+
+  // --- NEW METHODS END HERE ---
 
   // Helper methods for UI
   String getStatusDisplayName(String status) {
@@ -384,16 +651,14 @@ class ReservationController extends GetxController {
   }
 
   bool canUpdateStatus(String currentStatus, String newStatus) {
-    // Define allowed status transitions
     final allowedTransitions = <String, List<String>>{
       'PENDING': ['CONFIRMED', 'CANCELLED'],
       'CONFIRMED': ['IN_PROGRESS', 'CANCELLED'],
       'IN_PROGRESS': ['COMPLETED', 'CANCELLED'],
-      'COMPLETED': <String>[], // Cannot change from completed
-      'CANCELLED': <String>[], // Cannot change from cancelled
-      'EXPIRED': <String>[], // Cannot change from expired
+      'COMPLETED': <String>[],
+      'CANCELLED': <String>[],
+      'EXPIRED': <String>[],
     };
-
     return allowedTransitions[currentStatus.toUpperCase()]?.contains(
           newStatus.toUpperCase(),
         ) ??
@@ -409,22 +674,53 @@ class ReservationController extends GetxController {
       'CANCELLED': <String>[],
       'EXPIRED': <String>[],
     };
-
     return allowedTransitions[currentStatus.toUpperCase()] ?? <String>[];
   }
 
-  // Clear selected reservation
   void clearSelectedReservation() {
     selectedReservation.value = null;
   }
 
-  // Dispose method
+  void clearSelectedPaymentDetails() {
+    selectedPaymentDetails.value = null;
+    reservationForPaymentDetails.value = null;
+  }
+
   @override
   void onClose() {
-    // Clear all observables
+    // Clear existing observables
     reservationList.clear();
     selectedReservation.value = null;
     reservationAnalytics.clear();
+
+    // Clear new observables
+    upcomingReservationList.clear();
+    upcomingDayReservationList.clear();
+    ownerPaymentMethods.clear();
+    selectedPaymentDetails.value = null;
+    reservationForPaymentDetails.value = null;
+
+    // Clear filter/pagination states
+    selectedStatus.value = '';
+    selectedStartDate.value = null;
+    selectedEndDate.value = null;
+    selectedStaffId.value = '';
+    currentPage.value = 1;
+    totalPages.value = 1;
+    totalItems.value = 0;
+    hasMoreData.value = true;
+
+    upcomingCurrentPage.value = 1;
+    upcomingTotalPages.value = 1;
+    upcomingTotalItems.value = 0;
+    upcomingHasMoreData.value = true;
+    upcomingSelectedStaffId.value = '';
+
+    upcomingDayCurrentPage.value = 1;
+    upcomingDayTotalPages.value = 1;
+    upcomingDayTotalItems.value = 0;
+    upcomingDayHasMoreData.value = true;
+
     super.onClose();
   }
 }

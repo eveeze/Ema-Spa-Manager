@@ -1,11 +1,11 @@
 // lib/data/providers/reservation_provider.dart
 import 'dart:io';
 import 'package:emababyspa/data/api/api_client.dart';
-import 'package:emababyspa/data/api/api_endpoints.dart';
+import 'package:emababyspa/data/api/api_endpoints.dart'; // Pastikan endpoint baru didefinisikan di sini
 import 'package:emababyspa/utils/logger_utils.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:path/path.dart' as path;
-import 'package:dio/dio.dart'; // Ensure Dio is imported if not already
+import 'package:dio/dio.dart';
 
 class ReservationProvider {
   final ApiClient _apiClient;
@@ -32,15 +32,16 @@ class ReservationProvider {
         'limit': limit.toString(),
         if (status != null) 'status': status,
         if (startDate != null)
-          'startDate': startDate.toIso8601String().split('T')[0], // YYYY-MM-DD
-        if (endDate != null)
-          'endDate': endDate.toIso8601String().split('T')[0], // YYYY-MM-DD
+          'startDate': startDate.toIso8601String().split('T')[0],
+        if (endDate != null) 'endDate': endDate.toIso8601String().split('T')[0],
         if (staffId != null) 'staffId': staffId,
       };
       _logger.info('Getting filtered reservations with params: $queryParams');
       return await _apiClient.getValidated(
-        ApiEndpoints.reservationsOwner,
+        ApiEndpoints
+            .reservationsOwner, // Endpoint untuk daftar (tanpa ID di path)
         queryParameters: queryParams,
+        dataField: 'reservations', // Field yang berisi daftar reservasi
       );
     } catch (e) {
       _logger.error('Error getting filtered reservations: $e');
@@ -50,7 +51,7 @@ class ReservationProvider {
 
   // NEW: Get upcoming reservations for owner
   Future<Map<String, dynamic>> getUpcomingReservations({
-    String? staffId, // Optional: if owner wants to filter by a specific staff
+    String? staffId,
     int page = 1,
     int limit = 10,
   }) async {
@@ -62,8 +63,9 @@ class ReservationProvider {
       };
       _logger.info('Getting upcoming reservations with params: $queryParams');
       return await _apiClient.getValidated(
-        ApiEndpoints.reservationsOwnerUpcoming, // Use the new endpoint
+        ApiEndpoints.reservationsOwnerUpcoming,
         queryParameters: queryParams,
+        dataField: 'reservations', // Field yang berisi daftar reservasi
       );
     } catch (e) {
       _logger.error('Error getting upcoming reservations: $e');
@@ -79,7 +81,7 @@ class ReservationProvider {
   }) async {
     try {
       final Map<String, dynamic> queryParams = {
-        'date': date.toIso8601String().split('T')[0], // Format as YYYY-MM-DD
+        'date': date.toIso8601String().split('T')[0],
         'page': page.toString(),
         'limit': limit.toString(),
       };
@@ -87,9 +89,9 @@ class ReservationProvider {
         'Getting upcoming reservations for day with params: $queryParams',
       );
       return await _apiClient.getValidated(
-        ApiEndpoints
-            .reservationsOwnerDashboardUpcomingByDay, // Use the new endpoint
+        ApiEndpoints.reservationsOwnerDashboardUpcomingByDay,
         queryParameters: queryParams,
+        dataField: 'reservations',
       );
     } catch (e) {
       _logger.error('Error getting upcoming reservations for day: $e');
@@ -97,42 +99,42 @@ class ReservationProvider {
     }
   }
 
-  // Get reservation by ID
+  // Get reservation by ID for Owner
   Future<Map<String, dynamic>> getReservationById(String id) async {
     try {
-      _logger.info('Getting reservation by ID: $id');
-      // Assuming your backend endpoint for a single reservation might be different for owner vs customer
-      // For owner, it might be something like:
-      // return await _apiClient.getValidated('${ApiEndpoints.reservationsOwner}/$id');
-      // Or if it's a general one:
+      _logger.info('Getting reservation by ID (Owner): $id');
+      // Asumsikan ApiEndpoints.reservationsOwnerById = '/owner/reservations/{id}'
       return await _apiClient.getValidated(
-        '${ApiEndpoints.reservations}/owner/$id',
-      ); // Adjusted based on your routes for owner
+        ApiEndpoints.reservationsOwnerById, // Ganti dengan endpoint yang sesuai
+        pathParams: {'id': id},
+      );
     } catch (e) {
-      _logger.error('Error getting reservation by id $id: $e');
+      _logger.error('Error getting reservation by id $id (Owner): $e');
       rethrow;
     }
   }
 
-  // Update reservation status
+  // Update reservation status for Owner
   Future<Map<String, dynamic>> updateReservationStatus(
     String id,
     String status,
   ) async {
     try {
-      _logger.info('Updating reservation $id status to: $status');
-      // No need to fetch currentReservation here, backend handles validation
+      _logger.info('Updating reservation $id status to: $status (Owner)');
+      // Asumsikan ApiEndpoints.reservationsOwnerStatusById = '/owner/reservations/{id}/status'
       return await _apiClient.putValidated(
-        '${ApiEndpoints.reservationsOwner}/$id/status', // Adjusted for owner route
+        ApiEndpoints
+            .reservationsOwnerStatusById, // Ganti dengan endpoint yang sesuai
+        pathParams: {'id': id},
         data: {'status': status},
       );
     } catch (e) {
-      _logger.error('Error updating reservation $id status: $e');
+      _logger.error('Error updating reservation $id status (Owner): $e');
       rethrow;
     }
   }
 
-  // Create manual reservation
+  // Create manual reservation by Owner
   Future<Map<String, dynamic>> createManualReservation({
     required String customerName,
     required String customerPhone,
@@ -146,7 +148,7 @@ class ReservationProvider {
     String? priceTierId,
     String? notes,
     String paymentMethod = 'CASH',
-    bool isPaid = false, // Backend expects boolean or string that converts
+    bool isPaid = false,
     String? paymentNotes,
     File? paymentProofFile,
   }) async {
@@ -164,16 +166,14 @@ class ReservationProvider {
         if (customerInstagram != null && customerInstagram.isNotEmpty)
           'customerInstagram': customerInstagram,
         'babyName': babyName,
-        'babyAge':
-            babyAge
-                .toString(), // Backend expects string or number, ensure consistency
+        'babyAge': babyAge.toString(),
         'serviceId': serviceId,
         'sessionId': sessionId,
         if (priceTierId != null && priceTierId.isNotEmpty)
           'priceTierId': priceTierId,
         if (notes != null && notes.isNotEmpty) 'notes': notes,
         'paymentMethod': paymentMethod,
-        'isPaid': isPaid.toString(), // Send as string 'true' or 'false'
+        'isPaid': isPaid.toString(),
         if (paymentNotes != null && paymentNotes.isNotEmpty)
           'paymentNotes': paymentNotes,
       });
@@ -182,7 +182,7 @@ class ReservationProvider {
         String fileName = path.basename(paymentProofFile.path);
         formData.files.add(
           MapEntry(
-            'paymentProof', // This key must match your backend middleware (paymentProofUploadMiddleware expects 'paymentProof')
+            'paymentProof',
             await MultipartFile.fromFile(
               paymentProofFile.path,
               filename: fileName,
@@ -195,7 +195,8 @@ class ReservationProvider {
         'Manual reservation FormData: ${formData.fields}, files: ${formData.files.map((e) => e.key)}',
       );
       return await _apiClient.postMultipartValidated(
-        ApiEndpoints.manualReservations,
+        ApiEndpoints
+            .manualReservations, // Endpoint untuk membuat (tanpa ID di path)
         data: formData,
       );
     } on DioException catch (dioError) {
@@ -215,7 +216,7 @@ class ReservationProvider {
     }
   }
 
-  // Upload payment proof for manual reservation
+  // Upload payment proof for manual reservation by Owner
   Future<Map<String, dynamic>> uploadManualPaymentProof(
     String reservationId,
     File paymentProofFile, {
@@ -223,49 +224,56 @@ class ReservationProvider {
   }) async {
     try {
       _logger.info(
-        'Uploading manual payment proof for reservation $reservationId',
+        'Uploading manual payment proof for reservation $reservationId (Owner)',
       );
       String fileName = path.basename(paymentProofFile.path);
-      final endpoint =
-          '${ApiEndpoints.manualReservations}/$reservationId/payment-proof'; // Correct endpoint from routes
+      // Asumsikan ApiEndpoints.manualReservationsPaymentProofById = '/manual-reservations/{id}/payment-proof'
       FormData formData = FormData.fromMap({
-        if (notes != null)
-          'paymentNotes': notes, // Ensure backend expects 'paymentNotes'
+        if (notes != null) 'paymentNotes': notes,
         'paymentProof': await MultipartFile.fromFile(
-          // This key must match your backend middleware
           paymentProofFile.path,
           filename: fileName,
           contentType: MediaType.parse(_getContentType(fileName)),
         ),
       });
       _logger.info('Uploading payment proof FormData: ${formData.fields}');
-      return await _apiClient.postMultipartValidated(endpoint, data: formData);
+      return await _apiClient.postMultipartValidated(
+        ApiEndpoints
+            .manualReservationsPaymentProofById, // Ganti dengan endpoint yang sesuai
+        pathParams: {'id': reservationId},
+        data: formData,
+      );
     } catch (e) {
-      _logger.error('Error uploading payment proof for $reservationId: $e');
+      _logger.error(
+        'Error uploading payment proof for $reservationId (Owner): $e',
+      );
       rethrow;
     }
   }
 
-  // Verify manual payment
+  // Verify manual payment by Owner
   Future<Map<String, dynamic>> verifyManualPayment(
-    String paymentId,
+    String paymentId, // Ini adalah paymentId, bukan reservationId
     bool isVerified,
   ) async {
     try {
       _logger.info(
-        'Verifying manual payment $paymentId, isVerified: $isVerified',
+        'Verifying manual payment $paymentId, isVerified: $isVerified (Owner)',
       );
+      // Asumsikan ApiEndpoints.ownerPaymentVerifyById = '/owner/payments/{id}/verify'
       return await _apiClient.putValidated(
-        '${ApiEndpoints.ownerPayment}/$paymentId/verify', // Correct endpoint
+        ApiEndpoints
+            .ownerPaymentVerifyById, // Ganti dengan endpoint yang sesuai
+        pathParams: {'id': paymentId},
         data: {'isVerified': isVerified},
       );
     } catch (e) {
-      _logger.error('Error verifying manual payment $paymentId: $e');
+      _logger.error('Error verifying manual payment $paymentId (Owner): $e');
       rethrow;
     }
   }
 
-  // Get reservation analytics
+  // Get reservation analytics for Owner
   Future<Map<String, dynamic>> getReservationAnalytics(
     DateTime startDate,
     DateTime endDate,
@@ -275,7 +283,7 @@ class ReservationProvider {
           startDate.toIso8601String().split('T')[0];
       final String formattedEndDate = endDate.toIso8601String().split('T')[0];
       _logger.info(
-        'Getting reservation analytics from $formattedStartDate to $formattedEndDate',
+        'Getting reservation analytics from $formattedStartDate to $formattedEndDate (Owner)',
       );
       return await _apiClient.getValidated(
         ApiEndpoints.reservationsAnalytics,
@@ -285,7 +293,73 @@ class ReservationProvider {
         },
       );
     } catch (e) {
-      _logger.error('Error getting reservation analytics: $e');
+      _logger.error('Error getting reservation analytics (Owner): $e');
+      rethrow;
+    }
+  }
+
+  // Get Payment Methods for Owner
+  Future<Map<String, dynamic>> getOwnerPaymentMethods() async {
+    try {
+      _logger.info('Getting payment methods (Owner)');
+      return await _apiClient.getValidated(
+        ApiEndpoints.ownerSpecificPaymentMethods,
+      );
+    } catch (e) {
+      _logger.error('Error getting payment methods (Owner): $e');
+      rethrow;
+    }
+  }
+
+  // Get Payment Details for a Reservation by Owner
+  Future<Map<String, dynamic>> getOwnerPaymentDetails(
+    String reservationId,
+  ) async {
+    try {
+      _logger.info(
+        'Getting payment details for reservation $reservationId (Owner)',
+      );
+      // Asumsikan ApiEndpoints.reservationsOwnerPaymentDetailsById = '/owner/reservations/payment/{id}'
+      return await _apiClient.getValidated(
+        ApiEndpoints
+            .reservationsOwnerPaymentDetailsById, // Ganti dengan endpoint yang sesuai
+        pathParams: {'id': reservationId},
+      );
+    } catch (e) {
+      _logger.error(
+        'Error getting payment details for $reservationId (Owner): $e',
+      );
+      rethrow;
+    }
+  }
+
+  // Update Manual Reservation Payment Status by Owner
+  Future<Map<String, dynamic>> updateManualReservationPaymentStatus(
+    String reservationId, {
+    String paymentMethod = 'CASH',
+    String? notes,
+  }) async {
+    try {
+      _logger.info(
+        'Updating manual reservation $reservationId payment status to PAID (Owner)',
+      );
+      final Map<String, dynamic> data = {
+        'paymentMethod': paymentMethod.toUpperCase(),
+      };
+      if (notes != null) {
+        data['notes'] = notes;
+      }
+      // Asumsikan ApiEndpoints.manualReservationsPaymentUpdateById = '/manual-reservations/{id}/payment'
+      return await _apiClient.putValidated(
+        ApiEndpoints
+            .manualReservationsPaymentUpdateById, // Ganti dengan endpoint yang sesuai
+        pathParams: {'id': reservationId},
+        data: data,
+      );
+    } catch (e) {
+      _logger.error(
+        'Error updating manual reservation $reservationId payment (Owner): $e',
+      );
       rethrow;
     }
   }
@@ -300,7 +374,7 @@ class ReservationProvider {
       case '.png':
         return 'image/png';
       default:
-        return 'application/octet-stream'; // A common default
+        return 'application/octet-stream';
     }
   }
 }

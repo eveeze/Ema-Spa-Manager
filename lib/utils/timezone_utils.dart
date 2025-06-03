@@ -39,4 +39,37 @@ class TimeZoneUtil {
     final indonesiaDate = toIndonesiaTime(utcDate);
     return DateFormat(format).format(indonesiaDate);
   }
+
+  // Format DateTime to Indonesia day and date format (e.g., "Monday, 15 January 2024")
+  static String formatDateTimeToIndonesiaDayDate(DateTime dateTime) {
+    try {
+      final indonesiaTime = toIndonesiaTime(dateTime);
+      return DateFormat('EEEE, dd MMMM yyyy', 'id_ID').format(indonesiaTime);
+    } catch (e) {
+      // Fallback to English format if Indonesian locale is not available
+      final indonesiaTime = toIndonesiaTime(dateTime);
+      return DateFormat('EEEE, dd MMMM yyyy').format(indonesiaTime);
+    }
+  }
+
+  // Format ISO string to local date time with full format (e.g., "Monday, 15 January 2024 14:30")
+  static String formatISOToLocalDateTimeFull(String isoString) {
+    try {
+      final utcTime = DateTime.parse(isoString);
+      final indonesiaTime = toIndonesiaTime(utcTime);
+
+      try {
+        // Try Indonesian locale first
+        return DateFormat(
+          'EEEE, dd MMMM yyyy HH:mm',
+          'id_ID',
+        ).format(indonesiaTime);
+      } catch (e) {
+        // Fallback to English format if Indonesian locale is not available
+        return DateFormat('EEEE, dd MMMM yyyy HH:mm').format(indonesiaTime);
+      }
+    } catch (e) {
+      return isoString; // Return original string if parsing fails
+    }
+  }
 }

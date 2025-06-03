@@ -3,7 +3,7 @@ import 'package:equatable/equatable.dart';
 
 class Payment extends Equatable {
   final String id;
-  final String reservationId;
+  final String? reservationId; // Made nullable since it's not always present
   final double amount;
   final String paymentMethod;
   final String paymentStatus;
@@ -18,7 +18,7 @@ class Payment extends Equatable {
 
   const Payment({
     required this.id,
-    required this.reservationId,
+    this.reservationId, // Made optional since it's nullable
     required this.amount,
     required this.paymentMethod,
     required this.paymentStatus,
@@ -34,27 +34,47 @@ class Payment extends Equatable {
 
   factory Payment.fromJson(Map<String, dynamic> json) {
     return Payment(
-      id: json['id'],
-      reservationId: json['reservationId'],
-      amount: json['amount'].toDouble(),
-      paymentMethod: json['paymentMethod'],
-      paymentStatus: json['paymentStatus'],
-      transactionId: json['transactionId'],
-      tripayPaymentUrl: json['tripayPaymentUrl'],
-      paymentProof: json['paymentProof'],
+      id: json['id'] as String,
+      reservationId: json['reservationId'] as String?, // Safe null handling
+      amount: (json['amount'] as num).toDouble(),
+      paymentMethod: json['paymentMethod'] as String,
+      paymentStatus: json['status'] as String,
+      transactionId: json['transactionId'] as String?,
+      tripayPaymentUrl: json['paymentUrl'] as String?,
+      paymentProof: json['paymentProof'] as String?,
       paymentDate:
           json['paymentDate'] != null
-              ? DateTime.parse(json['paymentDate'])
+              ? DateTime.parse(json['paymentDate'] as String)
               : null,
-      merchantFee: json['merchantFee']?.toDouble(),
-
+      merchantFee:
+          json['merchantFee'] != null
+              ? (json['merchantFee'] as num).toDouble()
+              : null,
       expiryDate:
           json['expiryDate'] != null
-              ? DateTime.parse(json['expiryDate'])
+              ? DateTime.parse(json['expiryDate'] as String)
               : null,
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'reservationId': reservationId,
+      'amount': amount,
+      'paymentMethod': paymentMethod,
+      'status': paymentStatus,
+      'transactionId': transactionId,
+      'paymentUrl': tripayPaymentUrl,
+      'paymentProof': paymentProof,
+      'paymentDate': paymentDate?.toIso8601String(),
+      'merchantFee': merchantFee,
+      'expiryDate': expiryDate?.toIso8601String(),
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+    };
   }
 
   @override

@@ -2,7 +2,8 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:emababyspa/data/models/reservation.dart';
-import 'package:emababyspa/data/models/payment.dart'; // Ensure Payment model is defined
+import 'package:emababyspa/data/models/payment.dart';
+import 'package:emababyspa/data/models/payment_method.dart';
 import 'package:emababyspa/data/providers/reservation_provider.dart';
 import 'package:emababyspa/utils/logger_utils.dart';
 
@@ -17,7 +18,6 @@ class ReservationRepository {
        _logger = logger;
 
   // Get filtered reservations for owner
-  // Returns a map with 'data' (List<Reservation>) and 'pagination' (Map<String, dynamic>)
   Future<Map<String, dynamic>> getFilteredReservations({
     String? status,
     DateTime? startDate,
@@ -27,7 +27,7 @@ class ReservationRepository {
     int limit = 10,
   }) async {
     try {
-      _logger.info('Repository: Getting filtered reservations.');
+      _logger.info('Repository: Getting filtered reservations (Owner).');
       final response = await _reservationProvider.getFilteredReservations(
         status: status,
         startDate: startDate,
@@ -36,27 +36,27 @@ class ReservationRepository {
         page: page,
         limit: limit,
       );
-      // Assuming response['data'] is a List<dynamic> of reservation maps
       List<Reservation> reservations =
           (response['data'] as List)
               .map((item) => Reservation.fromJson(item as Map<String, dynamic>))
               .toList();
       return {'data': reservations, 'pagination': response['pagination'] ?? {}};
     } catch (e) {
-      _logger.error('Repository error getting filtered reservations: $e');
+      _logger.error(
+        'Repository error getting filtered reservations (Owner): $e',
+      );
       rethrow;
     }
   }
 
-  // NEW: Get upcoming reservations
-  // Returns a map with 'data' (List<Reservation>) and 'pagination' (Map<String, dynamic>)
+  // Get upcoming reservations for Owner
   Future<Map<String, dynamic>> getUpcomingReservations({
     String? staffId,
     int page = 1,
     int limit = 10,
   }) async {
     try {
-      _logger.info('Repository: Getting upcoming reservations.');
+      _logger.info('Repository: Getting upcoming reservations (Owner).');
       final response = await _reservationProvider.getUpcomingReservations(
         staffId: staffId,
         page: page,
@@ -68,20 +68,23 @@ class ReservationRepository {
               .toList();
       return {'data': reservations, 'pagination': response['pagination'] ?? {}};
     } catch (e) {
-      _logger.error('Repository: Error getting upcoming reservations: $e');
+      _logger.error(
+        'Repository: Error getting upcoming reservations (Owner): $e',
+      );
       rethrow;
     }
   }
 
-  // NEW: Get upcoming reservations for a specific day
-  // Returns a map with 'data' (List<Reservation>) and 'pagination' (Map<String, dynamic>)
+  // Get upcoming reservations for a specific day for Owner
   Future<Map<String, dynamic>> getUpcomingReservationsForDay({
     required DateTime date,
     int page = 1,
     int limit = 10,
   }) async {
     try {
-      _logger.info('Repository: Getting upcoming reservations for day $date.');
+      _logger.info(
+        'Repository: Getting upcoming reservations for day $date (Owner).',
+      );
       final response = await _reservationProvider.getUpcomingReservationsForDay(
         date: date,
         page: page,
@@ -94,50 +97,51 @@ class ReservationRepository {
       return {'data': reservations, 'pagination': response['pagination'] ?? {}};
     } catch (e) {
       _logger.error(
-        'Repository: Error getting upcoming reservations for day $date: $e',
+        'Repository: Error getting upcoming reservations for day $date (Owner): $e',
       );
       rethrow;
     }
   }
 
-  // Get reservation by ID
+  // Get reservation by ID for Owner
   Future<Reservation> getReservationById(String id) async {
     try {
-      _logger.info('Repository: Getting reservation by ID $id.');
-      final responseMap = await _reservationProvider.getReservationById(id);
-      // The backend directly returns the reservation object in 'data' field for this specific endpoint
-      if (responseMap['data'] != null &&
-          responseMap['data'] is Map<String, dynamic>) {
-        return Reservation.fromJson(
-          responseMap['data'] as Map<String, dynamic>,
-        );
-      }
-      // Fallback if the structure is flat (though your controller suggests it's nested under 'data')
-      return Reservation.fromJson(responseMap);
+      _logger.info('Repository: Getting reservation by ID $id (Owner).');
+      // _reservationProvider.getReservationById(id) already returns the content of the 'data' field
+      // from the API response due to the use of _apiClient.getValidated in the provider.
+      final Map<String, dynamic> reservationDataMap = await _reservationProvider
+          .getReservationById(id);
+
+      // Directly parse the reservationDataMap as it's already the correct object
+      return Reservation.fromJson(reservationDataMap);
     } catch (e) {
-      _logger.error('Repository error getting reservation by id $id: $e');
-      rethrow;
+      _logger.error(
+        'Repository error getting reservation by id $id (Owner): $e',
+      );
+      rethrow; // Rethrow the error to be handled by the controller
     }
   }
 
-  // Update reservation status
+  // Update reservation status for Owner
   Future<Reservation> updateReservationStatus(String id, String status) async {
     try {
-      _logger.info('Repository: Updating reservation $id status to $status.');
+      _logger.info(
+        'Repository: Updating reservation $id status to $status (Owner).',
+      );
       final responseMap = await _reservationProvider.updateReservationStatus(
         id,
         status,
       );
-      // Backend returns the updated reservation in 'data'
       return Reservation.fromJson(responseMap['data'] as Map<String, dynamic>);
     } catch (e) {
-      _logger.error('Repository error updating reservation $id status: $e');
+      _logger.error(
+        'Repository error updating reservation $id status (Owner): $e',
+      );
       rethrow;
     }
   }
 
-  // Create manual reservation
-  // Returns a map containing the created reservation and payment details
+  // Create manual reservation by Owner
   Future<Map<String, dynamic>> createManualReservation({
     required String customerName,
     required String customerPhone,
@@ -157,7 +161,7 @@ class ReservationRepository {
   }) async {
     try {
       _logger.info(
-        'Repository: Creating manual reservation for $customerName.',
+        'Repository: Creating manual reservation for $customerName (Owner).',
       );
       final response = await _reservationProvider.createManualReservation(
         customerName: customerName,
@@ -176,8 +180,6 @@ class ReservationRepository {
         paymentNotes: paymentNotes,
         paymentProofFile: paymentProofFile,
       );
-      // Assuming the backend returns a structure like: { data: { reservation: {...}, payment: {...}, customer: {...} } }
-      // Adjust parsing based on actual backend response structure for this endpoint
       if (response['data'] != null &&
           response['data'] is Map<String, dynamic>) {
         final responseData = response['data'] as Map<String, dynamic>;
@@ -187,36 +189,32 @@ class ReservationRepository {
           ),
           'payment': Payment.fromJson(
             responseData['payment'] as Map<String, dynamic>,
-          ), // Ensure Payment.fromJson exists
-          'customer':
-              responseData['customer'], // Or parse into a Customer model
+          ),
+          'customer': responseData['customer'],
         };
       }
       _logger.warning(
-        'Repository: createManualReservation response structure might not be as expected: $response',
+        'Repository: createManualReservation response structure not as expected: $response (Owner)',
       );
-      // Fallback if the structure is different or if you want to return the raw map
-      return response; // Or parse into a more specific model if needed
+      return response;
     } on DioException catch (e) {
       _logger.error(
-        'Repository DioException creating manual reservation: ${e.message}',
+        'Repository DioException creating manual reservation: ${e.message} (Owner)',
       );
       final errorMessage = e.response?.data?['message']?.toString();
       if (e.response?.statusCode == 400 &&
           errorMessage != null &&
           errorMessage.contains('Session is already booked')) {
         _logger.error(
-          "Repository: Session is already booked. Client should handle this.",
+          "Repository: Session is already booked. Client should handle this. (Owner)",
         );
-        // You might want to throw a custom exception here that the UI can catch specifically
         throw Exception(
           "Session is already booked. Please select an available session.",
         );
       }
       if (e.response?.statusCode == 409) {
-        // Conflict, session already booked
         _logger.error(
-          "Repository: Session is already booked by another customer (409).",
+          "Repository: Session is already booked by another customer (409). (Owner)",
         );
         throw Exception(
           "Session is no longer available. Please select another session.",
@@ -224,13 +222,12 @@ class ReservationRepository {
       }
       rethrow;
     } catch (e) {
-      _logger.error('Repository error creating manual reservation: $e');
+      _logger.error('Repository error creating manual reservation: $e (Owner)');
       rethrow;
     }
   }
 
-  // Upload payment proof for manual reservation
-  // Assuming it returns the updated Payment object nested under 'data': { 'data': { 'payment': {...} } }
+  // Upload payment proof for manual reservation by Owner
   Future<Payment> uploadManualPaymentProof(
     String reservationId,
     File paymentProofFile, {
@@ -238,67 +235,152 @@ class ReservationRepository {
   }) async {
     try {
       _logger.info(
-        'Repository: Uploading manual payment proof for reservation $reservationId.',
+        'Repository: Uploading manual payment proof for reservation $reservationId (Owner).',
       );
       final response = await _reservationProvider.uploadManualPaymentProof(
         reservationId,
         paymentProofFile,
         notes: notes,
       );
-      // Adjust based on the actual structure returned by your backend
-      // Your controller returns { data: { payment: {...}, reservation: {...} } }
       final paymentData = response['data']?['payment'];
       if (paymentData != null && paymentData is Map<String, dynamic>) {
         return Payment.fromJson(paymentData);
       }
-      throw Exception('Failed to parse payment proof upload response');
+      throw Exception('Failed to parse payment proof upload response (Owner)');
     } catch (e) {
       _logger.error(
-        'Repository error uploading payment proof for $reservationId: $e',
+        'Repository error uploading payment proof for $reservationId (Owner): $e',
       );
       rethrow;
     }
   }
 
-  // Verify manual payment
-  // Assuming it returns the updated Payment object nested under 'data': { 'data': { 'payment': {...} } }
+  // Verify manual payment by Owner
   Future<Payment> verifyManualPayment(String paymentId, bool isVerified) async {
     try {
       _logger.info(
-        'Repository: Verifying manual payment $paymentId, isVerified: $isVerified.',
+        'Repository: Verifying manual payment $paymentId, isVerified: $isVerified (Owner).',
       );
       final response = await _reservationProvider.verifyManualPayment(
         paymentId,
         isVerified,
       );
-      // Your controller returns { data: { payment: {...}, reservation: {...} } }
       final paymentData = response['data']?['payment'];
       if (paymentData != null && paymentData is Map<String, dynamic>) {
         return Payment.fromJson(paymentData);
       }
-      throw Exception('Failed to parse verify manual payment response');
+      throw Exception('Failed to parse verify manual payment response (Owner)');
     } catch (e) {
-      _logger.error('Repository error verifying payment $paymentId: $e');
+      _logger.error(
+        'Repository error verifying payment $paymentId (Owner): $e',
+      );
       rethrow;
     }
   }
 
-  // Get reservation analytics
+  // Get reservation analytics for Owner
   Future<Map<String, dynamic>> getReservationAnalytics(
     DateTime startDate,
     DateTime endDate,
   ) async {
     try {
-      _logger.info('Repository: Getting reservation analytics.');
-      // The provider already returns the data directly, assuming it's the analytics map.
-      // The backend controller returns { data: analytics }
+      _logger.info('Repository: Getting reservation analytics (Owner).');
       final response = await _reservationProvider.getReservationAnalytics(
         startDate,
         endDate,
       );
       return response['data'] as Map<String, dynamic>;
     } catch (e) {
-      _logger.error('Repository error getting analytics: $e');
+      _logger.error('Repository error getting analytics: $e (Owner)');
+      rethrow;
+    }
+  }
+
+  // ADDED: Get Payment Methods for Owner
+  Future<List<PaymentMethodModel>> getOwnerPaymentMethods() async {
+    try {
+      _logger.info('Repository: Getting payment methods (Owner).');
+      final response = await _reservationProvider.getOwnerPaymentMethods();
+      // Backend returns { data: formattedChannels }
+      // formattedChannels is a list of maps
+      List<PaymentMethodModel> methods =
+          (response['data'] as List)
+              .map(
+                (item) =>
+                    PaymentMethodModel.fromJson(item as Map<String, dynamic>),
+              )
+              .toList();
+      return methods;
+    } catch (e) {
+      _logger.error('Repository: Error getting payment methods (Owner): $e');
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> getOwnerPaymentDetails(
+    String reservationId,
+  ) async {
+    try {
+      _logger.info(
+        'Repository: Getting payment details for reservation $reservationId (Owner).',
+      );
+      // apiResponseData will be { "payment": {...}, "reservation": {...} }
+      // as _apiClient.getValidated in the provider extracts the "data" field from the raw API response.
+      final Map<String, dynamic> apiResponseData = await _reservationProvider
+          .getOwnerPaymentDetails(reservationId);
+
+      // Directly check for 'payment' and 'reservation' keys in apiResponseData
+      if (apiResponseData['payment'] != null &&
+          apiResponseData['payment'] is Map<String, dynamic> &&
+          apiResponseData['reservation'] != null &&
+          apiResponseData['reservation'] is Map<String, dynamic>) {
+        return {
+          'payment': Payment.fromJson(
+            apiResponseData['payment'] as Map<String, dynamic>,
+          ),
+          'reservation': Reservation.fromJson(
+            apiResponseData['reservation'] as Map<String, dynamic>,
+          ),
+        };
+      } else {
+        // This case means the expected "payment" or "reservation" fields are missing
+        // from the content of the "data" field of the API response.
+        _logger.warning(
+          'Repository: getOwnerPaymentDetails - "payment" or "reservation" field missing or invalid in API data: $apiResponseData (Owner)',
+        );
+        throw Exception(
+          'Payment or reservation data missing or invalid in API response data.',
+        );
+      }
+    } catch (e) {
+      _logger.error(
+        'Repository: Error getting payment details for $reservationId (Owner): $e',
+      );
+      rethrow;
+    }
+  }
+
+  // ADDED: Update Manual Reservation Payment Status by Owner
+  // Returns a simple success message map or throws error
+  Future<Map<String, dynamic>> updateManualReservationPaymentStatus(
+    String reservationId, {
+    String paymentMethod = 'CASH',
+    String? notes,
+  }) async {
+    try {
+      _logger.info(
+        'Repository: Updating manual reservation $reservationId payment status (Owner).',
+      );
+      // The provider method already returns a Map<String, dynamic> which usually contains { success: true, message: "..." }
+      return await _reservationProvider.updateManualReservationPaymentStatus(
+        reservationId,
+        paymentMethod: paymentMethod,
+        notes: notes,
+      );
+    } catch (e) {
+      _logger.error(
+        'Repository: Error updating manual reservation $reservationId payment (Owner): $e',
+      );
       rethrow;
     }
   }
