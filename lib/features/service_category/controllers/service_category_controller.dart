@@ -1,11 +1,13 @@
 // lib/features/service_category/controllers/service_category_controller.dart
 
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:emababyspa/data/models/service_category.dart';
 import 'package:emababyspa/data/repository/service_category_repository.dart';
 import 'package:emababyspa/utils/app_routes.dart';
 import 'package:emababyspa/common/theme/color_theme.dart';
 import 'package:emababyspa/utils/logger_utils.dart';
+import 'package:emababyspa/common/widgets/delete_confirmation_dialog.dart';
 
 class ServiceCategoryController extends GetxController {
   final ServiceCategoryRepository _serviceCategoryRepository;
@@ -81,7 +83,7 @@ class ServiceCategoryController extends GetxController {
   void navigateToEditServiceCategory(String id) {
     Get.toNamed('/service-categories/edit/$id');
   }
-  
+
   // Navigate to view service category details
   void navigateToViewServiceCategory(String id) {
     Get.toNamed('${AppRoutes.serviceCategoryEdit}/$id');
@@ -189,20 +191,17 @@ class ServiceCategoryController extends GetxController {
     }
   }
 
-  // Confirm delete dialog
+  // Show custom delete confirmation dialog
   void showDeleteConfirmation(String id, String categoryName) {
-    Get.defaultDialog(
-      title: "Confirm Delete",
-      middleText:
-          "Are you sure you want to delete the category '$categoryName'?",
-      textConfirm: "Delete",
-      textCancel: "Cancel",
-      confirmTextColor: ColorTheme.primary,
-      cancelTextColor: ColorTheme.secondary,
-      buttonColor: ColorTheme.error,
-      barrierDismissible: false,
+    DeleteConfirmationDialog.show(
+      title: "Delete Category",
+      itemName: categoryName,
+      message:
+          "Are you sure you want to delete the category ? This action cannot be undone.",
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      icon: Icons.category_outlined,
       onConfirm: () {
-        Get.back(); // Close dialog
         deleteServiceCategory(id);
       },
     );

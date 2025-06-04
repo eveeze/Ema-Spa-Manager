@@ -14,6 +14,7 @@ import 'package:emababyspa/features/staff/controllers/staff_controller.dart';
 import 'package:emababyspa/data/models/staff.dart';
 import 'package:emababyspa/utils/permission_utils.dart';
 import 'package:emababyspa/utils/file_utils.dart';
+import 'package:emababyspa/features/theme/controllers/theme_controller.dart'; // Import ThemeController
 
 class StaffEditView extends GetView<StaffController> {
   const StaffEditView({super.key});
@@ -22,6 +23,8 @@ class StaffEditView extends GetView<StaffController> {
   Widget build(BuildContext context) {
     // Create instance of utility classes
     final permissionUtils = PermissionUtils();
+    final ThemeController themeController =
+        Get.find(); // Access ThemeController
 
     final String staffId = Get.parameters['id'] ?? '';
 
@@ -56,40 +59,52 @@ class StaffEditView extends GetView<StaffController> {
           Get.snackbar(
             'Error',
             'Invalid staff ID',
-            backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
-            colorText: ColorTheme.error,
+            backgroundColor: (themeController.isDarkMode
+                    ? ColorTheme.errorDark
+                    : ColorTheme.error)
+                .withOpacity(0.8),
+            colorText:
+                themeController.isDarkMode
+                    ? ColorTheme.textPrimaryDark
+                    : ColorTheme.textInverse,
+            snackPosition: SnackPosition.BOTTOM,
+            margin: const EdgeInsets.all(16),
+            borderRadius: 12,
           );
           Get.back();
           return;
         }
 
-        // First check if the staff is already in the controller's list
         Staff? staff;
         if (controller.staffList.isNotEmpty) {
           staff = controller.staffList.firstWhereOrNull((s) => s.id == staffId);
         }
 
-        // If not found in the list, fetch from API
         staff ??= await controller.fetchStaffById(staffId);
 
-        // IMPORTANT FIX: Update the currentStaff observable
         if (staff != null) {
           currentStaff.value = staff;
-
-          // Fill the form fields with the staff data
           nameController.text = staff.name;
           emailController.text = staff.email;
           phoneController.text = staff.phoneNumber;
           addressController.text = staff.address ?? '';
           isActiveRx.value = staff.isActive;
-
           isDataLoaded.value = true;
         } else {
           Get.snackbar(
             'Error',
             'Staff member not found',
-            backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
-            colorText: ColorTheme.error,
+            backgroundColor: (themeController.isDarkMode
+                    ? ColorTheme.errorDark
+                    : ColorTheme.error)
+                .withOpacity(0.8),
+            colorText:
+                themeController.isDarkMode
+                    ? ColorTheme.textPrimaryDark
+                    : ColorTheme.textInverse,
+            snackPosition: SnackPosition.BOTTOM,
+            margin: const EdgeInsets.all(16),
+            borderRadius: 12,
           );
           Get.back();
         }
@@ -97,8 +112,17 @@ class StaffEditView extends GetView<StaffController> {
         Get.snackbar(
           'Error',
           'Failed to load staff data: ${e.toString()}',
-          backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
-          colorText: ColorTheme.error,
+          backgroundColor: (themeController.isDarkMode
+                  ? ColorTheme.errorDark
+                  : ColorTheme.error)
+              .withOpacity(0.8),
+          colorText:
+              themeController.isDarkMode
+                  ? ColorTheme.textPrimaryDark
+                  : ColorTheme.textInverse,
+          snackPosition: SnackPosition.BOTTOM,
+          margin: const EdgeInsets.all(16),
+          borderRadius: 12,
         );
         Get.back();
       } finally {
@@ -106,17 +130,13 @@ class StaffEditView extends GetView<StaffController> {
       }
     }
 
-    // Load staff data when view is loaded
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // IMPORTANT: Debug print to check if staffId is received
       loadStaffData();
     });
 
-    // Function to validate the form
     bool validateForm() {
       bool isValid = true;
 
-      // Validate name
       if (nameController.text.trim().isEmpty) {
         nameError.value = 'Name is required';
         isValid = false;
@@ -124,7 +144,6 @@ class StaffEditView extends GetView<StaffController> {
         nameError.value = '';
       }
 
-      // Validate email
       if (emailController.text.trim().isEmpty) {
         emailError.value = 'Email is required';
         isValid = false;
@@ -135,7 +154,6 @@ class StaffEditView extends GetView<StaffController> {
         emailError.value = '';
       }
 
-      // Validate phone
       if (phoneController.text.trim().isEmpty) {
         phoneError.value = 'Phone number is required';
         isValid = false;
@@ -143,44 +161,70 @@ class StaffEditView extends GetView<StaffController> {
         phoneError.value = '';
       }
 
-      // Validate profile picture if selected
       if (profilePicture.value != null) {
-        // Check file type
         if (!FileUtils.isAllowedImageType(profilePicture.value!)) {
           Get.snackbar(
             'Invalid File Type',
             'Please select a JPG, JPEG, or PNG image',
-            backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
-            colorText: ColorTheme.error,
+            backgroundColor: (themeController.isDarkMode
+                    ? ColorTheme.errorDark
+                    : ColorTheme.error)
+                .withOpacity(0.8),
+            colorText:
+                themeController.isDarkMode
+                    ? ColorTheme.textPrimaryDark
+                    : ColorTheme.textInverse,
+            snackPosition: SnackPosition.BOTTOM,
+            margin: const EdgeInsets.all(16),
+            borderRadius: 12,
           );
           return false;
         }
 
-        // Check file size (limit to 5MB)
         if (!FileUtils.isFileSizeWithinLimit(profilePicture.value!, 5.0)) {
           Get.snackbar(
             'File Too Large',
             'Profile picture should be less than 5MB',
-            backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
-            colorText: ColorTheme.error,
+            backgroundColor: (themeController.isDarkMode
+                    ? ColorTheme.errorDark
+                    : ColorTheme.error)
+                .withOpacity(0.8),
+            colorText:
+                themeController.isDarkMode
+                    ? ColorTheme.textPrimaryDark
+                    : ColorTheme.textInverse,
+            snackPosition: SnackPosition.BOTTOM,
+            margin: const EdgeInsets.all(16),
+            borderRadius: 12,
           );
           return false;
         }
       }
-
       return isValid;
     }
 
     return MainLayout(
       child: Scaffold(
-        appBar: const CustomAppBar(title: 'Edit Staff', showBackButton: true),
+        // Let MainLayout or AppTheme handle Scaffold background
+        // backgroundColor: themeController.isDarkMode ? ColorTheme.backgroundDark : ColorTheme.background,
+        appBar: const CustomAppBar(
+          title: 'Edit Staff',
+          showBackButton: true,
+        ), // Assuming CustomAppBar respects AppTheme
         body: Obx(() {
-          // Show loading indicator while fetching data
-          if (controller.isLoading.value) {
-            return const Center(child: CircularProgressIndicator());
+          if (controller.isLoading.value && !isDataLoaded.value) {
+            // Show loader only if data isn't loaded yet
+            return Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  themeController.isDarkMode
+                      ? ColorTheme.primaryLightDark
+                      : ColorTheme.primary,
+                ),
+              ),
+            );
           }
 
-          // Show content once data is loaded
           return SafeArea(
             child: SingleChildScrollView(
               child: Padding(
@@ -190,13 +234,15 @@ class StaffEditView extends GetView<StaffController> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Form title
                       Text(
                         'Edit Staff Information',
                         style: TextStyle(
-                          fontSize: 20,
+                          fontSize: 22, // Slightly larger for modern feel
                           fontWeight: FontWeight.bold,
-                          color: ColorTheme.textPrimary,
+                          color:
+                              themeController.isDarkMode
+                                  ? ColorTheme.textPrimaryDark
+                                  : ColorTheme.textPrimary,
                           fontFamily: 'JosefinSans',
                         ),
                       ),
@@ -205,15 +251,16 @@ class StaffEditView extends GetView<StaffController> {
                         () => Text(
                           'Update the details for ${currentStaff.value?.name ?? "this staff member"}',
                           style: TextStyle(
-                            fontSize: 14,
-                            color: ColorTheme.textSecondary,
+                            fontSize: 15, // Slightly larger
+                            color:
+                                themeController.isDarkMode
+                                    ? ColorTheme.textSecondaryDark
+                                    : ColorTheme.textSecondary,
                             fontFamily: 'JosefinSans',
                           ),
                         ),
                       ),
                       const SizedBox(height: 24),
-
-                      // Profile picture with edit options
                       Center(
                         child: Column(
                           children: [
@@ -223,123 +270,181 @@ class StaffEditView extends GetView<StaffController> {
                                     () => _selectImage(
                                       profilePicture,
                                       permissionUtils,
+                                      themeController,
                                     ),
                                 child: Container(
-                                  width: 100,
-                                  height: 100,
+                                  width: 120, // Increased size
+                                  height: 120, // Increased size
                                   decoration: BoxDecoration(
-                                    color: ColorTheme.info.withValues(
-                                      alpha: 0.1,
-                                    ),
-                                    borderRadius: BorderRadius.circular(50),
+                                    color:
+                                        themeController.isDarkMode
+                                            ? ColorTheme.surfaceDark
+                                            : ColorTheme.surface,
+                                    borderRadius: BorderRadius.circular(
+                                      60,
+                                    ), // Perfectly circular
                                     border: Border.all(
-                                      color: ColorTheme.primary.withValues(
-                                        alpha: 0.3,
-                                      ),
-                                      width: 2,
+                                      color:
+                                          themeController.isDarkMode
+                                              ? ColorTheme.primaryLightDark
+                                                  .withOpacity(0.7)
+                                              : ColorTheme.primary.withOpacity(
+                                                0.5,
+                                              ),
+                                      width: 2.5, // Slightly thicker border
                                     ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color:
+                                            themeController.isDarkMode
+                                                ? Colors.black.withOpacity(0.3)
+                                                : Colors.grey.withOpacity(0.3),
+                                        spreadRadius: 1,
+                                        blurRadius: 5,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
                                   ),
-                                  child:
-                                      profilePicture.value != null
-                                          ? ClipRRect(
-                                            borderRadius: BorderRadius.circular(
-                                              50,
-                                            ),
-                                            child: Image.file(
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(60),
+                                    child:
+                                        profilePicture.value != null
+                                            ? Image.file(
                                               profilePicture.value!,
-                                              width: 100,
-                                              height: 100,
+                                              width: 120,
+                                              height: 120,
                                               fit: BoxFit.cover,
-                                            ),
-                                          )
-                                          : currentStaff
-                                                      .value
-                                                      ?.profilePicture !=
-                                                  null &&
-                                              currentStaff
-                                                  .value!
-                                                  .profilePicture!
-                                                  .isNotEmpty
-                                          ? ClipRRect(
-                                            borderRadius: BorderRadius.circular(
-                                              50,
-                                            ),
-                                            child: Image.network(
-                                              currentStaff
-                                                  .value!
-                                                  .profilePicture!,
-                                              width: 100,
-                                              height: 100,
-                                              fit: BoxFit.cover,
-                                              loadingBuilder: (
-                                                context,
-                                                child,
-                                                loadingProgress,
-                                              ) {
-                                                if (loadingProgress == null) {
-                                                  return child;
-                                                }
-                                                return Center(
-                                                  child: CircularProgressIndicator(
-                                                    value:
-                                                        loadingProgress
-                                                                    .expectedTotalBytes !=
-                                                                null
-                                                            ? loadingProgress
-                                                                    .cumulativeBytesLoaded /
-                                                                loadingProgress
-                                                                    .expectedTotalBytes!
-                                                            : null,
-                                                  ),
-                                                );
-                                              },
-                                              errorBuilder: (
-                                                context,
-                                                error,
-                                                stackTrace,
-                                              ) {
-                                                return Icon(
-                                                  Icons.person,
-                                                  size: 50,
-                                                  color: ColorTheme.info,
-                                                );
-                                              },
-                                            ),
-                                          )
-                                          : Icon(
-                                            Icons.person,
-                                            size: 50,
-                                            color: ColorTheme.info,
-                                          ),
+                                            )
+                                            : (currentStaff
+                                                            .value
+                                                            ?.profilePicture !=
+                                                        null &&
+                                                    currentStaff
+                                                        .value!
+                                                        .profilePicture!
+                                                        .isNotEmpty
+                                                ? Image.network(
+                                                  currentStaff
+                                                      .value!
+                                                      .profilePicture!,
+                                                  width: 120,
+                                                  height: 120,
+                                                  fit: BoxFit.cover,
+                                                  loadingBuilder: (
+                                                    context,
+                                                    child,
+                                                    loadingProgress,
+                                                  ) {
+                                                    if (loadingProgress == null)
+                                                      return child;
+                                                    return Center(
+                                                      child: CircularProgressIndicator(
+                                                        valueColor:
+                                                            AlwaysStoppedAnimation<
+                                                              Color
+                                                            >(
+                                                              themeController
+                                                                      .isDarkMode
+                                                                  ? ColorTheme
+                                                                      .primaryLightDark
+                                                                  : ColorTheme
+                                                                      .primary,
+                                                            ),
+                                                        value:
+                                                            loadingProgress
+                                                                        .expectedTotalBytes !=
+                                                                    null
+                                                                ? loadingProgress
+                                                                        .cumulativeBytesLoaded /
+                                                                    loadingProgress
+                                                                        .expectedTotalBytes!
+                                                                : null,
+                                                      ),
+                                                    );
+                                                  },
+                                                  errorBuilder:
+                                                      (
+                                                        context,
+                                                        error,
+                                                        stackTrace,
+                                                      ) => Icon(
+                                                        Icons
+                                                            .person_outline, // Changed icon
+                                                        size:
+                                                            60, // Adjusted size
+                                                        color:
+                                                            themeController
+                                                                    .isDarkMode
+                                                                ? ColorTheme
+                                                                    .textTertiaryDark
+                                                                : ColorTheme
+                                                                    .textTertiary,
+                                                      ),
+                                                )
+                                                : Icon(
+                                                  Icons
+                                                      .person_add_alt_1_outlined, // Changed icon for adding
+                                                  size: 50, // Adjusted size
+                                                  color:
+                                                      themeController.isDarkMode
+                                                          ? ColorTheme
+                                                              .textTertiaryDark
+                                                          : ColorTheme
+                                                              .textTertiary,
+                                                )),
+                                  ),
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 12),
                             TextButton.icon(
                               onPressed:
                                   () => _selectImage(
                                     profilePicture,
                                     permissionUtils,
+                                    themeController,
                                   ),
                               icon: Icon(
-                                Icons.add_a_photo,
-                                color: ColorTheme.primary,
-                                size: 18,
+                                Icons.edit_outlined, // Changed icon
+                                color:
+                                    themeController.isDarkMode
+                                        ? ColorTheme.primaryLightDark
+                                        : ColorTheme.primary,
+                                size: 20,
                               ),
                               label: Text(
-                                profilePicture.value != null
-                                    ? 'Change Picture'
-                                    : currentStaff.value?.profilePicture !=
-                                            null &&
-                                        currentStaff
-                                            .value!
-                                            .profilePicture!
-                                            .isNotEmpty
+                                profilePicture.value != null ||
+                                        (currentStaff.value?.profilePicture !=
+                                                null &&
+                                            currentStaff
+                                                .value!
+                                                .profilePicture!
+                                                .isNotEmpty)
                                     ? 'Change Picture'
                                     : 'Add Profile Picture',
                                 style: TextStyle(
-                                  color: ColorTheme.primary,
-                                  fontSize: 14,
+                                  color:
+                                      themeController.isDarkMode
+                                          ? ColorTheme.primaryLightDark
+                                          : ColorTheme.primary,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600, // Bolder
+                                  fontFamily: 'JosefinSans',
+                                ),
+                              ),
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  side: BorderSide(
+                                    color: (themeController.isDarkMode
+                                            ? ColorTheme.primaryLightDark
+                                            : ColorTheme.primary)
+                                        .withOpacity(0.5),
+                                  ),
                                 ),
                               ),
                             ),
@@ -347,8 +452,6 @@ class StaffEditView extends GetView<StaffController> {
                         ),
                       ),
                       const SizedBox(height: 24),
-
-                      // Name field with validation
                       AppTextField(
                         controller: nameController,
                         label: 'Name',
@@ -370,20 +473,25 @@ class StaffEditView extends GetView<StaffController> {
                                   padding: const EdgeInsets.only(
                                     top: 4.0,
                                     left: 12.0,
+                                    bottom: 8.0,
                                   ),
                                   child: Text(
                                     nameError.value,
                                     style: TextStyle(
-                                      color: ColorTheme.error,
+                                      color:
+                                          themeController.isDarkMode
+                                              ? ColorTheme.errorDark
+                                              : ColorTheme.error,
                                       fontSize: 12,
                                     ),
                                   ),
                                 )
-                                : const SizedBox.shrink(),
+                                : const SizedBox(
+                                  height: 16,
+                                ), // Keep consistent spacing
                       ),
-                      const SizedBox(height: 16),
 
-                      // Email field with validation
+                      // const SizedBox(height: 16), // Removed, handled by Obx above
                       AppTextField(
                         controller: emailController,
                         label: 'Email',
@@ -407,20 +515,23 @@ class StaffEditView extends GetView<StaffController> {
                                   padding: const EdgeInsets.only(
                                     top: 4.0,
                                     left: 12.0,
+                                    bottom: 8.0,
                                   ),
                                   child: Text(
                                     emailError.value,
                                     style: TextStyle(
-                                      color: ColorTheme.error,
+                                      color:
+                                          themeController.isDarkMode
+                                              ? ColorTheme.errorDark
+                                              : ColorTheme.error,
                                       fontSize: 12,
                                     ),
                                   ),
                                 )
-                                : const SizedBox.shrink(),
+                                : const SizedBox(height: 16),
                       ),
-                      const SizedBox(height: 16),
 
-                      // Phone number field with validation
+                      // const SizedBox(height: 16),
                       AppTextField(
                         controller: phoneController,
                         label: 'Phone Number',
@@ -443,20 +554,23 @@ class StaffEditView extends GetView<StaffController> {
                                   padding: const EdgeInsets.only(
                                     top: 4.0,
                                     left: 12.0,
+                                    bottom: 8.0,
                                   ),
                                   child: Text(
                                     phoneError.value,
                                     style: TextStyle(
-                                      color: ColorTheme.error,
+                                      color:
+                                          themeController.isDarkMode
+                                              ? ColorTheme.errorDark
+                                              : ColorTheme.error,
                                       fontSize: 12,
                                     ),
                                   ),
                                 )
-                                : const SizedBox.shrink(),
+                                : const SizedBox(height: 16),
                       ),
-                      const SizedBox(height: 16),
 
-                      // Address field
+                      // const SizedBox(height: 16),
                       AppTextField(
                         controller: addressController,
                         label: 'Address (Optional)',
@@ -464,49 +578,78 @@ class StaffEditView extends GetView<StaffController> {
                         prefix: const Icon(Icons.location_on_outlined),
                         maxLines: 3,
                       ),
-                      const SizedBox(height: 16),
-
-                      // Status toggle
+                      const SizedBox(
+                        height: 24,
+                      ), // Increased spacing before switch
                       Obx(
-                        () => SwitchListTile(
-                          title: Text(
-                            'Active Status',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: ColorTheme.textPrimary,
-                              fontFamily: 'JosefinSans',
+                        () => Container(
+                          // Wrap SwitchListTile for better background/border
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color:
+                                themeController.isDarkMode
+                                    ? ColorTheme.surfaceDark.withOpacity(0.5)
+                                    : ColorTheme.surface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color:
+                                  themeController.isDarkMode
+                                      ? ColorTheme.borderDark
+                                      : ColorTheme.border,
+                              width: 1,
                             ),
                           ),
-                          subtitle: Text(
-                            isActiveRx.value
-                                ? 'Staff member is active'
-                                : 'Staff member is inactive',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: ColorTheme.textSecondary,
-                              fontFamily: 'JosefinSans',
+                          child: SwitchListTile(
+                            title: Text(
+                              'Active Status',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600, // Bolder
+                                color:
+                                    themeController.isDarkMode
+                                        ? ColorTheme.textPrimaryDark
+                                        : ColorTheme.textPrimary,
+                                fontFamily: 'JosefinSans',
+                              ),
                             ),
+                            subtitle: Text(
+                              isActiveRx.value
+                                  ? 'Staff member is active'
+                                  : 'Staff member is inactive',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color:
+                                    themeController.isDarkMode
+                                        ? ColorTheme.textSecondaryDark
+                                        : ColorTheme.textSecondary,
+                                fontFamily: 'JosefinSans',
+                              ),
+                            ),
+                            value: isActiveRx.value,
+                            onChanged: (value) {
+                              isActiveRx.value = value;
+                            },
+                            activeColor:
+                                themeController.isDarkMode
+                                    ? ColorTheme.primaryLightDark
+                                    : ColorTheme.primary,
+                            // thumbColor & trackColor are typically handled by SwitchTheme in AppTheme
+                            contentPadding: EdgeInsets.zero,
                           ),
-                          value: isActiveRx.value,
-                          onChanged: (value) {
-                            isActiveRx.value = value;
-                          },
-                          activeColor: ColorTheme.primary,
-                          contentPadding: EdgeInsets.zero,
                         ),
                       ),
                       const SizedBox(height: 32),
-
-                      // Submit button
                       Obx(
                         () => AppButton(
                           text: 'Update Staff',
                           isLoading: controller.isFormSubmitting.value,
                           type: AppButtonType.primary,
-                          size: AppButtonSize.medium,
+                          size: AppButtonSize.large, // Larger button
                           isFullWidth: true,
-                          icon: Icons.save,
+                          icon: Icons.save_alt_outlined, // Changed icon
                           onPressed: () async {
                             if (validateForm()) {
                               await controller.updateStaff(
@@ -522,14 +665,20 @@ class StaffEditView extends GetView<StaffController> {
                                 profilePicture: profilePicture.value,
                               );
                             } else {
-                              // Show validation message
                               Get.snackbar(
                                 'Validation Error',
                                 'Please check the form fields',
-                                backgroundColor: ColorTheme.error.withValues(
-                                  alpha: 0.1,
-                                ),
-                                colorText: ColorTheme.error,
+                                backgroundColor: (themeController.isDarkMode
+                                        ? ColorTheme.errorDark
+                                        : ColorTheme.error)
+                                    .withOpacity(0.8),
+                                colorText:
+                                    themeController.isDarkMode
+                                        ? ColorTheme.textPrimaryDark
+                                        : ColorTheme.textInverse,
+                                snackPosition: SnackPosition.BOTTOM,
+                                margin: const EdgeInsets.all(16),
+                                borderRadius: 12,
                               );
                             }
                           },
@@ -546,157 +695,123 @@ class StaffEditView extends GetView<StaffController> {
     );
   }
 
-  // Helper method to check if device is running Android 13 or above
   Future<bool> _isAndroid13OrAbove() async {
     if (Platform.isAndroid) {
       final deviceInfo = DeviceInfoPlugin();
       final androidInfo = await deviceInfo.androidInfo;
-      return androidInfo.version.sdkInt >= 33; // Android 13 is API level 33
+      return androidInfo.version.sdkInt >= 33;
     }
     return false;
   }
 
-  // Method to select image from gallery or camera
   Future<void> _selectImage(
     Rx<File?> profilePicture,
     PermissionUtils permissionUtils,
+    ThemeController themeController, // Pass ThemeController
   ) async {
     try {
-      // Show a bottom sheet to select image source
       await Get.bottomSheet(
         Container(
-          padding: const EdgeInsets.all(16),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
+          padding: const EdgeInsets.all(20), // Increased padding
+          decoration: BoxDecoration(
+            color:
+                themeController.isDarkMode
+                    ? ColorTheme.surfaceDark
+                    : Colors.white, // Theme-aware background
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(24), // Larger radius
+              topRight: Radius.circular(24), // Larger radius
             ),
+            boxShadow: [
+              // Add a subtle shadow
+              BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10),
+            ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              Container(
+                // Handle for bottom sheet
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 15),
+                decoration: BoxDecoration(
+                  color: Colors.grey[400],
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
               Text(
-                'Select Image Source',
+                'Select Profile Picture', // Updated title
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 20, // Slightly larger
                   fontWeight: FontWeight.bold,
-                  color: ColorTheme.textPrimary,
+                  color:
+                      themeController.isDarkMode
+                          ? ColorTheme.textPrimaryDark
+                          : ColorTheme.textPrimary,
                   fontFamily: 'JosefinSans',
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24), // Increased spacing
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  // Camera option
-                  InkWell(
+                  _buildImageSourceOption(
+                    icon: Icons.camera_alt_outlined,
+                    label: 'Camera',
+                    themeController: themeController,
+                    color:
+                        themeController.isDarkMode
+                            ? ColorTheme.primaryLightDark
+                            : ColorTheme.primary,
                     onTap: () async {
                       Get.back();
-
-                      // Request camera permission
                       final status = await Permission.camera.request();
-
                       if (status.isGranted) {
                         _takePicture(profilePicture, permissionUtils);
                       } else if (status.isPermanentlyDenied) {
-                        // Show dialog if permanently denied
                         permissionUtils.showPermissionDialog(
                           title: 'Camera Permission Required',
                           message:
                               'Camera permission is required to take photos. Please enable it in app settings.',
-                          cancelButtonText: 'Cancel',
-                          settingsButtonText: 'Open Settings',
                         );
                       } else {
                         permissionUtils.showToast('Camera permission denied');
                       }
                     },
-                    child: Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: ColorTheme.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(50),
-                          ),
-                          child: Icon(
-                            Icons.camera_alt,
-                            color: ColorTheme.primary,
-                            size: 30,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Camera',
-                          style: TextStyle(
-                            color: ColorTheme.textPrimary,
-                            fontFamily: 'JosefinSans',
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
-
-                  // Gallery option
-                  InkWell(
+                  _buildImageSourceOption(
+                    icon: Icons.photo_library_outlined,
+                    label: 'Gallery',
+                    themeController: themeController,
+                    color:
+                        themeController.isDarkMode
+                            ? ColorTheme.infoDark
+                            : ColorTheme.info, // Different color for gallery
                     onTap: () async {
                       Get.back();
-
-                      // Request storage permission for Android below 13 or photos for iOS and Android 13+
                       Permission permission;
-
                       if (Platform.isAndroid) {
-                        if (await _isAndroid13OrAbove()) {
-                          permission = Permission.photos;
-                        } else {
-                          permission = Permission.storage;
-                        }
+                        permission =
+                            await _isAndroid13OrAbove()
+                                ? Permission.photos
+                                : Permission.storage;
                       } else {
                         permission = Permission.photos;
                       }
-
                       final status = await permission.request();
-
                       if (status.isGranted) {
                         _pickFromGallery(profilePicture, permissionUtils);
                       } else if (status.isPermanentlyDenied) {
-                        // Show dialog if permanently denied
                         permissionUtils.showPermissionDialog(
                           title: 'Storage Permission Required',
                           message:
                               'Storage permission is required to select photos. Please enable it in app settings.',
-                          cancelButtonText: 'Cancel',
-                          settingsButtonText: 'Open Settings',
                         );
                       } else {
                         permissionUtils.showToast('Storage permission denied');
                       }
                     },
-                    child: Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: ColorTheme.info.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(50),
-                          ),
-                          child: Icon(
-                            Icons.photo_library,
-                            color: ColorTheme.info,
-                            size: 30,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Gallery',
-                          style: TextStyle(
-                            color: ColorTheme.textPrimary,
-                            fontFamily: 'JosefinSans',
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
                 ],
               ),
@@ -704,7 +819,8 @@ class StaffEditView extends GetView<StaffController> {
             ],
           ),
         ),
-        backgroundColor: Colors.transparent,
+        backgroundColor:
+            Colors.transparent, // Ensure container's shadow is visible
         elevation: 0,
       );
     } catch (e) {
@@ -712,46 +828,90 @@ class StaffEditView extends GetView<StaffController> {
     }
   }
 
-  // Helper method to take picture from camera
+  // Helper widget for image source options in BottomSheet
+  Widget _buildImageSourceOption({
+    required IconData icon,
+    required String label,
+    required ThemeController themeController,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16), // Add splash effect
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16), // Increased padding
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1), // Use passed color
+                borderRadius: BorderRadius.circular(100), // Fully circular
+                border: Border.all(color: color.withOpacity(0.3)),
+              ),
+              child: Icon(icon, color: color, size: 32), // Use passed color
+            ),
+            const SizedBox(height: 10),
+            Text(
+              label,
+              style: TextStyle(
+                color:
+                    themeController.isDarkMode
+                        ? ColorTheme.textSecondaryDark
+                        : ColorTheme.textSecondary,
+                fontFamily: 'JosefinSans',
+                fontSize: 14, // Slightly smaller
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _takePicture(
     Rx<File?> profilePicture,
     PermissionUtils permissionUtils,
   ) async {
+    // ... (implementation remains the same)
     try {
       final ImagePicker picker = ImagePicker();
       final XFile? photo = await picker.pickImage(
         source: ImageSource.camera,
-        imageQuality: 80,
-        maxWidth: 800,
-        maxHeight: 800,
+        imageQuality: 80, // Consider higher quality for modern apps
+        maxWidth: 1024, // Consider larger dimensions
+        maxHeight: 1024,
       );
 
       if (photo != null) {
         profilePicture.value = File(photo.path);
-        permissionUtils.showToast('Image captured successfully');
+        // No toast here, handled by form validation or success message after update
       }
     } catch (e) {
       permissionUtils.showToast('Failed to capture image: $e');
     }
   }
 
-  // Helper method to pick image from gallery
   Future<void> _pickFromGallery(
     Rx<File?> profilePicture,
     PermissionUtils permissionUtils,
   ) async {
+    // ... (implementation remains the same)
     try {
       final ImagePicker picker = ImagePicker();
       final XFile? image = await picker.pickImage(
         source: ImageSource.gallery,
         imageQuality: 80,
-        maxWidth: 800,
-        maxHeight: 800,
+        maxWidth: 1024,
+        maxHeight: 1024,
       );
 
       if (image != null) {
         profilePicture.value = File(image.path);
-        permissionUtils.showToast('Image selected successfully');
+        // No toast here
       }
     } catch (e) {
       permissionUtils.showToast('Failed to select image: $e');

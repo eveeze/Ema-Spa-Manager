@@ -132,7 +132,7 @@ class _AppButtonState extends State<AppButton>
         isDark
             ? ColorTheme.primaryLightDark.withValues(alpha: 0.8)
             : ColorTheme.primaryDark;
-    final textColor = isDark ? Colors.black : Colors.white;
+    final textColor = isDark ? ColorTheme.textInverse : Colors.white;
 
     return Container(
       width: widget.isFullWidth ? double.infinity : null,

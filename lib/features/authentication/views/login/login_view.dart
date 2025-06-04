@@ -169,7 +169,7 @@ class _LoginViewState extends State<LoginView> {
                                 ),
                               ),
 
-                              // Email field using AppTextField
+                              // Email field using AppTextField with white label
                               AppTextField(
                                 label: 'Email',
                                 placeholder: 'Enter your email',
@@ -180,11 +180,14 @@ class _LoginViewState extends State<LoginView> {
                                 prefix: const Icon(Icons.email_outlined),
                                 validator: ValidatorUtils.validateEmail,
                                 textInputAction: TextInputAction.next,
+                                // Force white label for both themes
+                                labelColor: Colors.white,
+                                requiredColor: Colors.red.shade300,
                               ),
 
                               const SizedBox(height: 24),
 
-                              // Password field using AppTextField
+                              // Password field using AppTextField with white label
                               AppTextField(
                                 label: 'Password',
                                 placeholder: 'Enter your password',
@@ -208,6 +211,9 @@ class _LoginViewState extends State<LoginView> {
                                 validator: ValidatorUtils.validatePassword,
                                 textInputAction: TextInputAction.done,
                                 onSubmitted: (_) => _handleLogin(),
+                                // Force white label for both themes
+                                labelColor: Colors.white,
+                                requiredColor: Colors.red.shade300,
                               ),
 
                               const SizedBox(height: 32),
@@ -230,54 +236,52 @@ class _LoginViewState extends State<LoginView> {
 
                               const SizedBox(height: 24),
 
-                              // Forgot password button using AppButton
-                              Center(
-                                child: AppButton(
-                                  text: 'Lupa Password',
-                                  onPressed: () {
-                                    Get.toNamed('/forgot-password');
-                                  },
-                                  type: AppButtonType.text,
-                                  size: AppButtonSize.medium,
-                                ),
-                              ),
-
-                              const SizedBox(height: 16),
-
-                              // Error messages
+                              // Error messages with improved visibility
                               Obx(() {
                                 if (_authController.errorMessage.isNotEmpty) {
                                   return Container(
-                                    padding: const EdgeInsets.all(12),
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.all(16),
                                     decoration: BoxDecoration(
                                       color: (isDark
                                               ? ColorTheme.errorDark
                                               : ColorTheme.error)
-                                          .withValues(alpha: 0.2),
-                                      borderRadius: BorderRadius.circular(8),
+                                          .withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
                                         color: (isDark
                                                 ? ColorTheme.errorDark
                                                 : ColorTheme.error)
-                                            .withValues(alpha: 0.5),
+                                            .withValues(alpha: 0.4),
+                                        width: 1.5,
                                       ),
                                     ),
                                     child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Icon(
-                                          Icons.error_outline,
+                                          Icons.error_outline_rounded,
                                           color:
                                               isDark
                                                   ? ColorTheme.errorDark
                                                   : ColorTheme.error,
-                                          size: 20,
+                                          size: 24,
                                         ),
-                                        const SizedBox(width: 8),
+                                        const SizedBox(width: 12),
                                         Expanded(
                                           child: Text(
                                             _authController.errorMessage.value,
-                                            style: textTheme.bodySmall
-                                                ?.copyWith(color: textPrimary),
+                                            style: TextStyle(
+                                              color: textPrimary,
+                                              fontSize:
+                                                  15, // Increased from default
+                                              fontWeight:
+                                                  FontWeight
+                                                      .w500, // Better contrast
+                                              height: 1.4,
+                                              fontFamily: 'JosefinSans',
+                                            ),
                                           ),
                                         ),
                                       ],

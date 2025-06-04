@@ -7,218 +7,191 @@ import 'package:emababyspa/common/widgets/empty_state_widget.dart';
 import 'package:emababyspa/common/layouts/main_layout.dart';
 import 'package:emababyspa/features/service/controllers/service_controller.dart';
 import 'package:emababyspa/data/models/service.dart';
+import 'package:emababyspa/features/theme/controllers/theme_controller.dart'; // Import ThemeController
 
 class ServiceManageView extends GetView<ServiceController> {
   const ServiceManageView({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final ThemeController themeController =
+        Get.find<ThemeController>(); // Get ThemeController instance
+
     return MainLayout(
-      child: Scaffold(
-        backgroundColor: Colors.grey[50],
-        appBar: const CustomAppBar(
-          title: 'Service Management',
-          showBackButton: true,
-        ),
-        floatingActionButton: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: ColorTheme.primary.withValues(alpha: 0.3),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
+      child: Obx(() {
+        // Wrap with Obx to listen to theme changes
+        // Update status bar style based on theme
+        themeController.updateSystemBrightness(); // Ensure status bar updates
+
+        return Scaffold(
+          backgroundColor:
+              themeController.isDarkMode
+                  ? ColorTheme.backgroundDark
+                  : Colors.grey[50],
+          appBar: CustomAppBar(
+            title: 'Service Management',
+            showBackButton: true,
+            backgroundColor:
+                themeController.isDarkMode
+                    ? ColorTheme.surfaceDark
+                    : ColorTheme.primary,
           ),
-          child: FloatingActionButton.extended(
-            onPressed: () => Get.toNamed('/services/form'),
-            backgroundColor: ColorTheme.primary,
-            elevation: 0,
-            icon: const Icon(Icons.add_rounded, color: Colors.white),
-            label: const Text(
-              'Add Service',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-                fontFamily: 'JosefinSans',
-              ),
-            ),
-            shape: RoundedRectangleBorder(
+          floatingActionButton: Container(
+            decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color:
+                      themeController.isDarkMode
+                          ? ColorTheme.primaryLightDark.withOpacity(0.3)
+                          : ColorTheme.primary.withOpacity(0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-          ),
-        ),
-        body: SafeArea(
-          child: RefreshIndicator(
-            onRefresh: () async {
-              await controller.refreshServices();
-            },
-            color: ColorTheme.primary,
-            backgroundColor: Colors.white,
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Enhanced Header Section
-                  Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          ColorTheme.primary.withValues(alpha: 0.05),
-                          ColorTheme.info.withValues(alpha: 0.02),
-                        ],
-                      ),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: ColorTheme.primary.withValues(
-                                    alpha: 0.1,
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Icon(
-                                  Icons.spa_rounded,
-                                  color: ColorTheme.primary,
-                                  size: 24,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Service Management',
-                                      style: TextStyle(
-                                        fontSize: 28,
-                                        fontWeight: FontWeight.bold,
-                                        color: ColorTheme.textPrimary,
-                                        fontFamily: 'JosefinSans',
-                                        letterSpacing: -0.5,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Manage and organize your baby spa services',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        color: ColorTheme.textSecondary,
-                                        fontFamily: 'JosefinSans',
-                                        height: 1.3,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // Filter Section
-                  Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: _buildFilterOptions(),
-                  ),
-
-                  // Service list
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Obx(() {
-                      if (controller.isLoadingServices.value) {
-                        return SizedBox(
-                          height: MediaQuery.of(context).size.height * 0.4,
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    ColorTheme.primary,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'Loading services...',
-                                  style: TextStyle(
-                                    color: ColorTheme.textSecondary,
-                                    fontFamily: 'JosefinSans',
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }
-
-                      if (controller.serviceError.isNotEmpty) {
-                        return SizedBox(
-                          height: MediaQuery.of(context).size.height * 0.4,
-                          child: EmptyStateWidget(
-                            title: 'Oops!',
-                            message: controller.serviceError.value,
-                            icon: Icons.error_outline_rounded,
-                            buttonLabel: 'Refresh',
-                            onButtonPressed: controller.refreshServices,
-                            fullScreen: false,
-                          ),
-                        );
-                      }
-
-                      if (controller.services.isEmpty) {
-                        return SizedBox(
-                          height: MediaQuery.of(context).size.height * 0.4,
-                          child: EmptyStateWidget(
-                            title: 'No Services Found',
-                            message: 'You haven\'t added any services yet.',
-                            icon: Icons.spa_outlined,
-                            buttonLabel: 'Add Service',
-                            onButtonPressed:
-                                () => Get.toNamed('/services/form'),
-                            fullScreen: false,
-                          ),
-                        );
-                      }
-
-                      return _buildServiceList();
-                    }),
-                  ),
-
-                  // Bottom spacing for FAB
-                  const SizedBox(height: 100),
-                ],
+            child: FloatingActionButton.extended(
+              onPressed: () => Get.toNamed('/services/form'),
+              backgroundColor:
+                  themeController.isDarkMode
+                      ? ColorTheme.primaryLightDark
+                      : ColorTheme.primary,
+              elevation: 0,
+              icon: Icon(
+                Icons.add_rounded,
+                color: themeController.isDarkMode ? Colors.black : Colors.white,
+              ),
+              label: Text(
+                'Add Service',
+                style: TextStyle(
+                  color:
+                      themeController.isDarkMode ? Colors.black : Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'JosefinSans',
+                ),
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
               ),
             ),
           ),
-        ),
-      ),
+          body: SafeArea(
+            child: RefreshIndicator(
+              onRefresh: () async {
+                await controller.refreshServices();
+              },
+              color:
+                  themeController.isDarkMode
+                      ? ColorTheme.primaryLightDark
+                      : ColorTheme.primary,
+              backgroundColor:
+                  themeController.isDarkMode
+                      ? ColorTheme.surfaceDark
+                      : Colors.white,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Filter Section
+                    Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: _buildFilterOptions(themeController),
+                    ),
+
+                    // Service list
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Obx(() {
+                        if (controller.isLoadingServices.value) {
+                          return SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.4,
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      themeController.isDarkMode
+                                          ? ColorTheme.primaryLightDark
+                                          : ColorTheme.primary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'Loading services...',
+                                    style: TextStyle(
+                                      color:
+                                          themeController.isDarkMode
+                                              ? ColorTheme.textSecondaryDark
+                                              : ColorTheme.textSecondary,
+                                      fontFamily: 'JosefinSans',
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }
+
+                        if (controller.serviceError.isNotEmpty) {
+                          return SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.4,
+                            child: EmptyStateWidget(
+                              title: 'Oops!',
+                              message: controller.serviceError.value,
+                              icon: Icons.error_outline_rounded,
+                              buttonLabel: 'Refresh',
+                              onButtonPressed: controller.refreshServices,
+                              fullScreen: false,
+                            ),
+                          );
+                        }
+
+                        if (controller.services.isEmpty) {
+                          return SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.4,
+                            child: EmptyStateWidget(
+                              title: 'No Services Found',
+                              message: 'You haven\'t added any services yet.',
+                              icon: Icons.spa_outlined,
+                              buttonLabel: 'Add Service',
+                              onButtonPressed:
+                                  () => Get.toNamed('/services/form'),
+                              fullScreen: false,
+                            ),
+                          );
+                        }
+
+                        return _buildServiceList(themeController);
+                      }),
+                    ),
+
+                    // Bottom spacing for FAB
+                    const SizedBox(height: 100),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      }),
     );
   }
 
-  Widget _buildFilterOptions() {
+  Widget _buildFilterOptions(ThemeController themeController) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color:
+            themeController.isDarkMode ? ColorTheme.surfaceDark : Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color:
+                themeController.isDarkMode
+                    ? Colors.black.withOpacity(0.2)
+                    : Colors.black.withOpacity(0.04),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -231,7 +204,10 @@ class ServiceManageView extends GetView<ServiceController> {
             children: [
               Icon(
                 Icons.filter_list_rounded,
-                color: ColorTheme.primary,
+                color:
+                    themeController.isDarkMode
+                        ? ColorTheme.primaryLightDark
+                        : ColorTheme.primary,
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -240,7 +216,10 @@ class ServiceManageView extends GetView<ServiceController> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: ColorTheme.textPrimary,
+                  color:
+                      themeController.isDarkMode
+                          ? ColorTheme.textPrimaryDark
+                          : ColorTheme.textPrimary,
                   fontFamily: 'JosefinSans',
                 ),
               ),
@@ -254,22 +233,54 @@ class ServiceManageView extends GetView<ServiceController> {
                 ? Container(
                   height: 56,
                   decoration: BoxDecoration(
-                    color: Colors.grey[100],
+                    color:
+                        themeController.isDarkMode
+                            ? Colors.grey[700]
+                            : Colors.grey[100],
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Center(child: LinearProgressIndicator()),
+                  child: Center(
+                    child: LinearProgressIndicator(
+                      backgroundColor:
+                          themeController.isDarkMode
+                              ? Colors.grey[600]
+                              : Colors.grey[300],
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        themeController.isDarkMode
+                            ? ColorTheme.primaryLightDark
+                            : ColorTheme.primary,
+                      ),
+                    ),
+                  ),
                 )
                 : Container(
                   decoration: BoxDecoration(
-                    color: Colors.grey[50],
+                    color:
+                        themeController.isDarkMode
+                            ? ColorTheme
+                                .backgroundDark // Darker background for dropdown
+                            : Colors.grey[50],
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey[200]!, width: 1),
+                    border: Border.all(
+                      color:
+                          themeController.isDarkMode
+                              ? ColorTheme.borderDark
+                              : Colors.grey[200]!,
+                      width: 1,
+                    ),
                   ),
                   child: DropdownButtonFormField<String>(
+                    dropdownColor:
+                        themeController.isDarkMode
+                            ? ColorTheme.surfaceDark
+                            : Colors.white, // Set dropdown menu color
                     decoration: InputDecoration(
                       labelText: 'Filter by Category',
                       labelStyle: TextStyle(
-                        color: ColorTheme.textSecondary,
+                        color:
+                            themeController.isDarkMode
+                                ? ColorTheme.textSecondaryDark
+                                : ColorTheme.textSecondary,
                         fontFamily: 'JosefinSans',
                       ),
                       border: InputBorder.none,
@@ -279,11 +290,23 @@ class ServiceManageView extends GetView<ServiceController> {
                       ),
                       prefixIcon: Icon(
                         Icons.category_outlined,
-                        color: ColorTheme.primary,
+                        color:
+                            themeController.isDarkMode
+                                ? ColorTheme.primaryLightDark
+                                : ColorTheme.primary,
                         size: 20,
                       ),
                     ),
-                    value: null,
+                    value:
+                        null, // Consider controller.selectedCategoryId.value if you have one
+                    style: TextStyle(
+                      // Style for selected item and items in dropdown
+                      color:
+                          themeController.isDarkMode
+                              ? ColorTheme.textPrimaryDark
+                              : ColorTheme.textPrimary,
+                      fontFamily: 'JosefinSans',
+                    ),
                     onChanged: (String? categoryId) {
                       if (categoryId != null) {
                         controller.fetchServices(categoryId: categoryId);
@@ -292,11 +315,18 @@ class ServiceManageView extends GetView<ServiceController> {
                       }
                     },
                     items: [
-                      const DropdownMenuItem<String>(
+                      DropdownMenuItem<String>(
                         value: null,
                         child: Text(
                           'All Categories',
-                          style: TextStyle(fontFamily: 'JosefinSans'),
+                          style: TextStyle(
+                            fontFamily: 'JosefinSans',
+                            color:
+                                themeController.isDarkMode
+                                    ? ColorTheme
+                                        .textSecondaryDark // Lighter for placeholder
+                                    : ColorTheme.textSecondary,
+                          ),
                         ),
                       ),
                       ...controller.serviceCategories.map((category) {
@@ -304,7 +334,13 @@ class ServiceManageView extends GetView<ServiceController> {
                           value: category.id,
                           child: Text(
                             category.name,
-                            style: const TextStyle(fontFamily: 'JosefinSans'),
+                            style: TextStyle(
+                              fontFamily: 'JosefinSans',
+                              color:
+                                  themeController.isDarkMode
+                                      ? ColorTheme.textPrimaryDark
+                                      : ColorTheme.textPrimary,
+                            ),
                           ),
                         );
                       }),
@@ -321,7 +357,10 @@ class ServiceManageView extends GetView<ServiceController> {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: ColorTheme.textSecondary,
+              color:
+                  themeController.isDarkMode
+                      ? ColorTheme.textSecondaryDark
+                      : ColorTheme.textSecondary,
               fontFamily: 'JosefinSans',
             ),
           ),
@@ -332,7 +371,11 @@ class ServiceManageView extends GetView<ServiceController> {
                 child: _buildFilterButton(
                   label: 'Active',
                   icon: Icons.check_circle_outline_rounded,
-                  color: ColorTheme.success,
+                  color:
+                      themeController.isDarkMode
+                          ? ColorTheme.successDark
+                          : ColorTheme.success,
+                  themeController: themeController,
                   onPressed: () => controller.fetchServices(isActive: true),
                 ),
               ),
@@ -341,7 +384,11 @@ class ServiceManageView extends GetView<ServiceController> {
                 child: _buildFilterButton(
                   label: 'Inactive',
                   icon: Icons.cancel_outlined,
-                  color: ColorTheme.error,
+                  color:
+                      themeController.isDarkMode
+                          ? ColorTheme.errorDark
+                          : ColorTheme.error,
+                  themeController: themeController,
                   onPressed: () => controller.fetchServices(isActive: false),
                 ),
               ),
@@ -350,7 +397,11 @@ class ServiceManageView extends GetView<ServiceController> {
                 child: _buildFilterButton(
                   label: 'All',
                   icon: Icons.list_rounded,
-                  color: ColorTheme.primary,
+                  color:
+                      themeController.isDarkMode
+                          ? ColorTheme.primaryLightDark
+                          : ColorTheme.primary,
+                  themeController: themeController,
                   onPressed: () => controller.fetchServices(),
                 ),
               ),
@@ -366,13 +417,33 @@ class ServiceManageView extends GetView<ServiceController> {
     required IconData icon,
     required Color color,
     required VoidCallback onPressed,
+    required ThemeController themeController,
   }) {
+    bool isPrimaryButton = label == 'All';
+    Color foregroundColor = color;
+    Color backgroundColor =
+        themeController.isDarkMode
+            ? color.withOpacity(0.15) // Slightly more opaque for dark theme
+            : color.withOpacity(0.05);
+    Color borderColor =
+        themeController.isDarkMode
+            ? color.withOpacity(0.5) // Brighter border for dark theme
+            : color.withOpacity(0.3);
+
+    if (themeController.isDarkMode && isPrimaryButton) {
+      // Special handling for "All" button in dark mode if needed, e.g. to use textPrimaryDark
+      // foregroundColor = ColorTheme.textPrimaryDark; // If you want black text on primaryLightDark
+    }
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: color.withValues(alpha: 0.1),
+            color:
+                themeController.isDarkMode
+                    ? color.withOpacity(0.25) // Darker shadow for contrast
+                    : color.withOpacity(0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -380,18 +451,19 @@ class ServiceManageView extends GetView<ServiceController> {
       ),
       child: OutlinedButton.icon(
         onPressed: onPressed,
-        icon: Icon(icon, size: 18),
+        icon: Icon(icon, size: 18, color: foregroundColor),
         label: Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.w600,
             fontFamily: 'JosefinSans',
+            color: foregroundColor,
           ),
         ),
         style: OutlinedButton.styleFrom(
-          foregroundColor: color,
-          side: BorderSide(color: color.withValues(alpha: 0.3), width: 1.5),
-          backgroundColor: color.withValues(alpha: 0.05),
+          foregroundColor: foregroundColor,
+          side: BorderSide(color: borderColor, width: 1.5),
+          backgroundColor: backgroundColor,
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -401,7 +473,7 @@ class ServiceManageView extends GetView<ServiceController> {
     );
   }
 
-  Widget _buildServiceList() {
+  Widget _buildServiceList(ThemeController themeController) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -409,14 +481,24 @@ class ServiceManageView extends GetView<ServiceController> {
           padding: const EdgeInsets.only(bottom: 16),
           child: Row(
             children: [
-              Icon(Icons.list_alt_rounded, color: ColorTheme.primary, size: 20),
+              Icon(
+                Icons.list_alt_rounded,
+                color:
+                    themeController.isDarkMode
+                        ? ColorTheme.primaryLightDark
+                        : ColorTheme.primary,
+                size: 20,
+              ),
               const SizedBox(width: 8),
               Text(
                 'Services (${controller.services.length})',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: ColorTheme.textPrimary,
+                  color:
+                      themeController.isDarkMode
+                          ? ColorTheme.textPrimaryDark
+                          : ColorTheme.textPrimary,
                   fontFamily: 'JosefinSans',
                 ),
               ),
@@ -430,15 +512,14 @@ class ServiceManageView extends GetView<ServiceController> {
           separatorBuilder: (context, index) => const SizedBox(height: 16),
           itemBuilder: (context, index) {
             final service = controller.services[index];
-            return _buildServiceCard(service);
+            return _buildServiceCard(service, themeController);
           },
         ),
       ],
     );
   }
 
-  Widget _buildServiceCard(Service service) {
-    // Find the category name for this service
+  Widget _buildServiceCard(Service service, ThemeController themeController) {
     String categoryName = 'Unknown';
     final category = controller.serviceCategories.firstWhereOrNull(
       (category) => category.id == service.categoryId,
@@ -449,314 +530,62 @@ class ServiceManageView extends GetView<ServiceController> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color:
+            themeController.isDarkMode ? ColorTheme.surfaceDark : Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
+            color:
+                themeController.isDarkMode
+                    ? Colors.black.withOpacity(0.3)
+                    : Colors.black.withOpacity(0.06),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: InkWell(
-        onTap: () => {controller.navigateToEditService(service.id)},
+        onTap: () => controller.navigateToEditService(service.id),
         borderRadius: BorderRadius.circular(16),
+        splashColor:
+            themeController.isDarkMode
+                ? ColorTheme.primaryLightDark.withOpacity(0.1)
+                : ColorTheme.primary.withOpacity(0.1),
+        highlightColor:
+            themeController.isDarkMode
+                ? ColorTheme.primaryLightDark.withOpacity(0.2)
+                : ColorTheme.primary.withOpacity(0.2),
         child: Padding(
           padding: const EdgeInsets.all(20.0),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Enhanced service image
-              Container(
-                width: 90,
-                height: 90,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      ColorTheme.info.withValues(alpha: 0.1),
-                      ColorTheme.primary.withValues(alpha: 0.05),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: ColorTheme.info.withValues(alpha: 0.2),
-                    width: 1,
-                  ),
-                ),
-                child:
-                    service.imageUrl != null && service.imageUrl!.isNotEmpty
-                        ? ClipRRect(
-                          borderRadius: BorderRadius.circular(15),
-                          child: Image.network(
-                            service.imageUrl!,
-                            width: 90,
-                            height: 90,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Icon(
-                                Icons.spa_rounded,
-                                size: 44,
-                                color: ColorTheme.info,
-                              );
-                            },
-                          ),
-                        )
-                        : Icon(
-                          Icons.spa_rounded,
-                          size: 44,
-                          color: ColorTheme.info,
-                        ),
-              ),
+              // Service Image Section
+              _buildServiceImage(service, themeController),
               const SizedBox(width: 16),
 
-              // Enhanced service info
+              // Main Content Section
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            service.name,
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: ColorTheme.textPrimary,
-                              fontFamily: 'JosefinSans',
-                              letterSpacing: -0.3,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors:
-                                  service.isActive
-                                      ? [
-                                        ColorTheme.success.withValues(
-                                          alpha: 0.1,
-                                        ),
-                                        ColorTheme.success.withValues(
-                                          alpha: 0.05,
-                                        ),
-                                      ]
-                                      : [
-                                        ColorTheme.error.withValues(alpha: 0.1),
-                                        ColorTheme.error.withValues(
-                                          alpha: 0.05,
-                                        ),
-                                      ],
-                            ),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color:
-                                  service.isActive
-                                      ? ColorTheme.success.withValues(
-                                        alpha: 0.3,
-                                      )
-                                      : ColorTheme.error.withValues(alpha: 0.3),
-                              width: 1,
-                            ),
-                          ),
-                          child: Text(
-                            service.isActive ? 'Active' : 'Inactive',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color:
-                                  service.isActive
-                                      ? ColorTheme.success
-                                      : ColorTheme.error,
-                              fontFamily: 'JosefinSans',
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
+                    // Header: Title + Status
+                    _buildServiceHeader(service, themeController),
+                    const SizedBox(height: 12),
 
-                    // Category badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: ColorTheme.info.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: ColorTheme.info.withValues(alpha: 0.2),
-                          width: 1,
-                        ),
-                      ),
-                      child: Text(
-                        categoryName,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: ColorTheme.info,
-                          fontFamily: 'JosefinSans',
-                        ),
-                      ),
-                    ),
+                    // Category Badge
+                    _buildCategoryBadge(categoryName, themeController),
+                    const SizedBox(height: 12),
 
-                    const SizedBox(height: 8),
-
-                    // Service details
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: ColorTheme.textSecondary.withValues(
-                              alpha: 0.1,
-                            ),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Icon(
-                            Icons.access_time_rounded,
-                            size: 14,
-                            color: ColorTheme.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          '${service.duration} min',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: ColorTheme.textSecondary,
-                            fontFamily: 'JosefinSans',
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        if (service.hasPriceTiers)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: ColorTheme.warning.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              'Multiple tiers',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: ColorTheme.warning,
-                                fontWeight: FontWeight.w600,
-                                fontFamily: 'JosefinSans',
-                              ),
-                            ),
-                          )
-                        else if (service.price != null)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: ColorTheme.success.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              'Rp ${service.price?.toStringAsFixed(0)}',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: ColorTheme.success,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: 'JosefinSans',
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-
-                    if (service.minBabyAge != null &&
-                        service.maxBabyAge != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 6),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.child_care_rounded,
-                              size: 14,
-                              color: ColorTheme.textSecondary,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              '${service.minBabyAge} - ${service.maxBabyAge} months old',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: ColorTheme.textSecondary,
-                                fontFamily: 'JosefinSans',
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                    // Service Details (Duration, Price, Age Range)
+                    _buildServiceDetails(service, themeController),
                   ],
                 ),
               ),
 
-              // Enhanced action buttons
-              Column(
-                children: [
-                  // Toggle active status button
-                  Container(
-                    decoration: BoxDecoration(
-                      color:
-                          service.isActive
-                              ? ColorTheme.success.withValues(alpha: 0.1)
-                              : Colors.grey.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: IconButton(
-                      icon: Icon(
-                        service.isActive
-                            ? Icons.toggle_on_rounded
-                            : Icons.toggle_off_rounded,
-                        color:
-                            service.isActive
-                                ? ColorTheme.success
-                                : ColorTheme.textSecondary,
-                        size: 32,
-                      ),
-                      onPressed:
-                          () => controller.toggleServiceStatus(
-                            service.id,
-                            !service.isActive,
-                          ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  // Delete button
-                  Container(
-                    decoration: BoxDecoration(
-                      color: ColorTheme.error.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: IconButton(
-                      icon: Icon(
-                        Icons.delete_outline_rounded,
-                        color: ColorTheme.error,
-                        size: 24,
-                      ),
-                      onPressed: () => _showDeleteConfirmation(service),
-                    ),
-                  ),
-                ],
-              ),
+              // Action Buttons Section
+              const SizedBox(width: 12),
+              _buildActionButtons(service, themeController),
             ],
           ),
         ),
@@ -764,54 +593,489 @@ class ServiceManageView extends GetView<ServiceController> {
     );
   }
 
+  // Separate widget for service image
+  Widget _buildServiceImage(Service service, ThemeController themeController) {
+    return Container(
+      width: 80,
+      height: 80,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors:
+              themeController.isDarkMode
+                  ? [
+                    ColorTheme.infoDark.withOpacity(0.2),
+                    ColorTheme.primaryLightDark.withOpacity(0.1),
+                  ]
+                  : [
+                    ColorTheme.info.withOpacity(0.1),
+                    ColorTheme.primary.withOpacity(0.05),
+                  ],
+        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color:
+              themeController.isDarkMode
+                  ? ColorTheme.infoDark.withOpacity(0.3)
+                  : ColorTheme.info.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child:
+          service.imageUrl != null && service.imageUrl!.isNotEmpty
+              ? ClipRRect(
+                borderRadius: BorderRadius.circular(13),
+                child: Image.network(
+                  service.imageUrl!,
+                  width: 80,
+                  height: 80,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Icon(
+                      Icons.spa_rounded,
+                      size: 32,
+                      color:
+                          themeController.isDarkMode
+                              ? ColorTheme.infoDark
+                              : ColorTheme.info,
+                    );
+                  },
+                ),
+              )
+              : Icon(
+                Icons.spa_rounded,
+                size: 32,
+                color:
+                    themeController.isDarkMode
+                        ? ColorTheme.infoDark
+                        : ColorTheme.info,
+              ),
+    );
+  }
+
+  // Separate widget for service header (title + status)
+  Widget _buildServiceHeader(Service service, ThemeController themeController) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Text(
+            service.name,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color:
+                  themeController.isDarkMode
+                      ? ColorTheme.textPrimaryDark
+                      : ColorTheme.textPrimary,
+              fontFamily: 'JosefinSans',
+              letterSpacing: -0.3,
+              height: 1.2,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        const SizedBox(width: 12),
+        _buildStatusBadge(service, themeController),
+      ],
+    );
+  }
+
+  // Separate widget for status badge
+  Widget _buildStatusBadge(Service service, ThemeController themeController) {
+    final isActive = service.isActive;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color:
+            isActive
+                ? themeController.isDarkMode
+                    ? ColorTheme.successDark.withOpacity(0.15)
+                    : ColorTheme.success.withOpacity(0.1)
+                : themeController.isDarkMode
+                ? ColorTheme.errorDark.withOpacity(0.15)
+                : ColorTheme.error.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color:
+              isActive
+                  ? themeController.isDarkMode
+                      ? ColorTheme.successDark.withOpacity(0.4)
+                      : ColorTheme.success.withOpacity(0.3)
+                  : themeController.isDarkMode
+                  ? ColorTheme.errorDark.withOpacity(0.4)
+                  : ColorTheme.error.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Text(
+        isActive ? 'Active' : 'Inactive',
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color:
+              isActive
+                  ? themeController.isDarkMode
+                      ? ColorTheme.successDark
+                      : ColorTheme.success
+                  : themeController.isDarkMode
+                  ? ColorTheme.errorDark
+                  : ColorTheme.error,
+          fontFamily: 'JosefinSans',
+        ),
+      ),
+    );
+  }
+
+  // Separate widget for category badge
+  Widget _buildCategoryBadge(
+    String categoryName,
+    ThemeController themeController,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color:
+            themeController.isDarkMode
+                ? ColorTheme.infoDark.withOpacity(0.15)
+                : ColorTheme.info.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color:
+              themeController.isDarkMode
+                  ? ColorTheme.infoDark.withOpacity(0.3)
+                  : ColorTheme.info.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.category_outlined,
+            size: 14,
+            color:
+                themeController.isDarkMode
+                    ? ColorTheme.infoDark
+                    : ColorTheme.info,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            categoryName,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color:
+                  themeController.isDarkMode
+                      ? ColorTheme.infoDark
+                      : ColorTheme.info,
+              fontFamily: 'JosefinSans',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Separate widget for service details
+  Widget _buildServiceDetails(
+    Service service,
+    ThemeController themeController,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Duration and Price Row
+        Row(
+          children: [
+            _buildDetailItem(
+              icon: Icons.access_time_rounded,
+              text: '${service.duration} min',
+              themeController: themeController,
+            ),
+            const SizedBox(width: 16),
+            if (service.hasPriceTiers)
+              _buildPriceTierBadge(themeController)
+            else if (service.price != null)
+              _buildPriceBadge(service.price!, themeController),
+          ],
+        ),
+
+        // Age Range (if available)
+        if (service.minBabyAge != null && service.maxBabyAge != null) ...[
+          const SizedBox(height: 8),
+          _buildDetailItem(
+            icon: Icons.child_care_rounded,
+            text: '${service.minBabyAge} - ${service.maxBabyAge} months old',
+            themeController: themeController,
+          ),
+        ],
+      ],
+    );
+  }
+
+  // Helper widget for detail items
+  Widget _buildDetailItem({
+    required IconData icon,
+    required String text,
+    required ThemeController themeController,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color:
+                themeController.isDarkMode
+                    ? ColorTheme.textSecondaryDark.withOpacity(0.15)
+                    : ColorTheme.textSecondary.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Icon(
+            icon,
+            size: 14,
+            color:
+                themeController.isDarkMode
+                    ? ColorTheme.textSecondaryDark
+                    : ColorTheme.textSecondary,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          text,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color:
+                themeController.isDarkMode
+                    ? ColorTheme.textSecondaryDark
+                    : ColorTheme.textSecondary,
+            fontFamily: 'JosefinSans',
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Helper widget for price badge
+  Widget _buildPriceBadge(double price, ThemeController themeController) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color:
+            themeController.isDarkMode
+                ? ColorTheme.successDark.withOpacity(0.15)
+                : ColorTheme.success.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        'Rp ${price.toStringAsFixed(0)}',
+        style: TextStyle(
+          fontSize: 12,
+          color:
+              themeController.isDarkMode
+                  ? ColorTheme.successDark
+                  : ColorTheme.success,
+          fontWeight: FontWeight.bold,
+          fontFamily: 'JosefinSans',
+        ),
+      ),
+    );
+  }
+
+  // Helper widget for price tier badge
+  Widget _buildPriceTierBadge(ThemeController themeController) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color:
+            themeController.isDarkMode
+                ? ColorTheme.warningDark.withOpacity(0.15)
+                : ColorTheme.warning.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.layers_outlined,
+            size: 12,
+            color:
+                themeController.isDarkMode
+                    ? ColorTheme.warningDark.withOpacity(0.9)
+                    : const Color(0xFFc77700),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            'Multiple tiers',
+            style: TextStyle(
+              fontSize: 11,
+              color:
+                  themeController.isDarkMode
+                      ? ColorTheme.warningDark.withOpacity(0.9)
+                      : const Color(0xFFc77700),
+              fontWeight: FontWeight.w600,
+              fontFamily: 'JosefinSans',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Separate widget for action buttons
+  Widget _buildActionButtons(Service service, ThemeController themeController) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Toggle Status Button
+        Container(
+          decoration: BoxDecoration(
+            color:
+                service.isActive
+                    ? themeController.isDarkMode
+                        ? ColorTheme.successDark.withOpacity(0.15)
+                        : ColorTheme.success.withOpacity(0.1)
+                    : themeController.isDarkMode
+                    ? Colors.grey[700]!.withOpacity(0.3)
+                    : Colors.grey.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: IconButton(
+            icon: Icon(
+              service.isActive
+                  ? Icons.toggle_on_rounded
+                  : Icons.toggle_off_rounded,
+              color:
+                  service.isActive
+                      ? themeController.isDarkMode
+                          ? ColorTheme.successDark
+                          : ColorTheme.success
+                      : themeController.isDarkMode
+                      ? ColorTheme.textSecondaryDark
+                      : ColorTheme.textSecondary,
+              size: 28,
+            ),
+            onPressed:
+                () => controller.toggleServiceStatus(
+                  service.id,
+                  !service.isActive,
+                ),
+            tooltip: service.isActive ? "Deactivate" : "Activate",
+            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        // Delete Button
+        Container(
+          decoration: BoxDecoration(
+            color:
+                themeController.isDarkMode
+                    ? ColorTheme.errorDark.withOpacity(0.15)
+                    : ColorTheme.error.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: IconButton(
+            icon: Icon(
+              Icons.delete_outline_rounded,
+              color:
+                  themeController.isDarkMode
+                      ? ColorTheme.errorDark
+                      : ColorTheme.error,
+              size: 20,
+            ),
+            onPressed: () => _showDeleteConfirmation(service, themeController),
+            tooltip: "Delete Service",
+            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+          ),
+        ),
+      ],
+    );
+  }
+
   // Enhanced delete confirmation dialog
-  void _showDeleteConfirmation(Service service) {
+  void _showDeleteConfirmation(
+    Service service,
+    ThemeController themeController,
+  ) {
     Get.dialog(
       AlertDialog(
+        backgroundColor:
+            themeController.isDarkMode ? ColorTheme.surfaceDark : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: ColorTheme.error.withValues(alpha: 0.1),
+                color:
+                    themeController.isDarkMode
+                        ? ColorTheme.errorDark.withOpacity(0.15)
+                        : ColorTheme.error.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
                 Icons.delete_outline_rounded,
-                color: ColorTheme.error,
+                color:
+                    themeController.isDarkMode
+                        ? ColorTheme.errorDark
+                        : ColorTheme.error,
                 size: 20,
               ),
             ),
             const SizedBox(width: 12),
-            const Text(
+            Text(
               'Delete Service',
               style: TextStyle(
                 fontFamily: 'JosefinSans',
                 fontWeight: FontWeight.bold,
+                color:
+                    themeController.isDarkMode
+                        ? ColorTheme.textPrimaryDark
+                        : ColorTheme.textPrimary,
               ),
             ),
           ],
         ),
         content: Text(
           'Are you sure you want to delete "${service.name}"? This action cannot be undone.',
-          style: const TextStyle(fontFamily: 'JosefinSans', height: 1.4),
+          style: TextStyle(
+            fontFamily: 'JosefinSans',
+            height: 1.4,
+            color:
+                themeController.isDarkMode
+                    ? ColorTheme.textSecondaryDark
+                    : ColorTheme.textSecondary,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Get.back(),
             style: TextButton.styleFrom(
-              foregroundColor: ColorTheme.textSecondary,
+              foregroundColor:
+                  themeController.isDarkMode
+                      ? ColorTheme.textSecondaryDark
+                      : ColorTheme.textSecondary,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text(
+            child: Text(
               'Cancel',
               style: TextStyle(
                 fontFamily: 'JosefinSans',
                 fontWeight: FontWeight.w600,
+                color:
+                    themeController.isDarkMode
+                        ? ColorTheme.textSecondaryDark.withOpacity(0.8)
+                        : ColorTheme.textSecondary,
               ),
             ),
           ),
@@ -821,8 +1085,12 @@ class ServiceManageView extends GetView<ServiceController> {
               controller.deleteService(service.id);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: ColorTheme.error,
-              foregroundColor: Colors.white,
+              backgroundColor:
+                  themeController.isDarkMode
+                      ? ColorTheme.errorDark
+                      : ColorTheme.error,
+              foregroundColor:
+                  themeController.isDarkMode ? Colors.black : Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),

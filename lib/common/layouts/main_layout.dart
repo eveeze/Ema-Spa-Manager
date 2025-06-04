@@ -17,9 +17,7 @@ class MainLayout extends StatefulWidget {
   final bool showAppBar;
   final PreferredSizeWidget? customAppBar;
   final Color? backgroundColor;
-  // NEW: Parameter untuk override parent route
   final String? parentRoute;
-  // NEW: FloatingActionButton parameter
   final Widget? floatingActionButton;
   final FloatingActionButtonLocation? floatingActionButtonLocation;
 
@@ -34,16 +32,16 @@ class MainLayout extends StatefulWidget {
     this.showAppBar = false,
     this.customAppBar,
     this.backgroundColor,
-    this.parentRoute, // NEW
-    this.floatingActionButton, // NEW
-    this.floatingActionButtonLocation, // NEW
+    this.parentRoute,
+    this.floatingActionButton,
+    this.floatingActionButtonLocation,
   });
 
   @override
   State<MainLayout> createState() => _MainLayoutState();
 }
 
-class _MainLayoutState extends State<MainLayout> {
+class _MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
   // Navigation state management
   final RxInt selectedIndex = 0.obs;
   final RxBool isNavigating = false.obs;
@@ -60,7 +58,7 @@ class _MainLayoutState extends State<MainLayout> {
     1: AppRoutes.schedule,
     2: AppRoutes.services,
     3: AppRoutes.analytics,
-    4: '/account', // Account page route (to be defined)
+    4: '/account',
   };
 
   // Reverse mapping for route to index
@@ -72,7 +70,7 @@ class _MainLayoutState extends State<MainLayout> {
     '/account': 4,
   };
 
-  // NEW: Parent route mapping untuk child routes
+  // Parent route mapping untuk child routes
   static const Map<String, String> _parentRouteMap = {
     // Service related routes
     AppRoutes.serviceManage: AppRoutes.services,
@@ -85,8 +83,7 @@ class _MainLayoutState extends State<MainLayout> {
     AppRoutes.serviceCategoryEdit: AppRoutes.services,
 
     // Staff routes
-    AppRoutes.staffList:
-        AppRoutes.services, // atau bisa ke route lain sesuai kebutuhan
+    AppRoutes.staffList: AppRoutes.services,
     AppRoutes.staffForm: AppRoutes.services,
     AppRoutes.staffEdit: AppRoutes.services,
 
@@ -107,10 +104,35 @@ class _MainLayoutState extends State<MainLayout> {
   @override
   void initState() {
     super.initState();
+
+    // Register sebagai observer untuk system changes
+    WidgetsBinding.instance.addObserver(this);
+
     _themeController = Get.find<ThemeController>();
     _initializeNavigationItems();
     _initializeCurrentRoute();
     _setupRouteListener();
+  }
+
+  @override
+  void dispose() {
+    // Cleanup observer
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // Override untuk handle system brightness changes
+  @override
+  void didChangePlatformBrightness() {
+    super.didChangePlatformBrightness();
+    debugPrint('🌙 MainLayout: System brightness changed');
+
+    // Trigger theme controller update
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _themeController.updateSystemBrightness();
+      }
+    });
   }
 
   void _initializeNavigationItems() {
@@ -144,7 +166,6 @@ class _MainLayoutState extends State<MainLayout> {
   }
 
   void _initializeCurrentRoute() {
-    // NEW: Enhanced route initialization with parent route support
     String routeToCheck = widget.parentRoute ?? Get.currentRoute;
 
     // Check if current route has a parent route mapping
@@ -152,7 +173,7 @@ class _MainLayoutState extends State<MainLayout> {
       routeToCheck = _parentRouteMap[routeToCheck]!;
     }
 
-    // Remove parameters from route (e.g., /services/edit/123 -> /services/edit)
+    // Remove parameters from route
     final cleanRoute = _cleanRoute(routeToCheck);
     if (_parentRouteMap.containsKey(cleanRoute)) {
       routeToCheck = _parentRouteMap[cleanRoute]!;
@@ -161,12 +182,9 @@ class _MainLayoutState extends State<MainLayout> {
     selectedIndex.value = _indexMap[routeToCheck] ?? 0;
   }
 
-  // NEW: Helper method to clean route parameters
   String _cleanRoute(String route) {
-    // Remove IDs from routes like /services/edit/123
     final segments = route.split('/');
     if (segments.length > 3) {
-      // Check if last segment is likely an ID (numeric)
       final lastSegment = segments.last;
       if (RegExp(r'^\d+$').hasMatch(lastSegment)) {
         segments.removeLast();
@@ -177,13 +195,12 @@ class _MainLayoutState extends State<MainLayout> {
   }
 
   void _setupRouteListener() {
-    // Listen to route changes to keep bottom nav in sync
     ever(selectedIndex, (int index) {
-      // This will be called when selectedIndex changes
+      // Route change handling
     });
   }
 
-  // Theme-aware color getters (unchanged)
+  // Theme-aware color getters dengan improved caching
   Color _getBackgroundColor() {
     if (widget.backgroundColor != null) return widget.backgroundColor!;
 
@@ -241,8 +258,14 @@ class _MainLayoutState extends State<MainLayout> {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      // Listen to theme changes to trigger rebuild
-      _themeController.isDarkMode;
+      // PERBAIKAN: Listen to multiple theme observables untuk memastikan rebuild
+      final isDarkMode = _themeController.isDarkMode;
+      final forceRebuild = _themeController.forceRebuild;
+
+      // Debug log untuk tracking rebuild
+      debugPrint(
+        '🌙 MainLayout rebuild: isDarkMode=$isDarkMode, forceRebuild=$forceRebuild',
+      );
 
       return _buildMainScaffold(context);
     });
@@ -255,8 +278,8 @@ class _MainLayoutState extends State<MainLayout> {
       body: _buildBody(context),
       bottomNavigationBar:
           widget.showBottomNavigation ? _buildBottomNavigation() : null,
-      floatingActionButton: widget.floatingActionButton, // NEW
-      floatingActionButtonLocation: widget.floatingActionButtonLocation, // NEW
+      floatingActionButton: widget.floatingActionButton,
+      floatingActionButtonLocation: widget.floatingActionButtonLocation,
       resizeToAvoidBottomInset: true,
     );
   }
@@ -318,8 +341,16 @@ class _MainLayoutState extends State<MainLayout> {
   }
 
   Widget _buildBottomNavigation() {
-    return Obx(
-      () => CustomBottomNavigation(
+    return Obx(() {
+      // PERBAIKAN: Multi-observable listening untuk bottom navigation
+      final isDarkMode = _themeController.isDarkMode;
+      final forceRebuild = _themeController.forceRebuild;
+
+      debugPrint(
+        '🌙 Bottom navigation rebuild: isDarkMode=$isDarkMode, forceRebuild=$forceRebuild',
+      );
+
+      return CustomBottomNavigation(
         items: navigationItems,
         currentIndex: selectedIndex.value,
         onTap: _handleBottomNavTap,
@@ -330,8 +361,8 @@ class _MainLayoutState extends State<MainLayout> {
         iconSize: 26,
         showLabels: true,
         isNavigating: isNavigating.value,
-      ),
-    );
+      );
+    });
   }
 
   void _handleBottomNavTap(int index) {
@@ -427,11 +458,6 @@ class _MainLayoutState extends State<MainLayout> {
         ),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 }
 

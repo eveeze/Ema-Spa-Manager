@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
-import 'package:emababyspa/common/theme/color_theme.dart';
+// Assuming ColorTheme is now part of AppTheme or accessed via Theme.of(context)
+// import 'package:emababyspa/common/theme/color_theme.dart'; // We'll use Theme.of(context) or themeController
 import 'package:emababyspa/common/widgets/custom_appbar.dart';
 import 'package:emababyspa/common/widgets/app_button.dart';
 import 'package:emababyspa/common/widgets/app_text_field.dart';
@@ -12,12 +13,18 @@ import 'package:emababyspa/common/layouts/main_layout.dart';
 import 'package:emababyspa/features/staff/controllers/staff_controller.dart';
 import 'package:emababyspa/utils/permission_utils.dart'; // Import PermissionUtils
 import 'package:permission_handler/permission_handler.dart';
+import 'package:emababyspa/features/theme/controllers/theme_controller.dart'; // Import ThemeController
 
 class StaffFormView extends GetView<StaffController> {
   const StaffFormView({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final ThemeController themeController =
+        Get.find(); // Get ThemeController instance
+    final ThemeData theme = Theme.of(context); // Get current theme data
+    final ColorScheme colorScheme = theme.colorScheme; // Get color scheme
+
     // Form controllers
     final nameController = TextEditingController();
     final emailController = TextEditingController();
@@ -41,44 +48,43 @@ class StaffFormView extends GetView<StaffController> {
     // Function to validate the form
     bool validateForm() {
       bool isValid = true;
+      nameError.value = '';
+      emailError.value = '';
+      phoneError.value = '';
 
-      // Validate name
       if (nameController.text.trim().isEmpty) {
         nameError.value = 'Name is required';
         isValid = false;
-      } else {
-        nameError.value = '';
       }
-
-      // Validate email
       if (emailController.text.trim().isEmpty) {
         emailError.value = 'Email is required';
         isValid = false;
       } else if (!GetUtils.isEmail(emailController.text.trim())) {
         emailError.value = 'Enter a valid email address';
         isValid = false;
-      } else {
-        emailError.value = '';
       }
-
-      // Validate phone
       if (phoneController.text.trim().isEmpty) {
         phoneError.value = 'Phone number is required';
         isValid = false;
-      } else {
-        phoneError.value = '';
       }
-
       return isValid;
     }
 
+    const double fieldSpacing = 18.0;
+    const double sectionSpacing = 28.0;
+    const EdgeInsets inputErrorPadding = EdgeInsets.only(top: 6.0, left: 12.0);
+
     return MainLayout(
       child: Scaffold(
-        appBar: const CustomAppBar(title: 'Add Staff', showBackButton: true),
+        // AppBar will use its theme settings from AppTheme
+        appBar: const CustomAppBar(
+          title: 'Add New Staff',
+          showBackButton: true,
+        ),
         body: SafeArea(
           child: SingleChildScrollView(
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(20.0),
               child: Form(
                 key: formKey,
                 child: Column(
@@ -87,23 +93,21 @@ class StaffFormView extends GetView<StaffController> {
                     // Form title
                     Text(
                       'Staff Information',
-                      style: TextStyle(
-                        fontSize: 20,
+                      style: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: ColorTheme.textPrimary,
-                        fontFamily: 'JosefinSans',
+                        color: colorScheme.onSurface,
+                        // fontFamily: 'JosefinSans', // Assuming TextTheme handles this
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Enter the details for the new staff member',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: ColorTheme.textSecondary,
-                        fontFamily: 'JosefinSans',
+                      'Enter the details for the new staff member below.',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        // fontFamily: 'JosefinSans',
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: sectionSpacing),
 
                     // Profile Picture Selection
                     Center(
@@ -115,80 +119,69 @@ class StaffFormView extends GetView<StaffController> {
                                   () => _selectImage(
                                     profilePicture,
                                     permissionUtils,
+                                    context, // Pass context for theming bottom sheet
+                                    themeController, // Pass theme controller
                                   ),
-                              child: Container(
-                                width: 100,
-                                height: 100,
-                                decoration: BoxDecoration(
-                                  color: ColorTheme.info.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(50),
-                                  border: Border.all(
-                                    color: ColorTheme.primary.withValues(
-                                      alpha: 0.3,
-                                    ),
-                                    width: 2,
-                                  ),
-                                ),
-                                child:
+                              child: CircleAvatar(
+                                radius: 55,
+                                backgroundColor: colorScheme.primaryContainer,
+                                backgroundImage:
                                     profilePicture.value != null
-                                        ? ClipRRect(
-                                          borderRadius: BorderRadius.circular(
-                                            50,
-                                          ),
-                                          child: Image.file(
-                                            profilePicture.value!,
-                                            width: 100,
-                                            height: 100,
-                                            fit: BoxFit.cover,
-                                          ),
-                                        )
-                                        : Icon(
-                                          Icons.person,
+                                        ? FileImage(profilePicture.value!)
+                                        : null,
+                                child:
+                                    profilePicture.value == null
+                                        ? Icon(
+                                          Icons.person_add_alt_1_rounded,
                                           size: 50,
-                                          color: ColorTheme.info,
-                                        ),
+                                          color: colorScheme.onPrimaryContainer,
+                                        )
+                                        : null,
                               ),
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 10),
                           TextButton.icon(
                             onPressed:
                                 () => _selectImage(
                                   profilePicture,
                                   permissionUtils,
+                                  context,
+                                  themeController,
                                 ),
                             icon: Icon(
-                              Icons.add_a_photo,
-                              color: ColorTheme.primary,
-                              size: 18,
+                              profilePicture.value != null
+                                  ? Icons.edit_outlined
+                                  : Icons.add_a_photo_outlined,
+                              color: colorScheme.primary,
+                              size: 20,
                             ),
                             label: Text(
                               profilePicture.value != null
-                                  ? 'Change Profile Picture'
+                                  ? 'Change Picture'
                                   : 'Add Profile Picture',
-                              style: TextStyle(
-                                color: ColorTheme.primary,
-                                fontSize: 14,
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: sectionSpacing),
 
                     // Name field with validation
                     AppTextField(
                       controller: nameController,
-                      label: 'Name',
-                      placeholder: 'Enter staff name',
+                      label: 'Full Name',
+                      placeholder: 'Enter staff full name',
                       prefix: const Icon(Icons.person_outline_rounded),
                       isRequired: true,
                       onChanged: (value) {
-                        if (nameError.value.isNotEmpty) {
-                          if (value.trim().isNotEmpty) {
-                            nameError.value = '';
-                          }
+                        if (nameError.value.isNotEmpty &&
+                            value.trim().isNotEmpty) {
+                          nameError.value = '';
                         }
                       },
                     ),
@@ -196,36 +189,32 @@ class StaffFormView extends GetView<StaffController> {
                       () =>
                           nameError.value.isNotEmpty
                               ? Padding(
-                                padding: const EdgeInsets.only(
-                                  top: 4.0,
-                                  left: 12.0,
-                                ),
+                                padding: inputErrorPadding,
                                 child: Text(
                                   nameError.value,
                                   style: TextStyle(
-                                    color: ColorTheme.error,
+                                    color: colorScheme.error,
                                     fontSize: 12,
                                   ),
                                 ),
                               )
                               : const SizedBox.shrink(),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: fieldSpacing),
 
                     // Email field with validation
                     AppTextField(
                       controller: emailController,
-                      label: 'Email',
+                      label: 'Email Address',
                       placeholder: 'Enter staff email',
                       prefix: const Icon(Icons.email_outlined),
                       keyboardType: TextInputType.emailAddress,
                       isRequired: true,
                       onChanged: (value) {
-                        if (emailError.value.isNotEmpty) {
-                          if (value.trim().isNotEmpty &&
-                              GetUtils.isEmail(value.trim())) {
-                            emailError.value = '';
-                          }
+                        if (emailError.value.isNotEmpty &&
+                            value.trim().isNotEmpty &&
+                            GetUtils.isEmail(value.trim())) {
+                          emailError.value = '';
                         }
                       },
                     ),
@@ -233,21 +222,18 @@ class StaffFormView extends GetView<StaffController> {
                       () =>
                           emailError.value.isNotEmpty
                               ? Padding(
-                                padding: const EdgeInsets.only(
-                                  top: 4.0,
-                                  left: 12.0,
-                                ),
+                                padding: inputErrorPadding,
                                 child: Text(
                                   emailError.value,
                                   style: TextStyle(
-                                    color: ColorTheme.error,
+                                    color: colorScheme.error,
                                     fontSize: 12,
                                   ),
                                 ),
                               )
                               : const SizedBox.shrink(),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: fieldSpacing),
 
                     // Phone number field with validation
                     AppTextField(
@@ -258,10 +244,9 @@ class StaffFormView extends GetView<StaffController> {
                       keyboardType: TextInputType.phone,
                       isRequired: true,
                       onChanged: (value) {
-                        if (phoneError.value.isNotEmpty) {
-                          if (value.trim().isNotEmpty) {
-                            phoneError.value = '';
-                          }
+                        if (phoneError.value.isNotEmpty &&
+                            value.trim().isNotEmpty) {
+                          phoneError.value = '';
                         }
                       },
                     ),
@@ -269,21 +254,18 @@ class StaffFormView extends GetView<StaffController> {
                       () =>
                           phoneError.value.isNotEmpty
                               ? Padding(
-                                padding: const EdgeInsets.only(
-                                  top: 4.0,
-                                  left: 12.0,
-                                ),
+                                padding: inputErrorPadding,
                                 child: Text(
                                   phoneError.value,
                                   style: TextStyle(
-                                    color: ColorTheme.error,
+                                    color: colorScheme.error,
                                     fontSize: 12,
                                   ),
                                 ),
                               )
                               : const SizedBox.shrink(),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: fieldSpacing),
 
                     // Address field
                     AppTextField(
@@ -293,17 +275,19 @@ class StaffFormView extends GetView<StaffController> {
                       prefix: const Icon(Icons.location_on_outlined),
                       maxLines: 3,
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: sectionSpacing * 1.5),
 
                     // Submit button
                     Obx(
                       () => AppButton(
-                        text: 'Add Staff',
+                        text: 'Save Staff Member',
                         isLoading: controller.isFormSubmitting.value,
-                        type: AppButtonType.primary,
-                        size: AppButtonSize.medium,
+                        type:
+                            AppButtonType
+                                .primary, // AppButton should handle its own theming
+                        size: AppButtonSize.large, // Make button more prominent
                         isFullWidth: true,
-                        icon: Icons.person_add,
+                        icon: Icons.save_alt_outlined,
                         onPressed: () async {
                           if (validateForm()) {
                             try {
@@ -317,15 +301,15 @@ class StaffFormView extends GetView<StaffController> {
                                         : null,
                                 profilePicture: profilePicture.value,
                               );
-                              // Navigate to staff view after successful submission
-                              Get.back();
+                              Get.back(); // Navigate back after successful submission
                             } catch (e) {
-                              // Error is already handled in controller
+                              // Error is already handled in controller via snackbar
                             }
                           }
                         },
                       ),
                     ),
+                    const SizedBox(height: fieldSpacing), // For bottom padding
                   ],
                 ),
               ),
@@ -336,18 +320,61 @@ class StaffFormView extends GetView<StaffController> {
     );
   }
 
+  Widget _buildSheetOption({
+    required IconData iconData,
+    required String label,
+    required VoidCallback onTap,
+    required ThemeData theme,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 10.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircleAvatar(
+              radius: 30,
+              backgroundColor: theme.colorScheme.primaryContainer,
+              child: Icon(
+                iconData,
+                size: 28,
+                color: theme.colorScheme.onPrimaryContainer,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              label,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _selectImage(
     Rx<File?> profilePicture,
     PermissionUtils permissionUtils,
+    BuildContext context, // Added context
+    ThemeController themeCtl, // Added theme controller
   ) async {
+    final ThemeData theme = Theme.of(
+      context,
+    ); // Get current theme data for bottom sheet
+
     try {
-      // Show a bottom sheet to select image source
       await Get.bottomSheet(
         Container(
-          padding: const EdgeInsets.all(16),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          decoration: BoxDecoration(
+            color:
+                theme.bottomSheetTheme.backgroundColor ??
+                theme.cardColor, // Use themed background
+            borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(20),
               topRight: Radius.circular(20),
             ),
@@ -356,75 +383,43 @@ class StaffFormView extends GetView<StaffController> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Select Image Source',
-                style: TextStyle(
-                  fontSize: 18,
+                'Choose Profile Picture',
+                style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: ColorTheme.textPrimary,
-                  fontFamily: 'JosefinSans',
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 25),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  // Camera option
-                  InkWell(
+                  _buildSheetOption(
+                    iconData: Icons.camera_alt_outlined,
+                    label: 'Camera',
+                    theme: theme,
                     onTap: () async {
                       Get.back();
-
-                      // Request camera permission
                       final status = await Permission.camera.request();
-
                       if (status.isGranted) {
                         _takePicture(profilePicture, permissionUtils);
                       } else if (status.isPermanentlyDenied) {
-                        // Show dialog if permanently denied
                         permissionUtils.showPermissionDialog(
                           title: 'Camera Permission Required',
                           message:
                               'Camera permission is required to take photos. Please enable it in app settings.',
-                          cancelButtonText: 'Cancel',
-                          settingsButtonText: 'Open Settings',
                         );
                       } else {
-                        permissionUtils.showToast('Camera permission denied');
+                        permissionUtils.showToast('Camera permission denied.');
                       }
                     },
-                    child: Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: ColorTheme.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(50),
-                          ),
-                          child: Icon(
-                            Icons.camera_alt,
-                            color: ColorTheme.primary,
-                            size: 30,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Camera',
-                          style: TextStyle(
-                            color: ColorTheme.textPrimary,
-                            fontFamily: 'JosefinSans',
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
-
-                  // Gallery option
-                  InkWell(
+                  _buildSheetOption(
+                    iconData: Icons.photo_library_outlined,
+                    label: 'Gallery',
+                    theme: theme,
                     onTap: () async {
                       Get.back();
-
-                      // Request storage permission for Android below 13 or photos for iOS and Android 13+
                       Permission permission;
-
                       if (Platform.isAndroid) {
                         if (await _isAndroid13OrAbove()) {
                           permission = Permission.photos;
@@ -434,48 +429,19 @@ class StaffFormView extends GetView<StaffController> {
                       } else {
                         permission = Permission.photos;
                       }
-
                       final status = await permission.request();
-
                       if (status.isGranted) {
                         _pickFromGallery(profilePicture, permissionUtils);
                       } else if (status.isPermanentlyDenied) {
-                        // Show dialog if permanently denied
                         permissionUtils.showPermissionDialog(
                           title: 'Storage Permission Required',
                           message:
                               'Storage permission is required to select photos. Please enable it in app settings.',
-                          cancelButtonText: 'Cancel',
-                          settingsButtonText: 'Open Settings',
                         );
                       } else {
-                        permissionUtils.showToast('Storage permission denied');
+                        permissionUtils.showToast('Storage permission denied.');
                       }
                     },
-                    child: Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: ColorTheme.info.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(50),
-                          ),
-                          child: Icon(
-                            Icons.photo_library,
-                            color: ColorTheme.info,
-                            size: 30,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Gallery',
-                          style: TextStyle(
-                            color: ColorTheme.textPrimary,
-                            fontFamily: 'JosefinSans',
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
                 ],
               ),
@@ -483,25 +449,23 @@ class StaffFormView extends GetView<StaffController> {
             ],
           ),
         ),
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.transparent, // Allow container to provide bg
         elevation: 0,
       );
     } catch (e) {
-      permissionUtils.showToast('Error: ${e.toString()}');
+      permissionUtils.showToast('Error selecting image: ${e.toString()}');
     }
   }
 
-  // Helper method to check if device is running Android 13 or above
   Future<bool> _isAndroid13OrAbove() async {
     if (Platform.isAndroid) {
       final deviceInfo = DeviceInfoPlugin();
       final androidInfo = await deviceInfo.androidInfo;
-      return androidInfo.version.sdkInt >= 33; // Android 13 is API level 33
+      return androidInfo.version.sdkInt >= 33;
     }
     return false;
   }
 
-  // Helper method to take picture from camera
   Future<void> _takePicture(
     Rx<File?> profilePicture,
     PermissionUtils permissionUtils,
@@ -514,17 +478,15 @@ class StaffFormView extends GetView<StaffController> {
         maxWidth: 800,
         maxHeight: 800,
       );
-
       if (photo != null) {
         profilePicture.value = File(photo.path);
-        permissionUtils.showToast('Image captured successfully');
+        permissionUtils.showToast('Image captured successfully!');
       }
     } catch (e) {
       permissionUtils.showToast('Failed to capture image: $e');
     }
   }
 
-  // Helper method to pick image from gallery
   Future<void> _pickFromGallery(
     Rx<File?> profilePicture,
     PermissionUtils permissionUtils,
@@ -537,10 +499,9 @@ class StaffFormView extends GetView<StaffController> {
         maxWidth: 800,
         maxHeight: 800,
       );
-
       if (image != null) {
         profilePicture.value = File(image.path);
-        permissionUtils.showToast('Image selected successfully');
+        permissionUtils.showToast('Image selected successfully!');
       }
     } catch (e) {
       permissionUtils.showToast('Failed to select image: $e');

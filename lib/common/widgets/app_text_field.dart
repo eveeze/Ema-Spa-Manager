@@ -34,6 +34,10 @@ class AppTextField extends StatelessWidget {
   final bool enableSuggestions;
   final String? Function(String?)? validator;
 
+  // Custom label color parameters
+  final Color? labelColor;
+  final Color? requiredColor;
+
   const AppTextField({
     super.key,
     this.label,
@@ -63,6 +67,8 @@ class AppTextField extends StatelessWidget {
     this.autocorrect = true,
     this.enableSuggestions = true,
     this.validator,
+    this.labelColor,
+    this.requiredColor,
   });
 
   @override
@@ -108,8 +114,10 @@ class AppTextField extends StatelessWidget {
               hintStyle: _getHintStyle(isDark),
               helperText: helperText,
               helperStyle: _getHelperStyle(isDark),
-              errorText: errorText,
-              errorStyle: _getErrorStyle(isDark),
+              // TIDAK menampilkan errorText di sini untuk menghindari background
+              errorText: null,
+              errorStyle: null,
+              errorMaxLines: null,
               contentPadding: _getContentPadding(),
               filled: true,
               fillColor: _getFillColor(isDark),
@@ -138,6 +146,38 @@ class AppTextField extends StatelessWidget {
             ),
           ),
         ),
+        // Enhanced error text display with better visibility
+        if (errorText != null)
+          Container(
+            margin: const EdgeInsets.only(top: 8.0, left: 4.0, right: 4.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12.0,
+              vertical: 8.0,
+            ),
+            decoration: BoxDecoration(
+              color: _getErrorBackgroundColor(isDark),
+              borderRadius: BorderRadius.circular(8.0),
+              border: Border.all(
+                color: _getErrorBorderColor(isDark),
+                width: 1.0,
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.error_outline_rounded,
+                  size: _getErrorIconSize(),
+                  color: _getErrorColor(isDark),
+                ),
+                const SizedBox(width: 8.0),
+                Expanded(
+                  child: Text(errorText!, style: _getErrorStyle(isDark)),
+                ),
+              ],
+            ),
+          ),
+        // Helper text hanya muncul jika tidak ada error
         if (helperText != null && errorText == null)
           Padding(
             padding: const EdgeInsets.only(top: 8.0, left: 4.0),
@@ -156,9 +196,9 @@ class AppTextField extends StatelessWidget {
           if (isRequired)
             Text(
               " *",
-              style: _getLabelStyle(isDark).copyWith(
-                color: isDark ? ColorTheme.errorDark : ColorTheme.error,
-              ),
+              style: _getLabelStyle(
+                isDark,
+              ).copyWith(color: _getRequiredColor(isDark)),
             ),
         ],
       ),
@@ -225,6 +265,47 @@ class AppTextField extends StatelessWidget {
     }
   }
 
+  // Method untuk mendapatkan warna label
+  Color _getLabelColor(bool isDark) {
+    // Jika labelColor disediakan, gunakan itu
+    if (labelColor != null) {
+      return labelColor!;
+    }
+
+    // Jika tidak, gunakan default berdasarkan theme
+    return isDark ? ColorTheme.textPrimaryDark : ColorTheme.textPrimary;
+  }
+
+  // Method untuk mendapatkan warna required asterisk
+  Color _getRequiredColor(bool isDark) {
+    // Jika requiredColor disediakan, gunakan itu
+    if (requiredColor != null) {
+      return requiredColor!;
+    }
+
+    // Jika tidak, gunakan default error color
+    return isDark ? ColorTheme.errorDark : ColorTheme.error;
+  }
+
+  // Enhanced error color methods for better visibility
+  Color _getErrorColor(bool isDark) {
+    return isDark
+        ? ColorTheme.errorDark.withValues(alpha: 0.9)
+        : ColorTheme.error;
+  }
+
+  Color _getErrorBackgroundColor(bool isDark) {
+    return isDark
+        ? ColorTheme.errorDark.withValues(alpha: 0.15)
+        : ColorTheme.error.withValues(alpha: 0.08);
+  }
+
+  Color _getErrorBorderColor(bool isDark) {
+    return isDark
+        ? ColorTheme.errorDark.withValues(alpha: 0.3)
+        : ColorTheme.error.withValues(alpha: 0.2);
+  }
+
   OutlineInputBorder _getBorder(
     bool isDark, {
     bool isError = false,
@@ -255,8 +336,7 @@ class AppTextField extends StatelessWidget {
   }
 
   TextStyle _getLabelStyle(bool isDark) {
-    final baseColor =
-        isDark ? ColorTheme.textPrimaryDark : ColorTheme.textPrimary;
+    final baseColor = _getLabelColor(isDark);
 
     switch (size) {
       case TextFieldSize.small:
@@ -385,13 +465,16 @@ class AppTextField extends StatelessWidget {
     );
   }
 
+  // Enhanced error style with better readability
   TextStyle _getErrorStyle(bool isDark) {
     return TextStyle(
-      fontSize: _getHelperFontSize(),
-      fontWeight: FontWeight.w500,
+      fontSize: _getErrorFontSize(),
+      fontWeight:
+          FontWeight.w600, // Slightly reduced from w800 for better readability
       height: 1.4,
-      color: isDark ? ColorTheme.errorDark : ColorTheme.error,
+      color: _getErrorColor(isDark),
       fontFamily: 'JosefinSans',
+      letterSpacing: 0.1,
     );
   }
 
@@ -414,6 +497,29 @@ class AppTextField extends StatelessWidget {
         return 12;
       case TextFieldSize.large:
         return 13;
+    }
+  }
+
+  // Improved error font size for better readability
+  double _getErrorFontSize() {
+    switch (size) {
+      case TextFieldSize.small:
+        return 13; // Slightly smaller for better proportion
+      case TextFieldSize.medium:
+        return 14;
+      case TextFieldSize.large:
+        return 15;
+    }
+  }
+
+  double _getErrorIconSize() {
+    switch (size) {
+      case TextFieldSize.small:
+        return 16;
+      case TextFieldSize.medium:
+        return 18;
+      case TextFieldSize.large:
+        return 20;
     }
   }
 

@@ -9,6 +9,7 @@ import 'package:emababyspa/common/layouts/main_layout.dart';
 import 'package:emababyspa/features/service/controllers/service_controller.dart';
 import 'package:emababyspa/common/widgets/app_button.dart';
 import 'package:emababyspa/common/widgets/app_text_field.dart';
+import 'package:emababyspa/features/theme/controllers/theme_controller.dart'; // Import ThemeController
 
 class ServiceEditView extends GetView<ServiceController> {
   ServiceEditView({super.key});
@@ -28,108 +29,121 @@ class ServiceEditView extends GetView<ServiceController> {
   final RxString currentImageUrl = ''.obs;
   final RxList<Map<String, dynamic>> priceTiers = <Map<String, dynamic>>[].obs;
 
-  // Map of controllers for price tiers
   final RxMap<int, Map<String, TextEditingController>> priceTierControllers =
       <int, Map<String, TextEditingController>>{}.obs;
 
-  // Service ID for editing
   final String serviceId = Get.parameters['id'] ?? '';
+
+  // Access ThemeController
+  final ThemeController themeController = Get.find<ThemeController>();
 
   @override
   Widget build(BuildContext context) {
-    // Fetch service data on init if not already loaded
     _fetchServiceIfNeeded();
 
-    return MainLayout(
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF8FAFC),
-        appBar: CustomAppBar(
-          title: 'Edit Service',
-          showBackButton: true,
-          backgroundColor: Colors.white,
-          elevation: 0,
+    // Use Obx to listen to theme changes via forceRebuild
+    return Obx(
+      () => MainLayout(
+        child: Scaffold(
+          backgroundColor:
+              themeController.isDarkMode
+                  ? ColorTheme.backgroundDark
+                  : ColorTheme.background,
+          appBar: CustomAppBar(
+            title: 'Edit Service',
+            showBackButton: true,
+            backgroundColor:
+                themeController.isDarkMode
+                    ? ColorTheme.surfaceDark
+                    : ColorTheme.surface, // Use surface for AppBar
+            elevation: 0,
+          ),
+          body: Obx(() {
+            // This Obx is for controller's state, keep it
+            if (controller.isFetchingServiceDetail.value) {
+              return _buildLoadingState();
+            }
+
+            if (controller.isLoadingCategories.value) {
+              return _buildLoadingState(); // Can reuse or make a specific one
+            }
+
+            if (controller.selectedService.value == null) {
+              return _buildErrorState(
+                icon: Icons.error_outline,
+                title: 'Service Not Found',
+                message: 'No service selected or service not found.',
+                actions: [
+                  AppButton(
+                    text: 'Refresh',
+                    icon: Icons.refresh,
+                    onPressed: () => _fetchServiceIfNeeded(),
+                    type: AppButtonType.primary,
+                    isFullWidth: true,
+                    size: AppButtonSize.medium,
+                  ),
+                  const SizedBox(height: 12),
+                  AppButton(
+                    text: 'Go Back',
+                    icon: Icons.arrow_back,
+                    onPressed: () => Get.back(),
+                    type: AppButtonType.outline,
+                    isFullWidth: true,
+                    size: AppButtonSize.medium,
+                  ),
+                ],
+              );
+            }
+
+            if (controller.categoryError.isNotEmpty) {
+              return _buildErrorState(
+                icon: Icons.warning_amber_outlined,
+                title: 'Error Loading Categories',
+                message: controller.categoryError.value,
+                actions: [
+                  AppButton(
+                    text: 'Refresh',
+                    icon: Icons.refresh,
+                    onPressed: controller.fetchCategories,
+                    type: AppButtonType.primary,
+                    isFullWidth: true,
+                    size: AppButtonSize.medium,
+                  ),
+                ],
+              );
+            }
+
+            if (controller.serviceCategories.isEmpty) {
+              return _buildErrorState(
+                icon: Icons.category_outlined,
+                title: 'No Categories Found',
+                message: 'Please add categories first before editing services.',
+                actions: [
+                  AppButton(
+                    text: 'Go to Categories',
+                    icon: Icons.add_box,
+                    onPressed: () => Get.toNamed('/service-categories'),
+                    type: AppButtonType.primary,
+                    isFullWidth: true,
+                    size: AppButtonSize.medium,
+                  ),
+                ],
+              );
+            }
+
+            return _buildForm(context);
+          }),
         ),
-        body: Obx(() {
-          if (controller.isFetchingServiceDetail.value) {
-            return _buildLoadingState();
-          }
-
-          if (controller.isLoadingCategories.value) {
-            return _buildLoadingState();
-          }
-
-          if (controller.selectedService.value == null) {
-            return _buildErrorState(
-              icon: Icons.error_outline,
-              title: 'Service Not Found',
-              message: 'No service selected or service not found.',
-              actions: [
-                AppButton(
-                  text: 'Refresh',
-                  icon: Icons.refresh,
-                  onPressed: () => _fetchServiceIfNeeded(),
-                  type: AppButtonType.primary,
-                  isFullWidth: true,
-                  size: AppButtonSize.medium,
-                ),
-                const SizedBox(height: 12),
-                AppButton(
-                  text: 'Go Back',
-                  icon: Icons.arrow_back,
-                  onPressed: () => Get.back(),
-                  type: AppButtonType.outline,
-                  isFullWidth: true,
-                  size: AppButtonSize.medium,
-                ),
-              ],
-            );
-          }
-
-          if (controller.categoryError.isNotEmpty) {
-            return _buildErrorState(
-              icon: Icons.warning_amber_outlined,
-              title: 'Error Loading Categories',
-              message: controller.categoryError.value,
-              actions: [
-                AppButton(
-                  text: 'Refresh',
-                  icon: Icons.refresh,
-                  onPressed: controller.fetchCategories,
-                  type: AppButtonType.primary,
-                  isFullWidth: true,
-                  size: AppButtonSize.medium,
-                ),
-              ],
-            );
-          }
-
-          if (controller.serviceCategories.isEmpty) {
-            return _buildErrorState(
-              icon: Icons.category_outlined,
-              title: 'No Categories Found',
-              message: 'Please add categories first before editing services.',
-              actions: [
-                AppButton(
-                  text: 'Go to Categories',
-                  icon: Icons.add_box,
-                  onPressed: () => Get.toNamed('/service-categories'),
-                  type: AppButtonType.primary,
-                  isFullWidth: true,
-                  size: AppButtonSize.medium,
-                ),
-              ],
-            );
-          }
-
-          return _buildForm(context);
-        }),
       ),
     );
   }
 
   Widget _buildLoadingState() {
     return Container(
-      color: const Color(0xFFF8FAFC),
+      color:
+          themeController.isDarkMode
+              ? ColorTheme.backgroundDark
+              : ColorTheme.background,
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -137,17 +151,26 @@ class ServiceEditView extends GetView<ServiceController> {
             Container(
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color:
+                    themeController.isDarkMode
+                        ? ColorTheme.surfaceDark
+                        : ColorTheme.surface,
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: ColorTheme.primary.withValues(alpha: 0.08),
+                    color: (themeController.isDarkMode
+                            ? ColorTheme.primaryDark
+                            : ColorTheme.primary)
+                        .withOpacity(0.08),
                     blurRadius: 20,
                     offset: const Offset(0, 8),
                     spreadRadius: 0,
                   ),
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.02),
+                    color: (themeController.isDarkMode
+                            ? ColorTheme.textPrimaryDark
+                            : ColorTheme.textPrimary)
+                        .withOpacity(0.02),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                     spreadRadius: 0,
@@ -162,8 +185,14 @@ class ServiceEditView extends GetView<ServiceController> {
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          ColorTheme.primary.withValues(alpha: 0.1),
-                          ColorTheme.primary.withValues(alpha: 0.05),
+                          (themeController.isDarkMode
+                                  ? ColorTheme.primaryDark
+                                  : ColorTheme.primary)
+                              .withOpacity(0.1),
+                          (themeController.isDarkMode
+                                  ? ColorTheme.primaryDark
+                                  : ColorTheme.primary)
+                              .withOpacity(0.05),
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
@@ -177,7 +206,9 @@ class ServiceEditView extends GetView<ServiceController> {
                         child: CircularProgressIndicator(
                           strokeWidth: 3,
                           valueColor: AlwaysStoppedAnimation<Color>(
-                            ColorTheme.primary,
+                            themeController.isDarkMode
+                                ? ColorTheme.primaryDark
+                                : ColorTheme.primary,
                           ),
                           strokeCap: StrokeCap.round,
                         ),
@@ -190,7 +221,10 @@ class ServiceEditView extends GetView<ServiceController> {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
-                      color: ColorTheme.textPrimary,
+                      color:
+                          themeController.isDarkMode
+                              ? ColorTheme.textSecondaryDark
+                              : ColorTheme.textPrimary,
                       fontFamily: 'JosefinSans',
                     ),
                   ),
@@ -199,7 +233,10 @@ class ServiceEditView extends GetView<ServiceController> {
                     'Please wait while we fetch the service details',
                     style: TextStyle(
                       fontSize: 14,
-                      color: ColorTheme.textSecondary,
+                      color:
+                          themeController.isDarkMode
+                              ? ColorTheme.textTertiaryDark
+                              : ColorTheme.textSecondary,
                       fontFamily: 'JosefinSans',
                     ),
                     textAlign: TextAlign.center,
@@ -220,23 +257,35 @@ class ServiceEditView extends GetView<ServiceController> {
     required List<Widget> actions,
   }) {
     return Container(
-      color: const Color(0xFFF8FAFC),
+      color:
+          themeController.isDarkMode
+              ? ColorTheme.backgroundDark
+              : ColorTheme.background,
       child: Center(
         child: Container(
           margin: const EdgeInsets.all(24),
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color:
+                themeController.isDarkMode
+                    ? ColorTheme.surfaceDark
+                    : ColorTheme.surface,
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: ColorTheme.primary.withValues(alpha: 0.08),
+                color: (themeController.isDarkMode
+                        ? ColorTheme.primaryDark
+                        : ColorTheme.primary)
+                    .withOpacity(0.08),
                 blurRadius: 24,
                 offset: const Offset(0, 12),
                 spreadRadius: 0,
               ),
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
+                color: (themeController.isDarkMode
+                        ? ColorTheme.textPrimaryDark
+                        : ColorTheme.textPrimary)
+                    .withOpacity(0.04),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
                 spreadRadius: 0,
@@ -251,23 +300,39 @@ class ServiceEditView extends GetView<ServiceController> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      ColorTheme.primary.withValues(alpha: 0.1),
-                      ColorTheme.primary.withValues(alpha: 0.05),
+                      (themeController.isDarkMode
+                              ? ColorTheme.primaryDark
+                              : ColorTheme.primary)
+                          .withOpacity(0.1),
+                      (themeController.isDarkMode
+                              ? ColorTheme.primaryDark
+                              : ColorTheme.primary)
+                          .withOpacity(0.05),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, size: 48, color: ColorTheme.primary),
+                child: Icon(
+                  icon,
+                  size: 48,
+                  color:
+                      themeController.isDarkMode
+                          ? ColorTheme.primaryDark
+                          : ColorTheme.primary,
+                ),
               ),
               const SizedBox(height: 24),
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E293B),
+                  color:
+                      themeController.isDarkMode
+                          ? ColorTheme.textPrimaryDark
+                          : ColorTheme.textPrimary,
                   fontFamily: 'JosefinSans',
                 ),
                 textAlign: TextAlign.center,
@@ -277,7 +342,10 @@ class ServiceEditView extends GetView<ServiceController> {
                 message,
                 style: TextStyle(
                   fontSize: 15,
-                  color: ColorTheme.textSecondary,
+                  color:
+                      themeController.isDarkMode
+                          ? ColorTheme.textTertiaryDark
+                          : ColorTheme.textSecondary,
                   fontFamily: 'JosefinSans',
                   height: 1.5,
                 ),
@@ -292,14 +360,16 @@ class ServiceEditView extends GetView<ServiceController> {
     );
   }
 
-  // Fetch the service if needed
   Future<void> _fetchServiceIfNeeded() async {
     if (serviceId.isEmpty) {
       Get.snackbar(
         'Error',
         'No service ID provided',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+        backgroundColor:
+            themeController.isDarkMode
+                ? ColorTheme.errorDark
+                : ColorTheme.error,
+        colorText: ColorTheme.textInverse,
       );
       return;
     }
@@ -307,59 +377,42 @@ class ServiceEditView extends GetView<ServiceController> {
     if (controller.selectedService.value == null ||
         controller.selectedService.value!.id != serviceId) {
       await controller.getServiceById(serviceId);
-
-      // Also ensure categories are loaded
       if (controller.serviceCategories.isEmpty) {
         await controller.fetchCategories();
       }
-
-      // Initialize form after fetching data
       _initializeFormWithServiceData();
     }
   }
 
   void _initializeFormWithServiceData() {
-    // Only initialize when service data is available
     if (controller.selectedService.value != null) {
       final service = controller.selectedService.value!;
-
-      // Set basic form fields
       nameController.text = service.name;
       descriptionController.text = service.description;
       durationController.text = service.duration.toString();
       selectedCategoryId.value = service.categoryId;
       currentImageUrl.value = service.imageUrl ?? '';
-
-      // Set pricing data
       hasPriceTiers.value = service.hasPriceTiers;
 
       if (!service.hasPriceTiers) {
-        // Simple pricing
         priceController.text = service.price.toString();
         minAgeController.text = service.minBabyAge.toString();
         maxAgeController.text = service.maxBabyAge.toString();
       } else {
-        // Price tiers
         if (service.priceTiers != null && service.priceTiers!.isNotEmpty) {
           priceTiers.clear();
-
-          // Convert API price tiers to local format
           for (var tier in service.priceTiers!) {
-            // Access PriceTier properties directly instead of using array notation
             priceTiers.add({
-              'minAge': tier.minBabyAge, // Changed from tier['minBabyAge']
-              'maxAge': tier.maxBabyAge, // Changed from tier['maxBabyAge']
-              'price': tier.price, // Changed from tier['price']
-              'tierName': tier.tierName, // Changed from tier['tierName']
+              'minAge': tier.minBabyAge,
+              'maxAge': tier.maxBabyAge,
+              'price': tier.price,
+              'tierName': tier.tierName,
             });
           }
-
-          // Initialize controllers for each tier
           for (int i = 0; i < priceTiers.length; i++) {
             _initializePriceTierControllers(i);
           }
         } else {
-          // If no price tiers found, add an initial empty one
           _addInitialPriceTier();
         }
       }
@@ -367,14 +420,17 @@ class ServiceEditView extends GetView<ServiceController> {
   }
 
   void _addInitialPriceTier() {
-    priceTiers.add({'minAge': 0, 'maxAge': 12, 'price': 0.0});
-    _initializePriceTierControllers(0);
+    priceTiers.add({
+      'minAge': 0,
+      'maxAge': 12,
+      'price': 0.0,
+      'tierName': 'Tier ${priceTiers.length + 1}',
+    });
+    _initializePriceTierControllers(priceTiers.length - 1);
   }
 
-  // Initialize controllers for a price tier at specified index
   void _initializePriceTierControllers(int index) {
     final tierData = priceTiers[index];
-
     priceTierControllers[index] = {
       'minAge': TextEditingController(text: tierData['minAge'].toString()),
       'maxAge': TextEditingController(text: tierData['maxAge'].toString()),
@@ -384,7 +440,10 @@ class ServiceEditView extends GetView<ServiceController> {
 
   Widget _buildForm(BuildContext context) {
     return Container(
-      color: const Color(0xFFF8FAFC),
+      color:
+          themeController.isDarkMode
+              ? ColorTheme.backgroundDark
+              : ColorTheme.background,
       child: Form(
         key: formKey,
         child: SingleChildScrollView(
@@ -392,31 +451,23 @@ class ServiceEditView extends GetView<ServiceController> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Enhanced Header Section
               _buildSectionHeader('Service Details', Icons.edit_outlined),
               const SizedBox(height: 24),
-
-              // Progress Indicator
               _buildProgressIndicator(),
               const SizedBox(height: 32),
-
-              // Image Picker Card
               _buildImagePickerCard(),
               const SizedBox(height: 24),
-
-              // Basic Information Card
               _buildCard(
                 child: Column(
                   children: [
                     _buildSectionTitle('Basic Information'),
                     const SizedBox(height: 24),
-
-                    // Service Name
                     AppTextField(
                       controller: nameController,
                       label: 'Service Name',
                       placeholder: 'Enter service name',
                       isRequired: true,
+                      // TODO: Adapt AppTextField's internal styles or pass themed styles
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Service name is required';
@@ -425,8 +476,6 @@ class ServiceEditView extends GetView<ServiceController> {
                       },
                     ),
                     const SizedBox(height: 20),
-
-                    // Service Description
                     AppTextField(
                       controller: descriptionController,
                       label: 'Description',
@@ -434,12 +483,8 @@ class ServiceEditView extends GetView<ServiceController> {
                       maxLines: 3,
                     ),
                     const SizedBox(height: 20),
-
-                    // Service Category Dropdown
                     _buildCategoryDropdown(),
                     const SizedBox(height: 20),
-
-                    // Service Duration
                     AppTextField(
                       controller: durationController,
                       label: 'Duration (minutes)',
@@ -461,19 +506,13 @@ class ServiceEditView extends GetView<ServiceController> {
                 ),
               ),
               const SizedBox(height: 24),
-
-              // Pricing Configuration Card
               _buildCard(
                 child: Column(
                   children: [
                     _buildSectionTitle('Pricing Configuration'),
                     const SizedBox(height: 24),
-
-                    // Price Tier Switch
                     _buildPriceTierSwitch(),
                     const SizedBox(height: 24),
-
-                    // Baby Age Range (for simple pricing) or Price Tiers
                     Obx(
                       () => AnimatedSwitcher(
                         duration: const Duration(milliseconds: 400),
@@ -503,10 +542,7 @@ class ServiceEditView extends GetView<ServiceController> {
                   ],
                 ),
               ),
-
               const SizedBox(height: 32),
-
-              // Submit Button
               _buildSubmitButton(),
               const SizedBox(height: 24),
             ],
@@ -521,27 +557,44 @@ class ServiceEditView extends GetView<ServiceController> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            ColorTheme.primary.withValues(alpha: 0.05),
-            ColorTheme.primary.withValues(alpha: 0.02),
-          ],
+          colors:
+              themeController.isDarkMode
+                  ? [
+                    (ColorTheme.primaryDark).withOpacity(0.1),
+                    (ColorTheme.primaryDark).withOpacity(0.05),
+                  ]
+                  : [
+                    ColorTheme.primary.withOpacity(0.05),
+                    ColorTheme.primary.withOpacity(0.02),
+                  ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: ColorTheme.primary.withValues(alpha: 0.1)),
+        border: Border.all(
+          color: (themeController.isDarkMode
+                  ? ColorTheme.primaryDark
+                  : ColorTheme.primary)
+              .withOpacity(0.1),
+        ),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: ColorTheme.primary.withValues(alpha: 0.1),
+              color: (themeController.isDarkMode
+                      ? ColorTheme.primaryDark
+                      : ColorTheme.primary)
+                  .withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
               Icons.settings_outlined,
-              color: ColorTheme.primary,
+              color:
+                  themeController.isDarkMode
+                      ? ColorTheme.primaryDark
+                      : ColorTheme.primary,
               size: 24,
             ),
           ),
@@ -555,7 +608,10 @@ class ServiceEditView extends GetView<ServiceController> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: ColorTheme.textPrimary,
+                    color:
+                        themeController.isDarkMode
+                            ? ColorTheme.textSecondaryDark
+                            : ColorTheme.textPrimary,
                     fontFamily: 'JosefinSans',
                   ),
                 ),
@@ -564,7 +620,10 @@ class ServiceEditView extends GetView<ServiceController> {
                   'Update your service details and pricing information',
                   style: TextStyle(
                     fontSize: 13,
-                    color: ColorTheme.textSecondary,
+                    color:
+                        themeController.isDarkMode
+                            ? ColorTheme.textTertiaryDark
+                            : ColorTheme.textSecondary,
                     fontFamily: 'JosefinSans',
                   ),
                 ),
@@ -577,6 +636,16 @@ class ServiceEditView extends GetView<ServiceController> {
   }
 
   Widget _buildSectionHeader(String title, IconData icon) {
+    final primaryCurrent =
+        themeController.isDarkMode
+            ? ColorTheme.primaryDark
+            : ColorTheme.primary;
+    final primaryDarkCurrent =
+        themeController.isDarkMode
+            ? ColorTheme
+                .primary // Ensure contrast or use a fixed light for dark's "dark"
+            : ColorTheme.primaryDark;
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -586,15 +655,15 @@ class ServiceEditView extends GetView<ServiceController> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  ColorTheme.primary.withValues(alpha: 0.15),
-                  ColorTheme.primary.withValues(alpha: 0.08),
+                  primaryCurrent.withOpacity(0.15),
+                  primaryCurrent.withOpacity(0.08),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, size: 24, color: ColorTheme.primary),
+            child: Icon(icon, size: 24, color: primaryCurrent),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -603,10 +672,13 @@ class ServiceEditView extends GetView<ServiceController> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E293B),
+                    color:
+                        themeController.isDarkMode
+                            ? ColorTheme.textPrimaryDark
+                            : ColorTheme.textPrimary,
                     fontFamily: 'JosefinSans',
                   ),
                 ),
@@ -616,7 +688,7 @@ class ServiceEditView extends GetView<ServiceController> {
                   width: 40,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [ColorTheme.primary, ColorTheme.primaryDark],
+                      colors: [primaryCurrent, primaryDarkCurrent],
                     ),
                     borderRadius: BorderRadius.circular(2),
                   ),
@@ -634,17 +706,26 @@ class ServiceEditView extends GetView<ServiceController> {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color:
+            themeController.isDarkMode
+                ? ColorTheme.surfaceDark
+                : ColorTheme.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: ColorTheme.primary.withValues(alpha: 0.06),
+            color: (themeController.isDarkMode
+                    ? ColorTheme.primaryDark
+                    : ColorTheme.primary)
+                .withOpacity(0.06),
             blurRadius: 20,
             offset: const Offset(0, 8),
             spreadRadius: 0,
           ),
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: (themeController.isDarkMode
+                    ? ColorTheme.textPrimaryDark
+                    : ColorTheme.textPrimary)
+                .withOpacity(0.03),
             blurRadius: 6,
             offset: const Offset(0, 2),
             spreadRadius: 0,
@@ -656,6 +737,14 @@ class ServiceEditView extends GetView<ServiceController> {
   }
 
   Widget _buildSectionTitle(String title) {
+    final primaryCurrent =
+        themeController.isDarkMode
+            ? ColorTheme.primaryDark
+            : ColorTheme.primary;
+    final primaryDarkCurrent =
+        themeController.isDarkMode
+            ? ColorTheme.primary
+            : ColorTheme.primaryDark;
     return Row(
       children: [
         Container(
@@ -663,7 +752,7 @@ class ServiceEditView extends GetView<ServiceController> {
           height: 24,
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [ColorTheme.primary, ColorTheme.primaryDark],
+              colors: [primaryCurrent, primaryDarkCurrent],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
             ),
@@ -676,7 +765,10 @@ class ServiceEditView extends GetView<ServiceController> {
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w700,
-            color: ColorTheme.textPrimary,
+            color:
+                themeController.isDarkMode
+                    ? ColorTheme.textSecondaryDark
+                    : ColorTheme.textPrimary,
             fontFamily: 'JosefinSans',
           ),
         ),
@@ -685,6 +777,10 @@ class ServiceEditView extends GetView<ServiceController> {
   }
 
   Widget _buildImagePickerCard() {
+    final primaryCurrent =
+        themeController.isDarkMode
+            ? ColorTheme.primaryDark
+            : ColorTheme.primary;
     return _buildCard(
       child: Column(
         children: [
@@ -700,27 +796,34 @@ class ServiceEditView extends GetView<ServiceController> {
                 height: 200,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [ColorTheme.background, Colors.white],
+                    colors:
+                        themeController.isDarkMode
+                            ? [
+                              ColorTheme.borderDark,
+                              ColorTheme.surfaceDark,
+                            ] // Using ColorTheme.borderDark (0xFF2D3748)
+                            : [ColorTheme.surface, ColorTheme.background],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: ColorTheme.primary.withValues(alpha: 0.2),
+                    color: primaryCurrent.withOpacity(0.2),
                     width: 2,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: ColorTheme.primary.withValues(alpha: 0.08),
+                      color: primaryCurrent.withOpacity(0.08),
                       blurRadius: 16,
                       offset: const Offset(0, 8),
-                      spreadRadius: 0,
                     ),
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
+                      color: (themeController.isDarkMode
+                              ? ColorTheme.textPrimaryDark
+                              : ColorTheme.textPrimary)
+                          .withOpacity(0.04),
                       blurRadius: 6,
                       offset: const Offset(0, 2),
-                      spreadRadius: 0,
                     ),
                   ],
                 ),
@@ -745,15 +848,15 @@ class ServiceEditView extends GetView<ServiceController> {
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
-                                  Colors.black.withValues(alpha: 0.7),
-                                  Colors.black.withValues(alpha: 0.5),
+                                  Colors.black.withOpacity(0.7),
+                                  Colors.black.withOpacity(0.5),
                                 ],
                               ),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
                               Icons.edit,
-                              color: Colors.white,
+                              color: ColorTheme.textInverse,
                               size: 18,
                             ),
                           ),
@@ -786,15 +889,15 @@ class ServiceEditView extends GetView<ServiceController> {
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
-                                  Colors.black.withValues(alpha: 0.7),
-                                  Colors.black.withValues(alpha: 0.5),
+                                  Colors.black.withOpacity(0.7),
+                                  Colors.black.withOpacity(0.5),
                                 ],
                               ),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
                               Icons.edit,
-                              color: Colors.white,
+                              color: ColorTheme.textInverse,
                               size: 18,
                             ),
                           ),
@@ -816,7 +919,10 @@ class ServiceEditView extends GetView<ServiceController> {
             'Tap to select or change image',
             style: TextStyle(
               fontSize: 13,
-              color: ColorTheme.textSecondary,
+              color:
+                  themeController.isDarkMode
+                      ? ColorTheme.textTertiaryDark
+                      : ColorTheme.textSecondary,
               fontFamily: 'JosefinSans',
               fontStyle: FontStyle.italic,
             ),
@@ -830,6 +936,10 @@ class ServiceEditView extends GetView<ServiceController> {
     required IconData icon,
     required String text,
   }) {
+    final primaryCurrent =
+        themeController.isDarkMode
+            ? ColorTheme.primaryDark
+            : ColorTheme.primary;
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -838,24 +948,20 @@ class ServiceEditView extends GetView<ServiceController> {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                ColorTheme.primary.withValues(alpha: 0.1),
-                ColorTheme.primary.withValues(alpha: 0.05),
+                primaryCurrent.withOpacity(0.1),
+                primaryCurrent.withOpacity(0.05),
               ],
             ),
             shape: BoxShape.circle,
           ),
-          child: Icon(
-            icon,
-            size: 48,
-            color: ColorTheme.primary.withValues(alpha: 0.8),
-          ),
+          child: Icon(icon, size: 48, color: primaryCurrent.withOpacity(0.8)),
         ),
         const SizedBox(height: 16),
         Text(
           text,
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: ColorTheme.primary,
+            color: primaryCurrent,
             fontWeight: FontWeight.w600,
             fontSize: 15,
             fontFamily: 'JosefinSans',
@@ -876,7 +982,10 @@ class ServiceEditView extends GetView<ServiceController> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: ColorTheme.textPrimary,
+                color:
+                    themeController.isDarkMode
+                        ? ColorTheme.textSecondaryDark
+                        : ColorTheme.textPrimary,
                 fontFamily: 'JosefinSans',
               ),
             ),
@@ -895,32 +1004,65 @@ class ServiceEditView extends GetView<ServiceController> {
         Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: ColorTheme.border.withValues(alpha: 0.3)),
+            border: Border.all(
+              color:
+                  themeController.isDarkMode
+                      ? ColorTheme.borderDark
+                      : ColorTheme.border.withOpacity(0.3),
+            ),
             gradient: LinearGradient(
-              colors: [
-                Colors.white,
-                ColorTheme.background.withValues(alpha: 0.3),
-              ],
+              colors:
+                  themeController.isDarkMode
+                      ? [
+                        ColorTheme.borderDark,
+                        ColorTheme.surfaceDark.withOpacity(0.8),
+                      ] // Using ColorTheme.borderDark (0xFF2D3748)
+                      : [
+                        ColorTheme.surface,
+                        ColorTheme.background.withOpacity(0.3),
+                      ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
+                color: (themeController.isDarkMode
+                        ? ColorTheme.textPrimaryDark
+                        : ColorTheme.textPrimary)
+                    .withOpacity(0.02),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
             ],
           ),
           child: DropdownButtonFormField<String>(
-            decoration: const InputDecoration(
-              contentPadding: EdgeInsets.symmetric(
+            decoration: InputDecoration(
+              contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 12,
               ),
               border: InputBorder.none,
               enabledBorder: InputBorder.none,
               focusedBorder: InputBorder.none,
+              hintStyle: TextStyle(
+                color:
+                    themeController.isDarkMode
+                        ? ColorTheme.textTertiaryDark
+                        : Colors.grey.shade500,
+              ),
+            ),
+            dropdownColor:
+                themeController.isDarkMode
+                    ? ColorTheme
+                        .borderDark // Using ColorTheme.borderDark (0xFF2D3748) as dropdown background
+                    : ColorTheme.surface,
+            style: TextStyle(
+              color:
+                  themeController.isDarkMode
+                      ? ColorTheme.textPrimaryDark
+                      : ColorTheme.textPrimary,
+              fontFamily: 'JosefinSans',
+              fontSize: 16,
             ),
             value:
                 selectedCategoryId.value.isEmpty
@@ -941,14 +1083,7 @@ class ServiceEditView extends GetView<ServiceController> {
                 controller.serviceCategories.map((category) {
                   return DropdownMenuItem<String>(
                     value: category.id,
-                    child: Text(
-                      category.name,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: ColorTheme.textPrimary,
-                        fontFamily: 'JosefinSans',
-                      ),
-                    ),
+                    child: Text(category.name),
                   );
                 }).toList(),
           ),
@@ -958,19 +1093,23 @@ class ServiceEditView extends GetView<ServiceController> {
   }
 
   Widget _buildPriceTierSwitch() {
+    final primaryCurrent =
+        themeController.isDarkMode
+            ? ColorTheme.primaryDark
+            : ColorTheme.primary;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            ColorTheme.primary.withValues(alpha: 0.06),
-            ColorTheme.primary.withValues(alpha: 0.03),
+            primaryCurrent.withOpacity(0.06),
+            primaryCurrent.withOpacity(0.03),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: ColorTheme.primary.withValues(alpha: 0.1)),
+        border: Border.all(color: primaryCurrent.withOpacity(0.1)),
       ),
       child: Row(
         children: [
@@ -979,17 +1118,13 @@ class ServiceEditView extends GetView<ServiceController> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  ColorTheme.primary.withValues(alpha: 0.15),
-                  ColorTheme.primary.withValues(alpha: 0.08),
+                  primaryCurrent.withOpacity(0.15),
+                  primaryCurrent.withOpacity(0.08),
                 ],
               ),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              Icons.tune_outlined,
-              color: ColorTheme.primary,
-              size: 24,
-            ),
+            child: Icon(Icons.tune_outlined, color: primaryCurrent, size: 24),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -1001,7 +1136,10 @@ class ServiceEditView extends GetView<ServiceController> {
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w600,
-                    color: ColorTheme.textPrimary,
+                    color:
+                        themeController.isDarkMode
+                            ? ColorTheme.textSecondaryDark
+                            : ColorTheme.textPrimary,
                     fontFamily: 'JosefinSans',
                   ),
                 ),
@@ -1010,7 +1148,10 @@ class ServiceEditView extends GetView<ServiceController> {
                   'Enable different pricing for different age groups',
                   style: TextStyle(
                     fontSize: 13,
-                    color: ColorTheme.textSecondary,
+                    color:
+                        themeController.isDarkMode
+                            ? ColorTheme.textTertiaryDark
+                            : ColorTheme.textSecondary,
                     fontFamily: 'JosefinSans',
                     height: 1.4,
                   ),
@@ -1024,7 +1165,7 @@ class ServiceEditView extends GetView<ServiceController> {
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: ColorTheme.primary.withValues(alpha: 0.1),
+                  color: primaryCurrent.withOpacity(0.1),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -1034,16 +1175,20 @@ class ServiceEditView extends GetView<ServiceController> {
               value: hasPriceTiers.value,
               onChanged: (value) {
                 hasPriceTiers.value = value;
-
-                // Initialize price tiers if switching to multiple tiers
                 if (value && priceTiers.isEmpty) {
                   _addInitialPriceTier();
                 }
               },
-              activeColor: ColorTheme.primary,
-              activeTrackColor: ColorTheme.primary.withValues(alpha: 0.3),
-              inactiveThumbColor: Colors.grey[400],
-              inactiveTrackColor: Colors.grey[300],
+              activeColor: primaryCurrent,
+              activeTrackColor: primaryCurrent.withOpacity(0.3),
+              inactiveThumbColor:
+                  themeController.isDarkMode
+                      ? ColorTheme.textTertiaryDark.withOpacity(0.6)
+                      : Colors.grey.shade400,
+              inactiveTrackColor:
+                  themeController.isDarkMode
+                      ? ColorTheme.borderDark
+                      : Colors.grey.shade300,
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
           ),
@@ -1053,20 +1198,26 @@ class ServiceEditView extends GetView<ServiceController> {
   }
 
   Widget _buildSimplePricing() {
+    final simplePricingAccent =
+        themeController.isDarkMode
+            ? ColorTheme
+                .successDark // Using success color for simple pricing accent in dark
+            : ColorTheme
+                .success; // Using success color for simple pricing accent in light
     return Container(
       key: const ValueKey('simple_pricing'),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Colors.green.withValues(alpha: 0.03),
-            Colors.green.withValues(alpha: 0.01),
+            simplePricingAccent.withOpacity(0.03),
+            simplePricingAccent.withOpacity(0.01),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.green.withValues(alpha: 0.1)),
+        border: Border.all(color: simplePricingAccent.withOpacity(0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1078,15 +1229,15 @@ class ServiceEditView extends GetView<ServiceController> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      Colors.green.withValues(alpha: 0.15),
-                      Colors.green.withValues(alpha: 0.08),
+                      simplePricingAccent.withOpacity(0.15),
+                      simplePricingAccent.withOpacity(0.08),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   Icons.attach_money_outlined,
-                  color: Colors.green[600],
+                  color: simplePricingAccent,
                   size: 20,
                 ),
               ),
@@ -1096,15 +1247,16 @@ class ServiceEditView extends GetView<ServiceController> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: ColorTheme.textPrimary,
+                  color:
+                      themeController.isDarkMode
+                          ? ColorTheme.textSecondaryDark
+                          : ColorTheme.textPrimary,
                   fontFamily: 'JosefinSans',
                 ),
               ),
             ],
           ),
           const SizedBox(height: 20),
-
-          // Price
           AppTextField(
             controller: priceController,
             label: 'Price (Rp)',
@@ -1112,9 +1264,7 @@ class ServiceEditView extends GetView<ServiceController> {
             keyboardType: TextInputType.number,
             isRequired: true,
             validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Price is required';
-              }
+              if (value == null || value.isEmpty) return 'Price is required';
               if (double.tryParse(value) == null || double.parse(value) < 0) {
                 return 'Please enter a valid price';
               }
@@ -1122,8 +1272,6 @@ class ServiceEditView extends GetView<ServiceController> {
             },
           ),
           const SizedBox(height: 24),
-
-          // Baby Age Range Header
           Row(
             children: [
               Container(
@@ -1131,15 +1279,24 @@ class ServiceEditView extends GetView<ServiceController> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      ColorTheme.primary.withValues(alpha: 0.15),
-                      ColorTheme.primary.withValues(alpha: 0.08),
+                      (themeController.isDarkMode
+                              ? ColorTheme.primaryDark
+                              : ColorTheme.primary)
+                          .withOpacity(0.15),
+                      (themeController.isDarkMode
+                              ? ColorTheme.primaryDark
+                              : ColorTheme.primary)
+                          .withOpacity(0.08),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   Icons.child_care_outlined,
-                  color: ColorTheme.primary,
+                  color:
+                      themeController.isDarkMode
+                          ? ColorTheme.primaryDark
+                          : ColorTheme.primary,
                   size: 20,
                 ),
               ),
@@ -1149,15 +1306,16 @@ class ServiceEditView extends GetView<ServiceController> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: ColorTheme.textPrimary,
+                  color:
+                      themeController.isDarkMode
+                          ? ColorTheme.textSecondaryDark
+                          : ColorTheme.textPrimary,
                   fontFamily: 'JosefinSans',
                 ),
               ),
             ],
           ),
           const SizedBox(height: 20),
-
-          // Baby Age Range Fields
           Row(
             children: [
               Expanded(
@@ -1168,9 +1326,7 @@ class ServiceEditView extends GetView<ServiceController> {
                   keyboardType: TextInputType.number,
                   isRequired: true,
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Required';
-                    }
+                    if (value == null || value.isEmpty) return 'Required';
                     if (int.tryParse(value) == null || int.parse(value) < 0) {
                       return 'Invalid';
                     }
@@ -1187,9 +1343,7 @@ class ServiceEditView extends GetView<ServiceController> {
                   keyboardType: TextInputType.number,
                   isRequired: true,
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Required';
-                    }
+                    if (value == null || value.isEmpty) return 'Required';
                     final minAgeText = minAgeController.text;
                     if (minAgeText.isEmpty ||
                         int.tryParse(minAgeText) == null) {
@@ -1211,6 +1365,17 @@ class ServiceEditView extends GetView<ServiceController> {
   }
 
   Widget _buildPriceTiers() {
+    final priceTierAccent =
+        themeController.isDarkMode
+            ? ColorTheme
+                .infoDark // Using info color for price tier accent in dark
+            : ColorTheme
+                .info; // Using info color for price tier accent in light
+    final primaryCurrent =
+        themeController.isDarkMode
+            ? ColorTheme.primaryDark
+            : ColorTheme.primary;
+
     return Container(
       key: const ValueKey('price_tiers'),
       child: Column(
@@ -1221,14 +1386,14 @@ class ServiceEditView extends GetView<ServiceController> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  Colors.blue.withValues(alpha: 0.03),
-                  Colors.blue.withValues(alpha: 0.01),
+                  priceTierAccent.withOpacity(0.03),
+                  priceTierAccent.withOpacity(0.01),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.blue.withValues(alpha: 0.1)),
+              border: Border.all(color: priceTierAccent.withOpacity(0.1)),
             ),
             child: Row(
               children: [
@@ -1237,15 +1402,15 @@ class ServiceEditView extends GetView<ServiceController> {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        Colors.blue.withValues(alpha: 0.15),
-                        Colors.blue.withValues(alpha: 0.08),
+                        priceTierAccent.withOpacity(0.15),
+                        priceTierAccent.withOpacity(0.08),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
                     Icons.layers_outlined,
-                    color: Colors.blue[600],
+                    color: priceTierAccent,
                     size: 20,
                   ),
                 ),
@@ -1255,7 +1420,10 @@ class ServiceEditView extends GetView<ServiceController> {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: ColorTheme.textPrimary,
+                    color:
+                        themeController.isDarkMode
+                            ? ColorTheme.textSecondaryDark
+                            : ColorTheme.textPrimary,
                     fontFamily: 'JosefinSans',
                   ),
                 ),
@@ -1263,19 +1431,14 @@ class ServiceEditView extends GetView<ServiceController> {
             ),
           ),
           const SizedBox(height: 20),
-
-          // List of price tiers
           Obx(
             () => Column(
               children: [
                 ...List.generate(priceTiers.length, (index) {
-                  // Ensure controllers exist for this index
                   if (!priceTierControllers.containsKey(index)) {
                     _initializePriceTierControllers(index);
                   }
-
                   final controllers = priceTierControllers[index]!;
-
                   return AnimatedContainer(
                     duration: const Duration(milliseconds: 400),
                     curve: Curves.easeInOutCubic,
@@ -1283,24 +1446,29 @@ class ServiceEditView extends GetView<ServiceController> {
                     child: Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color:
+                            themeController.isDarkMode
+                                ? ColorTheme
+                                    .borderDark // Using ColorTheme.borderDark (0xFF2D3748) as surface for tier item
+                                : ColorTheme.surface,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: ColorTheme.primary.withValues(alpha: 0.15),
+                          color: primaryCurrent.withOpacity(0.15),
                           width: 1.5,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: ColorTheme.primary.withValues(alpha: 0.08),
+                            color: primaryCurrent.withOpacity(0.08),
                             blurRadius: 16,
                             offset: const Offset(0, 6),
-                            spreadRadius: 0,
                           ),
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.02),
+                            color: (themeController.isDarkMode
+                                    ? ColorTheme.textPrimaryDark
+                                    : ColorTheme.textPrimary)
+                                .withOpacity(0.02),
                             blurRadius: 4,
                             offset: const Offset(0, 2),
-                            spreadRadius: 0,
                           ),
                         ],
                       ),
@@ -1317,12 +1485,8 @@ class ServiceEditView extends GetView<ServiceController> {
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
                                     colors: [
-                                      ColorTheme.primary.withValues(
-                                        alpha: 0.15,
-                                      ),
-                                      ColorTheme.primary.withValues(
-                                        alpha: 0.08,
-                                      ),
+                                      primaryCurrent.withOpacity(0.15),
+                                      primaryCurrent.withOpacity(0.08),
                                     ],
                                   ),
                                   borderRadius: BorderRadius.circular(12),
@@ -1331,7 +1495,7 @@ class ServiceEditView extends GetView<ServiceController> {
                                   'Tier ${index + 1}',
                                   style: TextStyle(
                                     fontWeight: FontWeight.w700,
-                                    color: ColorTheme.primary,
+                                    color: primaryCurrent,
                                     fontSize: 14,
                                     fontFamily: 'JosefinSans',
                                   ),
@@ -1343,10 +1507,8 @@ class ServiceEditView extends GetView<ServiceController> {
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
                                       colors: [
-                                        ColorTheme.error.withValues(alpha: 0.1),
-                                        ColorTheme.error.withValues(
-                                          alpha: 0.05,
-                                        ),
+                                        ColorTheme.error.withOpacity(0.1),
+                                        ColorTheme.error.withOpacity(0.05),
                                       ],
                                     ),
                                     shape: BoxShape.circle,
@@ -1360,7 +1522,6 @@ class ServiceEditView extends GetView<ServiceController> {
                                     onPressed: () {
                                       priceTiers.removeAt(index);
                                       priceTierControllers.remove(index);
-                                      // Reindex the controllers
                                       final newControllers =
                                           <
                                             int,
@@ -1371,12 +1532,17 @@ class ServiceEditView extends GetView<ServiceController> {
                                         i < priceTiers.length;
                                         i++
                                       ) {
-                                        if (i < index) {
+                                        if (priceTierControllers.containsKey(
+                                          i < index ? i : i + 1,
+                                        )) {
+                                          newControllers[i] =
+                                              priceTierControllers[i < index
+                                                  ? i
+                                                  : i + 1]!;
+                                        } else {
+                                          _initializePriceTierControllers(i);
                                           newControllers[i] =
                                               priceTierControllers[i]!;
-                                        } else {
-                                          newControllers[i] =
-                                              priceTierControllers[i + 1]!;
                                         }
                                       }
                                       priceTierControllers.value =
@@ -1387,14 +1553,13 @@ class ServiceEditView extends GetView<ServiceController> {
                             ],
                           ),
                           const SizedBox(height: 20),
-
-                          // Age Range Section
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: ColorTheme.background.withValues(
-                                alpha: 0.3,
-                              ),
+                              color:
+                                  themeController.isDarkMode
+                                      ? ColorTheme.surfaceDark.withOpacity(0.5)
+                                      : ColorTheme.background.withOpacity(0.6),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Column(
@@ -1405,13 +1570,14 @@ class ServiceEditView extends GetView<ServiceController> {
                                   style: TextStyle(
                                     fontSize: 15,
                                     fontWeight: FontWeight.w600,
-                                    color: ColorTheme.textPrimary,
+                                    color:
+                                        themeController.isDarkMode
+                                            ? ColorTheme.textSecondaryDark
+                                            : ColorTheme.textPrimary,
                                     fontFamily: 'JosefinSans',
                                   ),
                                 ),
                                 const SizedBox(height: 16),
-
-                                // Min and Max Age
                                 Row(
                                   children: [
                                     Expanded(
@@ -1419,23 +1585,19 @@ class ServiceEditView extends GetView<ServiceController> {
                                         placeholder: 'Min Age',
                                         keyboardType: TextInputType.number,
                                         controller: controllers['minAge'],
-                                        validator: (value) {
-                                          if (value == null || value.isEmpty) {
-                                            return 'Required';
-                                          }
-                                          if (int.tryParse(value) == null ||
-                                              int.parse(value) < 0) {
-                                            return 'Invalid age';
-                                          }
-                                          return null;
-                                        },
-                                        onChanged: (value) {
-                                          if (value.isNotEmpty &&
-                                              int.tryParse(value) != null) {
-                                            priceTiers[index]['minAge'] =
-                                                int.parse(value);
-                                          }
-                                        },
+                                        validator:
+                                            (v) =>
+                                                (v == null || v.isEmpty)
+                                                    ? 'Required'
+                                                    : (int.tryParse(v) ==
+                                                            null ||
+                                                        int.parse(v) < 0)
+                                                    ? 'Invalid'
+                                                    : null,
+                                        onChanged:
+                                            (v) =>
+                                                priceTiers[index]['minAge'] =
+                                                    int.tryParse(v) ?? 0,
                                       ),
                                     ),
                                     Container(
@@ -1449,12 +1611,8 @@ class ServiceEditView extends GetView<ServiceController> {
                                       decoration: BoxDecoration(
                                         gradient: LinearGradient(
                                           colors: [
-                                            ColorTheme.primary.withValues(
-                                              alpha: 0.1,
-                                            ),
-                                            ColorTheme.primary.withValues(
-                                              alpha: 0.05,
-                                            ),
+                                            primaryCurrent.withOpacity(0.1),
+                                            primaryCurrent.withOpacity(0.05),
                                           ],
                                         ),
                                         borderRadius: BorderRadius.circular(8),
@@ -1462,7 +1620,7 @@ class ServiceEditView extends GetView<ServiceController> {
                                       child: Text(
                                         'to',
                                         style: TextStyle(
-                                          color: ColorTheme.primary,
+                                          color: primaryCurrent,
                                           fontWeight: FontWeight.w600,
                                           fontSize: 12,
                                         ),
@@ -1473,33 +1631,23 @@ class ServiceEditView extends GetView<ServiceController> {
                                         placeholder: 'Max Age',
                                         keyboardType: TextInputType.number,
                                         controller: controllers['maxAge'],
-                                        validator: (value) {
-                                          if (value == null || value.isEmpty) {
+                                        validator: (v) {
+                                          if (v == null || v.isEmpty)
                                             return 'Required';
-                                          }
-
-                                          final minAgeText =
-                                              controllers['minAge']!.text;
-                                          if (minAgeText.isEmpty ||
-                                              int.tryParse(minAgeText) ==
-                                                  null) {
-                                            return 'Enter min age first';
-                                          }
-
-                                          if (int.tryParse(value) == null ||
-                                              int.parse(value) <=
-                                                  int.parse(minAgeText)) {
-                                            return 'Must be > min age';
-                                          }
-                                          return null;
+                                          final minAge = int.tryParse(
+                                            controllers['minAge']!.text,
+                                          );
+                                          if (minAge == null)
+                                            return 'Min Invalid';
+                                          return (int.tryParse(v) == null ||
+                                                  int.parse(v) <= minAge)
+                                              ? 'Invalid'
+                                              : null;
                                         },
-                                        onChanged: (value) {
-                                          if (value.isNotEmpty &&
-                                              int.tryParse(value) != null) {
-                                            priceTiers[index]['maxAge'] =
-                                                int.parse(value);
-                                          }
-                                        },
+                                        onChanged:
+                                            (v) =>
+                                                priceTiers[index]['maxAge'] =
+                                                    int.tryParse(v) ?? 0,
                                       ),
                                     ),
                                   ],
@@ -1508,15 +1656,19 @@ class ServiceEditView extends GetView<ServiceController> {
                             ),
                           ),
                           const SizedBox(height: 20),
-
-                          // Price Section
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
-                                  Colors.green.withValues(alpha: 0.05),
-                                  Colors.green.withValues(alpha: 0.02),
+                                  (themeController.isDarkMode
+                                          ? ColorTheme.successDark
+                                          : ColorTheme.success)
+                                      .withOpacity(0.05),
+                                  (themeController.isDarkMode
+                                          ? ColorTheme.successDark
+                                          : ColorTheme.success)
+                                      .withOpacity(0.02),
                                 ],
                               ),
                               borderRadius: BorderRadius.circular(12),
@@ -1529,7 +1681,10 @@ class ServiceEditView extends GetView<ServiceController> {
                                   style: TextStyle(
                                     fontSize: 15,
                                     fontWeight: FontWeight.w600,
-                                    color: ColorTheme.textPrimary,
+                                    color:
+                                        themeController.isDarkMode
+                                            ? ColorTheme.textSecondaryDark
+                                            : ColorTheme.textPrimary,
                                     fontFamily: 'JosefinSans',
                                   ),
                                 ),
@@ -1538,24 +1693,18 @@ class ServiceEditView extends GetView<ServiceController> {
                                   placeholder: 'Enter price for this tier',
                                   keyboardType: TextInputType.number,
                                   controller: controllers['price'],
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Price is required';
-                                    }
-                                    if (double.tryParse(value) == null ||
-                                        double.parse(value) < 0) {
-                                      return 'Invalid price';
-                                    }
-                                    return null;
-                                  },
-                                  onChanged: (value) {
-                                    if (value.isNotEmpty &&
-                                        double.tryParse(value) != null) {
-                                      priceTiers[index]['price'] = double.parse(
-                                        value,
-                                      );
-                                    }
-                                  },
+                                  validator:
+                                      (v) =>
+                                          (v == null || v.isEmpty)
+                                              ? 'Required'
+                                              : (double.tryParse(v) == null ||
+                                                  double.parse(v) < 0)
+                                              ? 'Invalid'
+                                              : null,
+                                  onChanged:
+                                      (v) =>
+                                          priceTiers[index]['price'] =
+                                              double.tryParse(v) ?? 0.0,
                                 ),
                               ],
                             ),
@@ -1568,25 +1717,21 @@ class ServiceEditView extends GetView<ServiceController> {
               ],
             ),
           ),
-
-          // Add new tier button
           const SizedBox(height: 20),
           Center(
             child: AppButton(
               text: 'Add Price Tier',
               icon: Icons.add,
               onPressed: () {
-                // Find the max age from the last tier to start the new one
-                final lastMaxAge = priceTiers.last['maxAge'];
+                final lastMaxAge =
+                    priceTiers.isNotEmpty ? priceTiers.last['maxAge'] : -1;
                 final newIndex = priceTiers.length;
-
                 priceTiers.add({
                   'minAge': lastMaxAge + 1,
-                  'maxAge': lastMaxAge + 12,
+                  'maxAge': lastMaxAge + 13, // Default to 12 months range
                   'price': 0.0,
+                  'tierName': 'Tier ${newIndex + 1}',
                 });
-
-                // Initialize controllers for the new tier
                 _initializePriceTierControllers(newIndex);
               },
               type: AppButtonType.outline,
@@ -1600,13 +1745,17 @@ class ServiceEditView extends GetView<ServiceController> {
   }
 
   Widget _buildSubmitButton() {
+    final primaryCurrent =
+        themeController.isDarkMode
+            ? ColorTheme.primaryDark
+            : ColorTheme.primary;
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            ColorTheme.primary.withValues(alpha: 0.1),
-            ColorTheme.primary.withValues(alpha: 0.05),
+            primaryCurrent.withOpacity(0.1),
+            primaryCurrent.withOpacity(0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(20),
@@ -1631,7 +1780,6 @@ class ServiceEditView extends GetView<ServiceController> {
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-
     if (pickedFile != null) {
       imageFile.value = File(pickedFile.path);
       isImageSelected.value = true;
@@ -1647,9 +1795,34 @@ class ServiceEditView extends GetView<ServiceController> {
       final categoryId = selectedCategoryId.value;
 
       if (hasPriceTiers.value) {
-        // Validate price tiers
         bool isValid = true;
-        for (var tier in priceTiers) {
+        for (int i = 0; i < priceTiers.length; i++) {
+          final tier = priceTiers[i];
+          final minAgeCtrl = priceTierControllers[i]?['minAge'];
+          final maxAgeCtrl = priceTierControllers[i]?['maxAge'];
+          final priceCtrl = priceTierControllers[i]?['price'];
+
+          if (minAgeCtrl == null ||
+              maxAgeCtrl == null ||
+              priceCtrl == null ||
+              minAgeCtrl.text.isEmpty ||
+              maxAgeCtrl.text.isEmpty ||
+              priceCtrl.text.isEmpty ||
+              tier['minAge'] == null ||
+              tier['maxAge'] == null ||
+              tier['price'] == null ||
+              (tier['minAge'] is String &&
+                  (tier['minAge'] as String).isEmpty) ||
+              (tier['maxAge'] is String &&
+                  (tier['maxAge'] as String).isEmpty) ||
+              (tier['price'] is String && (tier['price'] as String).isEmpty)) {
+            isValid = false;
+            break;
+          }
+          tier['minAge'] = int.tryParse(minAgeCtrl.text) ?? tier['minAge'];
+          tier['maxAge'] = int.tryParse(maxAgeCtrl.text) ?? tier['maxAge'];
+          tier['price'] = double.tryParse(priceCtrl.text) ?? tier['price'];
+
           if (tier['minAge'] == null ||
               tier['maxAge'] == null ||
               tier['price'] == null) {
@@ -1661,25 +1834,27 @@ class ServiceEditView extends GetView<ServiceController> {
         if (!isValid) {
           Get.snackbar(
             'Validation Error',
-            'Please complete all price tier fields',
-            backgroundColor: Colors.red,
-            colorText: Colors.white,
+            'Please complete all price tier fields with valid numbers.',
+            backgroundColor:
+                themeController.isDarkMode
+                    ? ColorTheme.errorDark
+                    : ColorTheme.error,
+            colorText: ColorTheme.textInverse,
           );
           return;
         }
 
-        // Convert to the correct format expected by the API
         List<Map<String, dynamic>> formattedPriceTiers =
             priceTiers.map((tier) {
               return {
                 'minBabyAge': tier['minAge'],
                 'maxBabyAge': tier['maxAge'],
                 'price': tier['price'],
-                'tierName': 'Tier ${priceTiers.indexOf(tier) + 1}',
+                'tierName':
+                    tier['tierName'] ?? 'Tier ${priceTiers.indexOf(tier) + 1}',
               };
             }).toList();
 
-        // Submit with price tiers
         controller
             .updateService(
               id: serviceId,
@@ -1693,12 +1868,9 @@ class ServiceEditView extends GetView<ServiceController> {
               priceTiers: formattedPriceTiers,
             )
             .then((service) {
-              if (service != null) {
-                Get.back(); // Return to previous screen on success
-              }
+              if (service != null) Get.back();
             });
       } else {
-        // Simple pricing
         final price = double.parse(priceController.text);
         final minBabyAge = int.parse(minAgeController.text);
         final maxBabyAge = int.parse(maxAgeController.text);
@@ -1718,9 +1890,7 @@ class ServiceEditView extends GetView<ServiceController> {
               maxBabyAge: maxBabyAge,
             )
             .then((service) {
-              if (service != null) {
-                Get.back(); // Return to previous screen on success
-              }
+              if (service != null) Get.back();
             });
       }
     }

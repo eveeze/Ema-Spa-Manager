@@ -36,45 +36,46 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GetBuilder<ThemeController>(
-      builder: (themeController) {
-        return AppBar(
-          title: _buildAnimatedTitle(themeController),
-          centerTitle: centerTitle,
-          backgroundColor:
-              backgroundColor ?? _getBackgroundColor(themeController),
-          elevation: elevation,
-          automaticallyImplyLeading: automaticallyImplyLeading,
-          leading: _buildLeading(context, themeController),
-          actions: _wrapActionsWithFeedback(actions, themeController),
-          iconTheme: IconThemeData(color: _getIconColor(themeController)),
-          bottom: bottom,
-          shape:
-              type == AppBarType.primary
-                  ? null
-                  : RoundedRectangleBorder(
-                    borderRadius: BorderRadius.vertical(
-                      bottom: Radius.circular(16),
-                    ),
+    // Menggunakan Obx untuk reaktivitas yang lebih baik
+    return Obx(() {
+      final themeController = Get.find<ThemeController>();
+
+      return AppBar(
+        title: _buildAnimatedTitle(themeController),
+        centerTitle: centerTitle,
+        backgroundColor:
+            backgroundColor ?? _getBackgroundColor(themeController),
+        elevation: elevation,
+        automaticallyImplyLeading: automaticallyImplyLeading,
+        leading: _buildLeading(context, themeController),
+        actions: _wrapActionsWithFeedback(actions, themeController),
+        iconTheme: IconThemeData(color: _getIconColor(themeController)),
+        bottom: bottom,
+        shape:
+            type == AppBarType.primary
+                ? null
+                : RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(
+                    bottom: Radius.circular(16),
                   ),
-          flexibleSpace:
-              type == AppBarType.primary
-                  ? Container(
-                    decoration: BoxDecoration(
-                      gradient: _getGradient(themeController),
-                      boxShadow: [
-                        BoxShadow(
-                          color: _getShadowColor(themeController),
-                          blurRadius: 4,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                  )
-                  : null,
-        );
-      },
-    );
+                ),
+        flexibleSpace:
+            type == AppBarType.primary
+                ? Container(
+                  decoration: BoxDecoration(
+                    gradient: _getGradient(themeController),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _getShadowColor(themeController),
+                        blurRadius: 4,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                )
+                : null,
+      );
+    });
   }
 
   Widget _buildAnimatedTitle(ThemeController themeController) {
@@ -108,8 +109,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           ),
         );
       },
-      child: Text(
-        title,
+      child: AnimatedDefaultTextStyle(
+        duration: Duration(milliseconds: 300),
         style: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.bold,
@@ -118,6 +119,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           letterSpacing: 0.5,
           shadows: _getTitleShadows(themeController),
         ),
+        child: Text(title),
       ),
     );
   }
@@ -137,13 +139,16 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   Widget _wrapWithFeedback(Widget widget, ThemeController themeController) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        customBorder: CircleBorder(),
-        splashColor: _getSplashColor(themeController),
-        highlightColor: _getHighlightColor(themeController),
-        child: widget,
+    return AnimatedContainer(
+      duration: Duration(milliseconds: 300),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          customBorder: CircleBorder(),
+          splashColor: _getSplashColor(themeController),
+          highlightColor: _getHighlightColor(themeController),
+          child: widget,
+        ),
       ),
     );
   }
@@ -160,9 +165,14 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     if (Navigator.of(context).canPop() && automaticallyImplyLeading) {
       return _wrapWithFeedback(
         IconButton(
-          icon: Icon(
-            Icons.arrow_back,
-            shadows: _getIconShadows(themeController),
+          icon: AnimatedSwitcher(
+            duration: Duration(milliseconds: 300),
+            child: Icon(
+              Icons.arrow_back,
+              key: ValueKey(themeController.isDarkMode),
+              color: _getIconColor(themeController),
+              shadows: _getIconShadows(themeController),
+            ),
           ),
           onPressed: () {
             if (onBackPressed != null) {
@@ -336,137 +346,146 @@ class SearchAppBar extends CustomAppBar {
     VoidCallback? onClear,
     String hintText,
   ) {
-    return GetBuilder<ThemeController>(
-      builder: (themeController) {
-        return AnimatedContainer(
-          duration: Duration(milliseconds: 300),
-          margin: EdgeInsets.fromLTRB(16, 0, 16, 8),
-          decoration: BoxDecoration(
-            color:
-                themeController.isDarkMode
-                    ? ColorTheme.surfaceDark
-                    : Colors.white,
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: [
-              BoxShadow(
-                color:
-                    themeController.isDarkMode
-                        ? Colors.black.withValues(alpha: 0.3)
-                        : Colors.black.withValues(alpha: 0.06),
-                blurRadius: 5,
-                spreadRadius: 0,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Focus(
-            child: Builder(
-              builder: (context) {
-                final isFocused = Focus.of(context).hasFocus;
-                return AnimatedContainer(
-                  duration: Duration(milliseconds: 300),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color:
-                          isFocused
-                              ? (themeController.isDarkMode
-                                  ? ColorTheme.primaryLightDark.withValues(
-                                    alpha: 0.5,
-                                  )
-                                  : ColorTheme.primary.withValues(alpha: 0.5))
-                              : Colors.transparent,
-                      width: 1.5,
-                    ),
+    // Menggunakan Obx untuk reaktivitas yang lebih baik
+    return Obx(() {
+      final themeController = Get.find<ThemeController>();
+
+      return AnimatedContainer(
+        duration: Duration(milliseconds: 300),
+        margin: EdgeInsets.fromLTRB(16, 0, 16, 8),
+        decoration: BoxDecoration(
+          color:
+              themeController.isDarkMode
+                  ? ColorTheme.surfaceDark
+                  : Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: [
+            BoxShadow(
+              color:
+                  themeController.isDarkMode
+                      ? Colors.black.withValues(alpha: 0.3)
+                      : Colors.black.withValues(alpha: 0.06),
+              blurRadius: 5,
+              spreadRadius: 0,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Focus(
+          child: Builder(
+            builder: (context) {
+              final isFocused = Focus.of(context).hasFocus;
+              return AnimatedContainer(
+                duration: Duration(milliseconds: 300),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color:
+                        isFocused
+                            ? (themeController.isDarkMode
+                                ? ColorTheme.primaryLightDark.withValues(
+                                  alpha: 0.5,
+                                )
+                                : ColorTheme.primary.withValues(alpha: 0.5))
+                            : Colors.transparent,
+                    width: 1.5,
                   ),
-                  child: TextField(
-                    controller: controller,
-                    onChanged: onSearch,
-                    decoration: InputDecoration(
-                      hintText: hintText,
-                      hintStyle: TextStyle(
+                ),
+                child: ListenableBuilder(
+                  listenable: controller,
+                  builder: (context, _) {
+                    return TextField(
+                      controller: controller,
+                      onChanged: onSearch,
+                      decoration: InputDecoration(
+                        hintText: hintText,
+                        hintStyle: TextStyle(
+                          color:
+                              themeController.isDarkMode
+                                  ? ColorTheme.textTertiaryDark
+                                  : ColorTheme.textTertiary,
+                          fontFamily: 'JosefinSans',
+                        ),
+                        prefixIcon: AnimatedSwitcher(
+                          duration: Duration(milliseconds: 300),
+                          child: Icon(
+                            Icons.search,
+                            color:
+                                isFocused
+                                    ? (themeController.isDarkMode
+                                        ? ColorTheme.primaryLightDark
+                                        : ColorTheme.primary)
+                                    : (themeController.isDarkMode
+                                        ? ColorTheme.textSecondaryDark
+                                        : ColorTheme.textSecondary),
+                            key: ValueKey(
+                              '${isFocused}_${themeController.isDarkMode}',
+                            ),
+                          ),
+                        ),
+                        suffixIcon:
+                            controller.text.isNotEmpty
+                                ? TweenAnimationBuilder<double>(
+                                  duration: Duration(milliseconds: 300),
+                                  tween: Tween(begin: 0.0, end: 1.0),
+                                  builder: (context, value, child) {
+                                    return Opacity(
+                                      opacity: value,
+                                      child: Transform.scale(
+                                        scale: value,
+                                        child: IconButton(
+                                          icon: Icon(
+                                            Icons.clear,
+                                            color:
+                                                themeController.isDarkMode
+                                                    ? ColorTheme
+                                                        .textSecondaryDark
+                                                    : ColorTheme.textSecondary,
+                                          ),
+                                          onPressed: () {
+                                            controller.clear();
+                                            if (onClear != null) {
+                                              onClear();
+                                            } else {
+                                              onSearch('');
+                                            }
+                                          },
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                )
+                                : null,
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(
+                          vertical: 12,
+                          horizontal: 16,
+                        ),
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                      ),
+                      textInputAction: TextInputAction.search,
+                      style: TextStyle(
                         color:
                             themeController.isDarkMode
-                                ? ColorTheme.textTertiaryDark
-                                : ColorTheme.textTertiary,
+                                ? ColorTheme.textPrimaryDark
+                                : ColorTheme.textPrimary,
                         fontFamily: 'JosefinSans',
                       ),
-                      prefixIcon: AnimatedSwitcher(
-                        duration: Duration(milliseconds: 300),
-                        child: Icon(
-                          Icons.search,
-                          color:
-                              isFocused
-                                  ? (themeController.isDarkMode
-                                      ? ColorTheme.primaryLightDark
-                                      : ColorTheme.primary)
-                                  : (themeController.isDarkMode
-                                      ? ColorTheme.textSecondaryDark
-                                      : ColorTheme.textSecondary),
-                          key: ValueKey(isFocused),
-                        ),
-                      ),
-                      suffixIcon:
-                          controller.text.isNotEmpty
-                              ? TweenAnimationBuilder<double>(
-                                duration: Duration(milliseconds: 300),
-                                tween: Tween(begin: 0.0, end: 1.0),
-                                builder: (context, value, child) {
-                                  return Opacity(
-                                    opacity: value,
-                                    child: Transform.scale(
-                                      scale: value,
-                                      child: IconButton(
-                                        icon: Icon(
-                                          Icons.clear,
-                                          color:
-                                              themeController.isDarkMode
-                                                  ? ColorTheme.textSecondaryDark
-                                                  : ColorTheme.textSecondary,
-                                        ),
-                                        onPressed: () {
-                                          controller.clear();
-                                          if (onClear != null) {
-                                            onClear();
-                                          } else {
-                                            onSearch('');
-                                          }
-                                        },
-                                      ),
-                                    ),
-                                  );
-                                },
-                              )
-                              : null,
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(
-                        vertical: 12,
-                        horizontal: 16,
-                      ),
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                    ),
-                    textInputAction: TextInputAction.search,
-                    style: TextStyle(
-                      color:
+                      cursorColor:
                           themeController.isDarkMode
-                              ? ColorTheme.textPrimaryDark
-                              : ColorTheme.textPrimary,
-                      fontFamily: 'JosefinSans',
-                    ),
-                    cursorColor:
-                        themeController.isDarkMode
-                            ? ColorTheme.primaryLightDark
-                            : ColorTheme.primary,
-                    cursorWidth: 1.5,
-                    cursorRadius: Radius.circular(4),
-                  ),
-                );
-              },
-            ),
+                              ? ColorTheme.primaryLightDark
+                              : ColorTheme.primary,
+                      cursorWidth: 1.5,
+                      cursorRadius: Radius.circular(4),
+                    );
+                  },
+                ),
+              );
+            },
           ),
-        );
-      },
-    );
+        ),
+      );
+    });
   }
 }

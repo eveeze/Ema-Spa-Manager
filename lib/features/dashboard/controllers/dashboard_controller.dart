@@ -5,7 +5,6 @@ import 'package:emababyspa/data/models/owner.dart';
 import 'package:emababyspa/data/models/reservation.dart'; // Import Reservation model
 import 'package:emababyspa/utils/storage_utils.dart';
 import 'package:emababyspa/features/reservation/controllers/reservation_controller.dart';
-import 'package:intl/intl.dart'; // For date formatting
 
 class DashboardController extends GetxController {
   final StorageUtils _storageUtils = StorageUtils();
@@ -216,9 +215,4 @@ class DashboardController extends GetxController {
       isLoadingActivities.value ||
       isLoadingRevenue.value ||
       isLoadingUpcomingCarousel.value; // Include the new loader
-
-  @override
-  void onClose() {
-    super.onClose();
-  }
 }

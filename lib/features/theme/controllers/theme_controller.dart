@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 
-class ThemeController extends GetxController {
+class ThemeController extends GetxController with WidgetsBindingObserver {
   static const String _themeKey = 'theme_mode';
 
   final GetStorage _storage = GetStorage();
@@ -13,13 +13,16 @@ class ThemeController extends GetxController {
   final Rx<ThemeMode> _themeMode = ThemeMode.system.obs;
   ThemeMode get themeMode => _themeMode.value;
 
-  // Observable untuk system brightness detection yang lebih akurat
+  // Observable untuk system brightness detection
   final RxBool _systemBrightnessDark = false.obs;
+
+  // Force rebuild observable - ini yang akan trigger UI rebuild
+  final RxBool _forceRebuild = false.obs;
+  bool get forceRebuild => _forceRebuild.value;
 
   // Computed property to check if dark mode is active
   bool get isDarkMode {
     if (_themeMode.value == ThemeMode.system) {
-      // Gunakan cached system brightness untuk performa lebih baik
       return _systemBrightnessDark.value;
     }
     return _themeMode.value == ThemeMode.dark;
@@ -39,35 +42,86 @@ class ThemeController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+
+    // Register observer untuk listen system changes
+    WidgetsBinding.instance.addObserver(this);
+
     _loadThemeFromStorage();
     _initSystemBrightnessListener();
+  }
+
+  @override
+  void onClose() {
+    // Cleanup observer
+    WidgetsBinding.instance.removeObserver(this);
+    super.onClose();
+  }
+
+  // Override didChangePlatformBrightness untuk handle system theme changes
+  @override
+  void didChangePlatformBrightness() {
+    super.didChangePlatformBrightness();
+    debugPrint('🌙 System brightness changed detected');
+
+    // Update system brightness dengan delay untuk memastikan context tersedia
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateSystemBrightness();
+    });
+  }
+
+  // Override didChangeAppLifecycleState untuk handle app resume
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    if (state == AppLifecycleState.resumed) {
+      debugPrint('🌙 App resumed, checking system brightness');
+      _updateSystemBrightness();
+    }
   }
 
   /// Initialize system brightness listener
   void _initSystemBrightnessListener() {
     // Set initial system brightness
-    _updateSystemBrightness();
-
-    // Listen to system brightness changes
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final context = Get.context;
-      if (context != null) {
-        final brightness = MediaQuery.of(context).platformBrightness;
-        _systemBrightnessDark.value = brightness == Brightness.dark;
-      }
+      _updateSystemBrightness();
     });
   }
 
-  /// Update system brightness detection
+  /// Update system brightness detection dengan force rebuild
   void _updateSystemBrightness() {
     final context = Get.context;
-    if (context != null) {
-      final brightness = MediaQuery.of(context).platformBrightness;
-      _systemBrightnessDark.value = brightness == Brightness.dark;
-    } else {
-      // Fallback: assume light mode if context is not available
-      _systemBrightnessDark.value = false;
+    if (context == null) {
+      debugPrint('🌙 Context not available, scheduling retry');
+      // Retry setelah delay jika context belum tersedia
+      Future.delayed(const Duration(milliseconds: 100), () {
+        _updateSystemBrightness();
+      });
+      return;
     }
+
+    final brightness = MediaQuery.platformBrightnessOf(context);
+    final wasDark = _systemBrightnessDark.value;
+    final isDark = brightness == Brightness.dark;
+
+    debugPrint(
+      '🌙 System brightness: $brightness (was: ${wasDark ? 'dark' : 'light'}, now: ${isDark ? 'dark' : 'light'})',
+    );
+
+    // Update system brightness
+    _systemBrightnessDark.value = isDark;
+
+    // Force rebuild jika ada perubahan dan sedang menggunakan system mode
+    if (wasDark != isDark && _themeMode.value == ThemeMode.system) {
+      debugPrint('🌙 System theme changed, forcing UI rebuild');
+      _triggerForceRebuild();
+      _updateSystemUIOverlayStyle();
+    }
+  }
+
+  /// Trigger force rebuild untuk memastikan UI update
+  void _triggerForceRebuild() {
+    _forceRebuild.value = !_forceRebuild.value;
   }
 
   /// Load theme preference from storage
@@ -87,8 +141,12 @@ class ThemeController extends GetxController {
         break;
     }
 
+    debugPrint('🌙 Loaded theme from storage: ${_themeMode.value}');
+
     // Update system UI overlay style
-    _updateSystemUIOverlayStyle();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateSystemUIOverlayStyle();
+    });
   }
 
   /// Save theme preference to storage
@@ -106,15 +164,34 @@ class ThemeController extends GetxController {
         break;
     }
     _storage.write(_themeKey, themeString);
+    debugPrint('🌙 Saved theme to storage: $themeString');
   }
 
-  /// Change theme mode
+  /// Change theme mode dengan improved handling
   void changeThemeMode(ThemeMode themeMode) {
+    final oldMode = _themeMode.value;
     _themeMode.value = themeMode;
+
+    debugPrint('🌙 Theme mode changed: $oldMode -> $themeMode');
+
+    // Update GetX theme
     Get.changeThemeMode(themeMode);
+
+    // Save to storage
     _saveThemeToStorage();
-    _updateSystemBrightness(); // Update system brightness detection
+
+    // Update system brightness detection jika beralih ke system mode
+    if (themeMode == ThemeMode.system) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _updateSystemBrightness();
+      });
+    }
+
+    // Update system UI
     _updateSystemUIOverlayStyle();
+
+    // Force rebuild UI
+    _triggerForceRebuild();
 
     // Show feedback to user
     _showThemeChangeSnackbar();
@@ -149,14 +226,33 @@ class ThemeController extends GetxController {
   void setDarkMode() => changeThemeMode(ThemeMode.dark);
   void setSystemMode() => changeThemeMode(ThemeMode.system);
 
-  /// Manually trigger system brightness update (panggil ini dari main app)
+  /// Manually trigger system brightness update
   void updateSystemBrightness() {
+    debugPrint('🌙 Manual system brightness update triggered');
     _updateSystemBrightness();
+  }
+
+  /// Check if system theme actually changed (untuk debugging)
+  void checkSystemTheme() {
+    final context = Get.context;
+    if (context != null) {
+      final brightness = MediaQuery.platformBrightnessOf(context);
+      debugPrint('🌙 Current system brightness: $brightness');
+      debugPrint(
+        '🌙 Cached system brightness: ${_systemBrightnessDark.value ? 'dark' : 'light'}',
+      );
+      debugPrint('🌙 Current theme mode: ${_themeMode.value}');
+      debugPrint('🌙 Computed isDarkMode: $isDarkMode');
+    }
   }
 
   /// Update system UI overlay style based on current theme
   void _updateSystemUIOverlayStyle() {
     final bool isDark = isDarkMode;
+
+    debugPrint(
+      '🌙 Updating system UI overlay style: ${isDark ? 'dark' : 'light'}',
+    );
 
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(
@@ -188,9 +284,14 @@ class ThemeController extends GetxController {
         icon = Icons.dark_mode;
         break;
       case ThemeMode.system:
-        message = 'Mengikuti Sistem';
+        message = 'Mengikuti Sistem ${isDarkMode ? '(Gelap)' : '(Terang)'}';
         icon = Icons.brightness_auto;
         break;
+    }
+
+    // Cancel existing snackbar jika ada
+    if (Get.isSnackbarOpen) {
+      Get.closeCurrentSnackbar();
     }
 
     Get.showSnackbar(
@@ -202,6 +303,8 @@ class ThemeController extends GetxController {
         margin: const EdgeInsets.all(16),
         borderRadius: 12,
         dismissDirection: DismissDirection.horizontal,
+        backgroundColor:
+            isDarkMode ? const Color(0xFF2D3748) : const Color(0xFF4A5568),
       ),
     );
   }
@@ -214,7 +317,7 @@ class ThemeController extends GetxController {
       case ThemeMode.dark:
         return 'Gelap';
       case ThemeMode.system:
-        return 'Sistem';
+        return 'Sistem ${isDarkMode ? '(Gelap)' : '(Terang)'}';
     }
   }
 
