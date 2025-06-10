@@ -122,7 +122,70 @@ class ReservationRepository {
     }
   }
 
-  // Update reservation status for Owner
+  Future<Reservation> updateReservationDetails(
+    String id,
+    Map<String, dynamic> data,
+  ) async {
+    try {
+      _logger.info('Repository: Updating reservation details for $id (Owner).');
+      // Panggil provider 'updateReservation' yang sudah diperbaiki
+      final responseMap = await _reservationProvider.updateReservation(
+        id,
+        data,
+      );
+      return Reservation.fromJson(responseMap);
+    } catch (e) {
+      _logger.error(
+        'Repository error updating reservation details for $id (Owner): $e',
+      );
+      rethrow;
+    }
+  }
+
+  // TAMBAHKAN FUNGSI BARU INI
+  Future<Payment> updateManualPaymentProof(
+    String reservationId,
+    File paymentProofFile,
+  ) async {
+    try {
+      _logger.info(
+        'Repository: Updating manual payment proof for reservation $reservationId (Owner).',
+      );
+      final response = await _reservationProvider.updateManualPaymentProof(
+        reservationId,
+        paymentProofFile,
+      );
+      final paymentData = response['payment'];
+      if (paymentData != null && paymentData is Map<String, dynamic>) {
+        return Payment.fromJson(paymentData);
+      }
+      throw Exception('Failed to parse payment proof update response (Owner)');
+    } catch (e) {
+      _logger.error(
+        'Repository error updating payment proof for $reservationId (Owner): $e',
+      );
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> confirmManualWithProof(
+    String reservationId,
+    File paymentProofFile,
+  ) async {
+    try {
+      _logger.info(
+        'Repository: Confirming manual reservation $reservationId with proof.',
+      );
+      return await _reservationProvider.confirmManualWithProof(
+        reservationId,
+        paymentProofFile,
+      );
+    } catch (e) {
+      _logger.error('Repository: Error confirming reservation with proof: $e');
+      rethrow;
+    }
+  }
+
   Future<Reservation> updateReservationStatus(String id, String status) async {
     try {
       _logger.info(
@@ -132,7 +195,10 @@ class ReservationRepository {
         id,
         status,
       );
-      return Reservation.fromJson(responseMap['data'] as Map<String, dynamic>);
+
+      // --- PERBAIKAN UTAMA DI SINI ---
+      // Hapus akses ke ['data']. Langsung gunakan responseMap.
+      return Reservation.fromJson(responseMap);
     } catch (e) {
       _logger.error(
         'Repository error updating reservation $id status (Owner): $e',
@@ -180,23 +246,26 @@ class ReservationRepository {
         paymentNotes: paymentNotes,
         paymentProofFile: paymentProofFile,
       );
-      if (response['data'] != null &&
-          response['data'] is Map<String, dynamic>) {
-        final responseData = response['data'] as Map<String, dynamic>;
+      if (response['reservation'] != null &&
+          response['payment'] != null &&
+          response['customer'] != null &&
+          response['reservation'] is Map<String, dynamic> &&
+          response['payment'] is Map<String, dynamic>) {
+        // Directly parse the maps into your model objects.
         return {
           'reservation': Reservation.fromJson(
-            responseData['reservation'] as Map<String, dynamic>,
+            response['reservation'] as Map<String, dynamic>,
           ),
           'payment': Payment.fromJson(
-            responseData['payment'] as Map<String, dynamic>,
+            response['payment'] as Map<String, dynamic>,
           ),
-          'customer': responseData['customer'],
+          'customer': response['customer'], // Assuming this is a Map
         };
       }
       _logger.warning(
         'Repository: createManualReservation response structure not as expected: $response (Owner)',
       );
-      return response;
+      throw Exception('Failed to parse response from provider.');
     } on DioException catch (e) {
       _logger.error(
         'Repository DioException creating manual reservation: ${e.message} (Owner)',
@@ -242,7 +311,8 @@ class ReservationRepository {
         paymentProofFile,
         notes: notes,
       );
-      final paymentData = response['data']?['payment'];
+      final paymentData = response['payment'];
+
       if (paymentData != null && paymentData is Map<String, dynamic>) {
         return Payment.fromJson(paymentData);
       }
@@ -265,7 +335,8 @@ class ReservationRepository {
         paymentId,
         isVerified,
       );
-      final paymentData = response['data']?['payment'];
+      final paymentData = response['payment'];
+
       if (paymentData != null && paymentData is Map<String, dynamic>) {
         return Payment.fromJson(paymentData);
       }

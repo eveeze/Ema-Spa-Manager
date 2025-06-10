@@ -1148,11 +1148,13 @@ class ServiceFormView extends GetView<ServiceController> {
                                 keyboardType: TextInputType.number,
                                 controller: currentTierControllers['minAge'],
                                 validator: (value) {
-                                  if (value == null || value.isEmpty)
+                                  if (value == null || value.isEmpty) {
                                     return 'Required';
+                                  }
                                   if (int.tryParse(value) == null ||
-                                      int.parse(value) < 0)
+                                      int.parse(value) < 0) {
                                     return 'Invalid age';
+                                  }
                                   return null;
                                 },
                                 onChanged: (value) {
@@ -1172,16 +1174,20 @@ class ServiceFormView extends GetView<ServiceController> {
                                 keyboardType: TextInputType.number,
                                 controller: currentTierControllers['maxAge'],
                                 validator: (value) {
-                                  if (value == null || value.isEmpty)
+                                  if (value == null || value.isEmpty) {
                                     return 'Required';
+                                  }
                                   final minAgeText =
                                       currentTierControllers['minAge']!.text;
                                   if (minAgeText.isEmpty ||
-                                      int.tryParse(minAgeText) == null)
+                                      int.tryParse(minAgeText) == null) {
                                     return 'Min age first';
+                                  }
                                   if (int.tryParse(value) == null ||
-                                      int.parse(value) <= int.parse(minAgeText))
+                                      int.parse(value) <=
+                                          int.parse(minAgeText)) {
                                     return '> min age';
+                                  }
                                   return null;
                                 },
                                 onChanged: (value) {
@@ -1202,11 +1208,13 @@ class ServiceFormView extends GetView<ServiceController> {
                           keyboardType: TextInputType.number,
                           controller: currentTierControllers['price'],
                           validator: (value) {
-                            if (value == null || value.isEmpty)
+                            if (value == null || value.isEmpty) {
                               return 'Required';
+                            }
                             if (double.tryParse(value) == null ||
-                                double.parse(value) < 0)
+                                double.parse(value) < 0) {
                               return 'Invalid price';
+                            }
                             return null;
                           },
                           onChanged: (value) {

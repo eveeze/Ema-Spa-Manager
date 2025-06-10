@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
-// Assuming ColorTheme is now part of AppTheme or accessed via Theme.of(context)
-// import 'package:emababyspa/common/theme/color_theme.dart'; // We'll use Theme.of(context) or themeController
 import 'package:emababyspa/common/widgets/custom_appbar.dart';
 import 'package:emababyspa/common/widgets/app_button.dart';
 import 'package:emababyspa/common/widgets/app_text_field.dart';

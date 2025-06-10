@@ -1,64 +1,51 @@
 // lib/features/reservation/views/reservation_detail_view.dart
+
 import 'package:emababyspa/data/models/payment.dart';
+import 'package:emababyspa/features/theme/controllers/theme_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:emababyspa/common/theme/color_theme.dart';
 import 'package:emababyspa/common/layouts/main_layout.dart';
 import 'package:emababyspa/common/widgets/app_button.dart';
 import 'package:emababyspa/features/reservation/controllers/reservation_controller.dart';
 import 'package:emababyspa/data/models/reservation.dart';
 import 'package:emababyspa/utils/timezone_utils.dart';
 import 'package:emababyspa/utils/app_routes.dart';
-import 'package:intl/intl.dart'; // For currency formatting
-
-// Helper function to darken a color
-Color _darkenColor(Color color, [double amount = 0.3]) {
-  assert(amount >= 0 && amount <= 1);
-  final hsl = HSLColor.fromColor(color);
-  final hslDark = hsl.withLightness((hsl.lightness - amount).clamp(0.0, 1.0));
-  return hslDark.toColor();
-}
+import 'package:intl/intl.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ReservationDetailView extends GetView<ReservationController> {
   const ReservationDetailView({super.key});
 
+  // --- PERBAIKAN 1: Sederhanakan fungsi load data ---
+  // Kita hanya butuh satu panggilan API.
   Future<void> _loadReservationDetails(String reservationId) async {
-    if (reservationId.isEmpty) {
-      Get.snackbar(
-        'Error',
-        'Reservation ID is missing.',
-        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
-        colorText: ColorTheme.error,
-      );
-      // Attempt to pop only if navigation stack allows
-      if (Navigator.of(Get.context!).canPop()) {
-        Get.back();
-      }
-      return;
-    }
+    // Reset state sebelum memuat data baru
     controller.clearSelectedReservation();
-    controller.clearSelectedPaymentDetails();
     await controller.fetchReservationById(reservationId);
-    await controller.fetchOwnerPaymentDetails(reservationId);
+    // Panggilan ke fetchOwnerPaymentDetails() DIHAPUS.
   }
 
   @override
   Widget build(BuildContext context) {
     final String reservationId = Get.parameters['id'] ?? '';
+    final theme = Theme.of(context);
 
+    // Gunakan WidgetsBinding.instance.addPostFrameCallback untuk menghindari error build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (reservationId.isNotEmpty) {
-        _loadReservationDetails(reservationId);
+        // Hanya panggil jika data belum ada atau berbeda ID
+        if (controller.selectedReservation.value?.id != reservationId) {
+          _loadReservationDetails(reservationId);
+        }
       } else {
+        // Handle jika tidak ada ID
         Get.snackbar(
           'Error',
           'Reservation ID not provided.',
-          backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
-          colorText: ColorTheme.error,
+          backgroundColor: theme.colorScheme.errorContainer,
+          colorText: theme.colorScheme.onErrorContainer,
         );
-        if (Navigator.of(Get.context!).canPop()) {
-          Get.back();
-        }
+        if (Navigator.of(context).canPop()) Get.back();
       }
     });
 
@@ -69,15 +56,16 @@ class ReservationDetailView extends GetView<ReservationController> {
       appBarTitle: 'Reservation Details',
       appBarActions: [
         IconButton(
+          icon: const Icon(Icons.edit),
+          onPressed:
+              () => Get.toNamed('${AppRoutes.reservationEdit}/$reservationId'),
+          tooltip: 'Edit Reservation',
+        ),
+        IconButton(
           icon: const Icon(Icons.refresh),
           onPressed: () {
             if (reservationId.isNotEmpty) {
               _loadReservationDetails(reservationId);
-            } else {
-              Get.snackbar(
-                'Error',
-                'Cannot refresh: Reservation ID is missing.',
-              );
             }
           },
           tooltip: 'Refresh Details',
@@ -89,126 +77,72 @@ class ReservationDetailView extends GetView<ReservationController> {
 
   Widget _buildBody(BuildContext context, String reservationId) {
     return Obx(() {
-      final isLoadingForThisId =
-          controller.isLoading.value &&
-          (controller.selectedReservation.value == null ||
-              (reservationId.isNotEmpty &&
-                  controller.selectedReservation.value!.id != reservationId));
-
-      if (isLoadingForThisId) {
+      // Logika Pengecekan Loading
+      if (controller.isLoading.value &&
+          controller.selectedReservation.value?.id != reservationId) {
         return const Center(child: CircularProgressIndicator());
       }
 
-      final hasErrorForThisId =
-          controller.errorMessage.value.isNotEmpty &&
-          (controller.selectedReservation.value == null ||
-              (reservationId.isNotEmpty &&
-                  controller.selectedReservation.value!.id != reservationId));
-
-      if (hasErrorForThisId) {
-        return Center(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.error_outline, color: ColorTheme.error, size: 50),
-                const SizedBox(height: 10),
-                Text(
-                  controller.errorMessage.value,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: ColorTheme.error, fontSize: 16),
-                ),
-                const SizedBox(height: 20),
-                AppButton(
-                  text: 'Retry',
-                  onPressed: () {
-                    if (reservationId.isNotEmpty) {
-                      _loadReservationDetails(reservationId);
-                    } else {
-                      Get.snackbar(
-                        'Error',
-                        'Cannot retry: Reservation ID is missing.',
-                      );
-                    }
-                  },
-                  icon: Icons.refresh,
-                ),
-              ],
-            ),
-          ),
+      // Logika Pengecekan Error
+      if (controller.errorMessage.value.isNotEmpty &&
+          controller.selectedReservation.value?.id != reservationId) {
+        return _buildErrorState(
+          context,
+          reservationId,
+          controller.errorMessage.value,
         );
       }
 
       final reservation = controller.selectedReservation.value;
 
-      if (reservation == null ||
-          (reservationId.isNotEmpty && reservation.id != reservationId)) {
-        if (reservationId.isEmpty &&
-            !isLoadingForThisId &&
-            !hasErrorForThisId) {
-          return Center(
-            child: Text(
-              "Reservation ID is missing.",
-              style: TextStyle(color: ColorTheme.error, fontSize: 16),
-            ),
-          );
-        }
-        return Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.search_off, color: Colors.grey.shade400, size: 50),
-              const SizedBox(height: 10),
-              Text(
-                reservationId.isNotEmpty
-                    ? 'Reservation details not found.'
-                    : 'Could not load reservation.',
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 16),
-              ),
-              const SizedBox(height: 20),
-              AppButton(
-                text: 'Go Back',
-                onPressed: () => Get.back(),
-                icon: Icons.arrow_back,
-              ),
-            ],
-          ),
+      // Kondisi jika reservasi tidak ditemukan
+      if (reservation == null) {
+        return _buildErrorState(
+          context,
+          reservationId,
+          'Reservation details not found.',
         );
       }
 
+      // Tampilkan data jika sudah ada
       return RefreshIndicator(
-        onRefresh: () async {
-          if (reservationId.isNotEmpty) {
-            await _loadReservationDetails(reservationId);
-          }
-        },
+        onRefresh: () => _loadReservationDetails(reservationId),
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildStatusChip(reservation.status),
+              _buildStatusChip(context, reservation.status),
               const SizedBox(height: 16),
               _buildSectionCard(
+                context: context,
                 title: 'Session & Service',
                 icon: Icons.event_note,
                 children: [
-                  _buildDetailRow('Reservation ID', reservation.id),
+                  _buildDetailRow(context, 'Reservation ID', reservation.id),
                   if (reservation.sessionDate != null)
                     _buildDetailRow(
+                      context,
                       'Date',
                       TimeZoneUtil.formatDateTimeToIndonesiaDayDate(
                         reservation.sessionDate!,
                       ),
                     ),
                   if (reservation.sessionTime != null)
-                    _buildDetailRow('Time', reservation.sessionTime!),
-                  _buildDetailRow('Service', reservation.serviceName ?? 'N/A'),
-                  _buildDetailRow('Staff', reservation.staffName ?? 'N/A'),
+                    _buildDetailRow(context, 'Time', reservation.sessionTime!),
                   _buildDetailRow(
+                    context,
+                    'Service',
+                    reservation.serviceName ?? 'N/A',
+                  ),
+                  _buildDetailRow(
+                    context,
+                    'Staff',
+                    reservation.staffName ?? 'N/A',
+                  ),
+                  _buildDetailRow(
+                    context,
                     'Type',
                     reservation.reservationType == ReservationType.MANUAL
                         ? 'Manual Reservation'
@@ -218,83 +152,54 @@ class ReservationDetailView extends GetView<ReservationController> {
               ),
               const SizedBox(height: 20),
               _buildSectionCard(
-                title: 'Customer Information',
+                context: context,
+                title: 'Customer & Baby',
                 icon: Icons.person_outline,
                 children: [
-                  _buildDetailRow('Name', reservation.customerName ?? 'N/A'),
-                ],
-              ),
-              const SizedBox(height: 20),
-              _buildSectionCard(
-                title: 'Baby Information',
-                icon: Icons.child_care_outlined,
-                children: [
-                  _buildDetailRow('Name', reservation.babyName),
-                  _buildDetailRow('Age', '${reservation.babyAge} months'),
+                  _buildDetailRow(
+                    context,
+                    'Customer Name',
+                    reservation.customerName ?? 'N/A',
+                  ),
+                  _buildDetailRow(context, 'Baby Name', reservation.babyName),
+                  _buildDetailRow(
+                    context,
+                    'Baby Age',
+                    '${reservation.babyAge} months',
+                  ),
                   if (reservation.parentNames != null &&
                       reservation.parentNames!.isNotEmpty)
-                    _buildDetailRow('Parent Names', reservation.parentNames!),
-                ],
-              ),
-              const SizedBox(height: 20),
-              _buildSectionCard(
-                title: 'Payment Summary',
-                icon: Icons.payment_outlined,
-                children: [
-                  _buildDetailRow(
-                    'Total Price',
-                    NumberFormat.currency(
-                      locale: 'id_ID',
-                      symbol: 'Rp ',
-                      decimalDigits: 0,
-                    ).format(reservation.totalPrice),
-                  ),
-                  _buildDetailRow(
-                    'Payment Status',
-                    _getPaymentStatusFromReservation(reservation),
-                  ),
-                  if (reservation.notes != null &&
-                      reservation.notes!.isNotEmpty)
-                    _buildDetailRow('Reservation Notes', reservation.notes!),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Obx(() {
-                final paymentDetailsMatch =
-                    controller.reservationForPaymentDetails.value?.id ==
-                    reservationId;
-
-                if (controller.isLoadingPaymentDetails.value &&
-                    (controller.selectedPaymentDetails.value == null ||
-                        !paymentDetailsMatch)) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8.0),
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                    _buildDetailRow(
+                      context,
+                      'Parent Names',
+                      reservation.parentNames!,
                     ),
-                  );
-                }
-                if (controller.selectedPaymentDetails.value == null ||
-                    !paymentDetailsMatch) {
-                  return AppButton(
-                    text: 'Load Payment Info',
-                    onPressed: () {
-                      if (reservationId.isNotEmpty) {
-                        controller.fetchOwnerPaymentDetails(reservationId);
-                      } else {
-                        Get.snackbar(
-                          'Error',
-                          'Cannot load payment info: Reservation ID is missing.',
-                        );
-                      }
-                    },
-                    type: AppButtonType.outline,
-                    size: AppButtonSize.medium,
-                  );
-                }
-                final payment = controller.selectedPaymentDetails.value!;
-                return _buildPaymentDetailsCard(payment);
-              }),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // --- PERBAIKAN 2: Sederhanakan Tampilan Payment ---
+              // Langsung cek dari controller.selectedPaymentDetails
+              _buildPaymentSection(
+                context,
+                controller.selectedPaymentDetails.value,
+              ),
+
+              if (reservation.notes != null &&
+                  reservation.notes!.isNotEmpty) ...[
+                const SizedBox(height: 20),
+                _buildSectionCard(
+                  context: context,
+                  title: 'Reservation Notes',
+                  icon: Icons.notes_rounded,
+                  children: [
+                    Text(
+                      reservation.notes!,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 80),
             ],
           ),
@@ -303,32 +208,62 @@ class ReservationDetailView extends GetView<ReservationController> {
     });
   }
 
-  Widget _buildStatusChip(ReservationStatus status) {
+  // --- WIDGET BARU UNTUK PAYMENT ---
+  Widget _buildPaymentSection(BuildContext context, Payment? payment) {
+    // Jika tidak ada data payment sama sekali
+    if (payment == null) {
+      return _buildSectionCard(
+        context: context,
+        title: 'Payment Summary',
+        icon: Icons.payment_outlined,
+        children: const [
+          Center(
+            child: Text("No payment details available for this reservation."),
+          ),
+        ],
+      );
+    }
+
+    // Jika ada data payment
+    return _buildPaymentDetailsCard(context, payment);
+  }
+
+  Widget _buildStatusChip(BuildContext context, ReservationStatus status) {
+    // ... (Fungsi ini tidak berubah, biarkan seperti sebelumnya)
+    final themeController = Get.find<ThemeController>();
+    final isDark = themeController.isDarkMode;
+
     Color chipColor;
+    Color textColor;
     String statusText = controller.getStatusDisplayName(
       status.toString().split('.').last,
     );
 
     switch (status) {
       case ReservationStatus.PENDING:
-        chipColor = Colors.orange.shade100;
-        break;
       case ReservationStatus.PENDING_PAYMENT:
-        chipColor = Colors.orange.shade100;
-        statusText = 'Pending Payment';
+        chipColor = isDark ? Colors.orange.shade800 : Colors.orange.shade100;
+        textColor = isDark ? Colors.orange.shade100 : Colors.orange.shade900;
+        if (status == ReservationStatus.PENDING_PAYMENT) {
+          statusText = 'Pending Payment';
+        }
         break;
       case ReservationStatus.CONFIRMED:
-        chipColor = Colors.blue.shade100;
+        chipColor = isDark ? Colors.blue.shade800 : Colors.blue.shade100;
+        textColor = isDark ? Colors.blue.shade100 : Colors.blue.shade900;
         break;
       case ReservationStatus.IN_PROGRESS:
-        chipColor = Colors.teal.shade100;
+        chipColor = isDark ? Colors.teal.shade800 : Colors.teal.shade100;
+        textColor = isDark ? Colors.teal.shade100 : Colors.teal.shade900;
         break;
       case ReservationStatus.COMPLETED:
-        chipColor = Colors.green.shade100;
+        chipColor = isDark ? Colors.green.shade800 : Colors.green.shade100;
+        textColor = isDark ? Colors.green.shade100 : Colors.green.shade900;
         break;
       case ReservationStatus.CANCELLED:
       case ReservationStatus.EXPIRED:
-        chipColor = Colors.red.shade100;
+        chipColor = isDark ? Colors.red.shade800 : Colors.red.shade100;
+        textColor = isDark ? Colors.red.shade100 : Colors.red.shade900;
         break;
     }
 
@@ -337,160 +272,45 @@ class ReservationDetailView extends GetView<ReservationController> {
       child: Chip(
         label: Text(
           statusText,
-          style: TextStyle(
-            color: _darkenColor(chipColor, 0.4),
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
         ),
         backgroundColor: chipColor,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        side: BorderSide.none,
       ),
     );
   }
 
-  String _getPaymentStatusFromReservation(Reservation reservation) {
-    if (reservation.status == ReservationStatus.PENDING_PAYMENT) {
-      return 'UNPAID';
-    }
-    if (reservation.status == ReservationStatus.CONFIRMED ||
-        reservation.status == ReservationStatus.IN_PROGRESS ||
-        reservation.status == ReservationStatus.COMPLETED) {
-      return 'PAID';
-    }
-    if (reservation.status == ReservationStatus.CANCELLED ||
-        reservation.status == ReservationStatus.EXPIRED) {
-      return 'N/A';
-    }
-    return 'PENDING';
-  }
-
-  Widget _buildSectionCard({
-    required String title,
-    required IconData icon,
-    required List<Widget> children,
-  }) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: ColorTheme.primary.withValues(alpha: 0.1),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(icon, color: ColorTheme.primary, size: 20),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: ColorTheme.primary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: children,
-            ),
-          ),
-        ],
-      ),
+  Widget _buildPaymentDetailsCard(BuildContext context, Payment payment) {
+    final theme = Theme.of(context);
+    final currencyFormatter = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
     );
-  }
 
-  Widget _buildDetailRow(String label, String value, {Color? valueColor}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontWeight: FontWeight.w500,
-                color: ColorTheme.textSecondary.withValues(alpha: 0.8),
-                fontSize: 13,
-              ),
-            ),
-          ),
-          Text(
-            ':  ',
-            style: TextStyle(
-              fontSize: 13,
-              color: ColorTheme.textSecondary.withValues(alpha: 0.8),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value.isEmpty ? 'N/A' : value,
-              style: TextStyle(
-                fontWeight: FontWeight.w400,
-                color: valueColor ?? ColorTheme.textPrimary,
-                fontSize: 14,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPaymentDetailsCard(Payment payment) {
     return _buildSectionCard(
+      context: context,
       title: 'Payment Details',
       icon: Icons.receipt_long_outlined,
       children: [
-        _buildDetailRow('Payment ID', payment.id),
-        _buildDetailRow('Method', payment.paymentMethod),
-        _buildDetailRow('Status', payment.paymentStatus.toUpperCase()),
+        _buildDetailRow(context, 'Payment ID', payment.id),
+        _buildDetailRow(context, 'Method', payment.paymentMethod),
+        _buildDetailRow(context, 'Status', payment.paymentStatus.toUpperCase()),
         _buildDetailRow(
+          context,
           'Amount',
-          NumberFormat.currency(
-            locale: 'id_ID',
-            symbol: 'Rp ',
-            decimalDigits: 0,
-          ).format(payment.amount),
+          currencyFormatter.format(payment.amount),
         ),
-        if (payment.transactionId != null && payment.transactionId!.isNotEmpty)
-          _buildDetailRow('Transaction ID', payment.transactionId!),
         if (payment.paymentDate != null)
           _buildDetailRow(
+            context,
             'Payment Date',
             TimeZoneUtil.formatISOToLocalDateTimeFull(
               payment.paymentDate!.toIso8601String(),
             ),
           ),
-        if (payment.tripayPaymentUrl != null &&
-            payment.tripayPaymentUrl!.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 8.0),
-            child: AppButton(
-              text: 'View Payment Gateway',
-              onPressed: () {
-                Get.snackbar(
-                  'Info',
-                  'Payment URL: ${payment.tripayPaymentUrl}',
-                );
-              },
-              icon: Icons.open_in_new,
-              type: AppButtonType.outline,
-            ),
-          ),
+
         if (payment.paymentProof != null && payment.paymentProof!.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 8.0),
@@ -501,72 +321,46 @@ class ReservationDetailView extends GetView<ReservationController> {
                   width: 120,
                   child: Text(
                     "Payment Proof",
-                    style: TextStyle(
-                      fontWeight: FontWeight.w500,
-                      color: ColorTheme.textSecondary.withValues(alpha: 0.8),
-                      fontSize: 13,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),
                 Text(
                   ':  ',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: ColorTheme.textSecondary.withValues(alpha: 0.8),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
                 Expanded(
                   child: InkWell(
-                    onTap: () {
-                      Get.dialog(
-                        AlertDialog(
-                          content:
-                              payment.paymentProof!.startsWith('http')
-                                  ? Image.network(
-                                    payment.paymentProof!,
-                                    fit: BoxFit.contain,
-                                    loadingBuilder: (
-                                      BuildContext context,
-                                      Widget child,
-                                      ImageChunkEvent? loadingProgress,
-                                    ) {
-                                      if (loadingProgress == null) return child;
-                                      return Center(
-                                        child: CircularProgressIndicator(
-                                          value:
-                                              loadingProgress
-                                                          .expectedTotalBytes !=
-                                                      null
-                                                  ? loadingProgress
-                                                          .cumulativeBytesLoaded /
-                                                      loadingProgress
-                                                          .expectedTotalBytes!
-                                                  : null,
-                                        ),
-                                      );
-                                    },
-                                    errorBuilder:
-                                        (context, error, stackTrace) =>
-                                            const Text('Could not load image.'),
-                                  )
-                                  : const Text(
-                                    "Cannot display proof: Invalid URL or format.",
+                    onTap:
+                        () => Get.dialog(
+                          AlertDialog(
+                            content: CachedNetworkImage(
+                              imageUrl: payment.paymentProof!,
+                              placeholder:
+                                  (context, url) => const Center(
+                                    child: CircularProgressIndicator(),
                                   ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Get.back(),
-                              child: const Text("Close"),
+                              errorWidget:
+                                  (context, url, error) =>
+                                      const Text('Could not load image.'),
                             ),
-                          ],
+                            actions: [
+                              TextButton(
+                                onPressed: Get.back,
+                                child: const Text("Close"),
+                              ),
+                            ],
+                          ),
                         ),
-                      );
-                    },
                     child: Text(
                       "View Proof",
                       style: TextStyle(
-                        color: ColorTheme.primary,
+                        color: theme.colorScheme.primary,
                         decoration: TextDecoration.underline,
-                        fontSize: 14,
+                        decorationColor: theme.colorScheme.primary,
                       ),
                     ),
                   ),
@@ -575,6 +369,127 @@ class ReservationDetailView extends GetView<ReservationController> {
             ),
           ),
       ],
+    );
+  }
+
+  Widget _buildSectionCard({
+    required BuildContext context,
+    required String title,
+    required IconData icon,
+    required List<Widget> children,
+  }) {
+    // ... (Fungsi ini tidak berubah)
+    final theme = Theme.of(context);
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            color: theme.colorScheme.primaryContainer.withOpacity(0.4),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  color: theme.colorScheme.onPrimaryContainer,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onPrimaryContainer,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12.0, 6.0, 12.0, 12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: children,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(
+    BuildContext context,
+    String label,
+    String value, {
+    Color? valueColor,
+  }) {
+    // ... (Fungsi ini tidak berubah)
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          Text(
+            ':  ',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value.isEmpty ? 'N/A' : value,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: valueColor ?? theme.colorScheme.onSurface,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(
+    BuildContext context,
+    String reservationId,
+    String message,
+  ) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, color: theme.colorScheme.error, size: 50),
+            const SizedBox(height: 10),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: theme.colorScheme.error, fontSize: 16),
+            ),
+            const SizedBox(height: 20),
+            AppButton(
+              text: 'Retry',
+              onPressed: () => _loadReservationDetails(reservationId),
+              icon: Icons.refresh,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -2,38 +2,31 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
-import 'package:emababyspa/common/theme/color_theme.dart';
 import 'package:emababyspa/common/layouts/main_layout.dart';
 import 'package:emababyspa/common/widgets/app_button.dart';
 import 'package:emababyspa/features/time_slot/controllers/time_slot_controller.dart';
 import 'package:emababyspa/data/models/time_slot.dart';
 import 'package:emababyspa/utils/timezone_utils.dart';
+import 'package:emababyspa/features/theme/controllers/theme_controller.dart';
+import 'package:emababyspa/common/theme/text_theme.dart';
 
 class TimeSlotEditView extends GetView<TimeSlotController> {
   const TimeSlotEditView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Get the time slot from arguments
     final args = Get.arguments as Map<String, dynamic>;
     final TimeSlot timeSlot = args['timeSlot'];
-
-    // Form key for validation
     final formKey = GlobalKey<FormState>();
-
-    // Controllers for form fields
     final startDateController = TextEditingController();
     final endDateController = TextEditingController();
     final startTimeController = TextEditingController();
     final endTimeController = TextEditingController();
-
-    // Observable variables for date/time selection
     final selectedStartDate = Rx<DateTime?>(null);
     final selectedEndDate = Rx<DateTime?>(null);
     final selectedStartTime = Rx<TimeOfDay?>(null);
     final selectedEndTime = Rx<TimeOfDay?>(null);
 
-    // Initialize form with existing data
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeForm(
         timeSlot,
@@ -68,7 +61,6 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
     );
   }
 
-  // Initialize form with existing time slot data, using Indonesia time
   void _initializeForm(
     TimeSlot timeSlot,
     TextEditingController startDateController,
@@ -80,11 +72,9 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
     Rx<TimeOfDay?> selectedStartTime,
     Rx<TimeOfDay?> selectedEndTime,
   ) {
-    // Convert UTC times to Indonesia time
     final startTimeIndonesia = TimeZoneUtil.toIndonesiaTime(timeSlot.startTime);
     final endTimeIndonesia = TimeZoneUtil.toIndonesiaTime(timeSlot.endTime);
 
-    // Set start date and time
     selectedStartDate.value = startTimeIndonesia;
     selectedStartTime.value = TimeOfDay(
       hour: startTimeIndonesia.hour,
@@ -95,7 +85,6 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
     ).format(startTimeIndonesia);
     startTimeController.text = DateFormat('HH:mm').format(startTimeIndonesia);
 
-    // Set end date and time
     selectedEndDate.value = endTimeIndonesia;
     selectedEndTime.value = TimeOfDay(
       hour: endTimeIndonesia.hour,
@@ -105,23 +94,17 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
     endTimeController.text = DateFormat('HH:mm').format(endTimeIndonesia);
   }
 
-  // Build app bar
   PreferredSizeWidget _buildAppBar(BuildContext context) {
+    final theme = Theme.of(context);
+    Get.find<ThemeController>();
     return AppBar(
-      title: Text(
-        'Edit Time Slot',
-        style: TextStyle(
-          color: ColorTheme.textPrimary,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      backgroundColor: Colors.white,
-      elevation: 0,
-      iconTheme: IconThemeData(color: ColorTheme.primary),
+      title: Text('Edit Time Slot', style: theme.appBarTheme.titleTextStyle),
+      backgroundColor: theme.appBarTheme.backgroundColor,
+      elevation: theme.appBarTheme.elevation,
+      iconTheme: theme.appBarTheme.iconTheme,
     );
   }
 
-  // Build main body
   Widget _buildBody(
     BuildContext context,
     GlobalKey<FormState> formKey,
@@ -135,20 +118,15 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
     Rx<TimeOfDay?> selectedStartTime,
     Rx<TimeOfDay?> selectedEndTime,
   ) {
+    final theme = Theme.of(context);
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Colors.white, ColorTheme.primary.withValues(alpha: 0.05)],
-        ),
-      ),
+      color: theme.scaffoldBackgroundColor,
       child: Form(
         key: formKey,
         child: ListView(
           padding: const EdgeInsets.all(16.0),
           children: [
-            _buildInfoCard(timeSlot),
+            _buildInfoCard(context, timeSlot),
             const SizedBox(height: 24),
             _buildFormSection(
               context,
@@ -177,26 +155,24 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
     );
   }
 
-  // Build info card showing current time slot details with Indonesia time
-  Widget _buildInfoCard(TimeSlot timeSlot) {
-    // Use TimeZoneUtil to format dates in Indonesia time
+  Widget _buildInfoCard(BuildContext context, TimeSlot timeSlot) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final String currentDate = TimeZoneUtil.formatDate(
       timeSlot.startTime,
       format: 'EEEE, d MMMM yyyy',
     );
-
     final String currentTimeRange =
-        '${TimeZoneUtil.formatIndonesiaTime(timeSlot.startTime)} - '
-        '${TimeZoneUtil.formatIndonesiaTime(timeSlot.endTime)}';
+        '${TimeZoneUtil.formatIndonesiaTime(timeSlot.startTime)} - ${TimeZoneUtil.formatIndonesiaTime(timeSlot.endTime)}';
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
+            color: theme.shadowColor.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 5,
             offset: const Offset(0, 2),
@@ -211,12 +187,12 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: ColorTheme.primary.withValues(alpha: 0.1),
+                  color: colorScheme.primaryContainer,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   Icons.info_outline,
-                  color: ColorTheme.primary,
+                  color: colorScheme.primary,
                   size: 24,
                 ),
               ),
@@ -227,36 +203,31 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
                   children: [
                     Text(
                       'Current Time Slot',
-                      style: TextStyle(
-                        fontSize: 16,
+                      style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: ColorTheme.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       currentDate,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: ColorTheme.textSecondary,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       currentTimeRange,
-                      style: TextStyle(
-                        fontSize: 14,
+                      style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w500,
-                        color: ColorTheme.primary,
+                        color: colorScheme.primary,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Indonesia Time (GMT+7)',
-                      style: TextStyle(
-                        fontSize: 12,
+                      style: theme.textTheme.bodySmall?.copyWith(
                         fontStyle: FontStyle.italic,
-                        color: ColorTheme.textSecondary,
+                        color: colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -269,7 +240,6 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
     );
   }
 
-  // Build form section
   Widget _buildFormSection(
     BuildContext context,
     TextEditingController startDateController,
@@ -281,14 +251,18 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
     Rx<TimeOfDay?> selectedStartTime,
     Rx<TimeOfDay?> selectedEndTime,
   ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    Get.find<ThemeController>();
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
+            color: theme.shadowColor.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 5,
             offset: const Offset(0, 2),
@@ -298,32 +272,20 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Edit Time Slot Details',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: ColorTheme.textPrimary,
-            ),
-          ),
+          Text('Edit Time Slot Details', style: theme.textTheme.titleLarge),
           const SizedBox(height: 8),
           Text(
             'All times are in Indonesia Time (GMT+7)',
-            style: TextStyle(
-              fontSize: 14,
+            style: theme.textTheme.bodySmall?.copyWith(
               fontStyle: FontStyle.italic,
-              color: ColorTheme.textSecondary,
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 24),
-
-          // Start Date and Time Section
           Text(
             'Start Date & Time',
-            style: TextStyle(
-              fontSize: 16,
+            style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w600,
-              color: ColorTheme.textPrimary,
             ),
           ),
           const SizedBox(height: 12),
@@ -352,16 +314,11 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
               ),
             ],
           ),
-
           const SizedBox(height: 24),
-
-          // End Date and Time Section
           Text(
             'End Date & Time',
-            style: TextStyle(
-              fontSize: 16,
+            style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w600,
-              color: ColorTheme.textPrimary,
             ),
           ),
           const SizedBox(height: 12),
@@ -390,10 +347,7 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
               ),
             ],
           ),
-
           const SizedBox(height: 20),
-
-          // Validation message
           Obx(() {
             if (selectedStartDate.value != null &&
                 selectedEndDate.value != null &&
@@ -419,25 +373,23 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
                 return Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.red.shade50,
+                    color: colorScheme.errorContainer.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red.shade200),
+                    border: Border.all(color: colorScheme.error),
                   ),
                   child: Row(
                     children: [
                       Icon(
                         Icons.error_outline,
-                        color: Colors.red.shade700,
+                        color: colorScheme.error,
                         size: 20,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           'End time must be after start time',
-                          style: TextStyle(
-                            color: Colors.red.shade700,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.error,
                           ),
                         ),
                       ),
@@ -453,7 +405,6 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
     );
   }
 
-  // Build date field - Updated to use Indonesia time
   Widget _buildDateField(
     BuildContext context,
     String label,
@@ -461,22 +412,17 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
     Rx<DateTime?> selectedDate,
     IconData icon,
   ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return TextFormField(
       controller: controller,
       readOnly: true,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: ColorTheme.primary),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: ColorTheme.primary, width: 2),
-        ),
-        filled: true,
-        fillColor: Colors.grey.shade50,
+        prefixIcon: Icon(icon, color: colorScheme.primary),
+        fillColor:
+            theme.inputDecorationTheme.fillColor ??
+            colorScheme.surfaceContainerHighest,
       ),
       validator: (value) {
         if (value == null || value.isEmpty) {
@@ -485,7 +431,6 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
         return null;
       },
       onTap: () async {
-        // Use Indonesia time for initial date
         final indonesiaTimeNow = TimeZoneUtil.getNow();
         final initialDate = selectedDate.value ?? indonesiaTimeNow;
 
@@ -495,17 +440,7 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
           firstDate: indonesiaTimeNow.subtract(const Duration(days: 365)),
           lastDate: indonesiaTimeNow.add(const Duration(days: 365)),
           builder: (context, child) {
-            return Theme(
-              data: Theme.of(context).copyWith(
-                colorScheme: ColorScheme.light(
-                  primary: ColorTheme.primary,
-                  onPrimary: Colors.white,
-                  surface: Colors.white,
-                  onSurface: ColorTheme.textPrimary,
-                ),
-              ),
-              child: child!,
-            );
+            return Theme(data: theme, child: child!);
           },
         );
 
@@ -517,7 +452,6 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
     );
   }
 
-  // Build time field - Updated to use Indonesia time
   Widget _buildTimeField(
     BuildContext context,
     String label,
@@ -526,22 +460,17 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
     Rx<DateTime?> selectedDate,
     IconData icon,
   ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return TextFormField(
       controller: controller,
       readOnly: true,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: ColorTheme.primary),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: ColorTheme.primary, width: 2),
-        ),
-        filled: true,
-        fillColor: Colors.grey.shade50,
+        prefixIcon: Icon(icon, color: colorScheme.primary),
+        fillColor:
+            theme.inputDecorationTheme.fillColor ??
+            colorScheme.surfaceContainerHighest,
       ),
       validator: (value) {
         if (value == null || value.isEmpty) {
@@ -550,7 +479,6 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
         return null;
       },
       onTap: () async {
-        // Use Indonesia time for initial time
         final indonesiaTimeNow = TimeZoneUtil.getNow();
         final initialTime =
             selectedTime.value ??
@@ -563,17 +491,7 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
           context: context,
           initialTime: initialTime,
           builder: (context, child) {
-            return Theme(
-              data: Theme.of(context).copyWith(
-                colorScheme: ColorScheme.light(
-                  primary: ColorTheme.primary,
-                  onPrimary: Colors.white,
-                  surface: Colors.white,
-                  onSurface: ColorTheme.textPrimary,
-                ),
-              ),
-              child: child!,
-            );
+            return Theme(data: theme, child: child!);
           },
         );
 
@@ -586,7 +504,6 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
     );
   }
 
-  // Build action buttons
   Widget _buildActionButtons(
     BuildContext context,
     GlobalKey<FormState> formKey,
@@ -596,9 +513,9 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
     Rx<TimeOfDay?> selectedStartTime,
     Rx<TimeOfDay?> selectedEndTime,
   ) {
+    final theme = Theme.of(context);
     return Column(
       children: [
-        // Update button
         Obx(() {
           return AppButton(
             text: 'Update Time Slot',
@@ -618,29 +535,19 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
             icon: Icons.save,
           );
         }),
-
         const SizedBox(height: 12),
-
-        // Cancel button
         OutlinedButton(
           onPressed: () => Get.back(),
-          style: OutlinedButton.styleFrom(
-            side: BorderSide(color: ColorTheme.primary),
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
+          style: theme.outlinedButtonTheme.style,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.cancel_outlined, color: ColorTheme.primary),
+              Icon(Icons.cancel_outlined, color: theme.colorScheme.primary),
               const SizedBox(width: 8),
               Text(
                 'Cancel',
-                style: TextStyle(
-                  color: ColorTheme.primary,
-                  fontWeight: FontWeight.w600,
+                style: SpecialTextStyles.buttonSecondary.copyWith(
+                  color: theme.colorScheme.primary,
                 ),
               ),
             ],
@@ -650,7 +557,6 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
     );
   }
 
-  // Handle update time slot - Modified to convert from Indonesia to UTC time
   Future<void> _handleUpdate(
     BuildContext context,
     GlobalKey<FormState> formKey,
@@ -678,7 +584,6 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
       return;
     }
 
-    // Create DateTime objects in Indonesia time
     final startDateTimeIndonesia = DateTime(
       selectedStartDate.value!.year,
       selectedStartDate.value!.month,
@@ -695,7 +600,6 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
       selectedEndTime.value!.minute,
     );
 
-    // Validate time range
     if (endDateTimeIndonesia.isBefore(startDateTimeIndonesia) ||
         endDateTimeIndonesia.isAtSameMomentAs(startDateTimeIndonesia)) {
       Get.snackbar(
@@ -708,21 +612,21 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
       return;
     }
 
-    // Convert from Indonesia time to UTC
-    final startDateTimeUTC = startDateTimeIndonesia.subtract(
-      const Duration(hours: 7),
+    final correctStartUTC = startDateTimeIndonesia.toUtc();
+    final correctEndUTC = endDateTimeIndonesia.toUtc();
+
+    final startTimeToSend = correctStartUTC.add(const Duration(hours: 7));
+    final endTimeToSend = correctEndUTC.add(const Duration(hours: 7));
+
+    final initialStartTimeIndonesia = TimeZoneUtil.toIndonesiaTime(
+      timeSlot.startTime,
     );
-    final endDateTimeUTC = endDateTimeIndonesia.subtract(
-      const Duration(hours: 7),
+    final initialEndTimeIndonesia = TimeZoneUtil.toIndonesiaTime(
+      timeSlot.endTime,
     );
 
-    // Convert the original time slot to Indonesia time for comparison
-    final startTimeIndonesia = TimeZoneUtil.toIndonesiaTime(timeSlot.startTime);
-    final endTimeIndonesia = TimeZoneUtil.toIndonesiaTime(timeSlot.endTime);
-
-    // Check if there are any changes (comparing in Indonesia time)
-    if (startDateTimeIndonesia.isAtSameMomentAs(startTimeIndonesia) &&
-        endDateTimeIndonesia.isAtSameMomentAs(endTimeIndonesia)) {
+    if (startDateTimeIndonesia.isAtSameMomentAs(initialStartTimeIndonesia) &&
+        endDateTimeIndonesia.isAtSameMomentAs(initialEndTimeIndonesia)) {
       Get.snackbar(
         'No Changes',
         'No changes detected in the time slot',
@@ -734,11 +638,10 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
     }
 
     try {
-      // Send UTC times to the controller
       final updatedTimeSlot = await controller.updateTimeSlot(
         id: timeSlot.id,
-        startTime: startDateTimeUTC,
-        endTime: endDateTimeUTC,
+        startTime: startTimeToSend,
+        endTime: endTimeToSend,
       );
 
       if (updatedTimeSlot != null) {
@@ -751,7 +654,6 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
           snackPosition: SnackPosition.BOTTOM,
         );
       } else {
-        // Error message is handled by the controller
         final errorMessage = controller.errorMessage.value;
         if (errorMessage.isNotEmpty) {
           Get.snackbar(

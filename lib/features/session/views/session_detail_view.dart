@@ -1,14 +1,14 @@
-// lib/features/session/views/session_detail_view.dart
-import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:emababyspa/common/theme/color_theme.dart';
 import 'package:emababyspa/common/layouts/main_layout.dart';
+import 'package:emababyspa/common/theme/text_theme.dart';
 import 'package:emababyspa/common/widgets/app_button.dart';
+import 'package:emababyspa/data/models/reservation.dart';
+import 'package:emababyspa/data/models/session.dart';
 import 'package:emababyspa/features/session/controllers/session_controller.dart';
+import 'package:emababyspa/features/theme/controllers/theme_controller.dart';
 import 'package:emababyspa/utils/app_routes.dart';
 import 'package:emababyspa/utils/timezone_utils.dart';
-import 'package:emababyspa/data/models/session.dart';
-import 'package:emababyspa/data/models/reservation.dart';
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 class SessionDetailView extends StatefulWidget {
   const SessionDetailView({super.key});
@@ -26,41 +26,55 @@ class _SessionDetailViewState extends State<SessionDetailView> {
     super.initState();
     final args = Get.arguments as Map<String, dynamic>;
     session = args['session'];
-
-    // Refresh session data to get latest information
     sessionController.getSessionById(session.id);
   }
 
   @override
   Widget build(BuildContext context) {
-    return MainLayout(
-      child: Scaffold(
-        appBar: _buildAppBar(context),
-        body: _buildBody(context),
-        bottomNavigationBar: _buildBottomActions(context),
-      ),
+    return GetBuilder<ThemeController>(
+      builder: (_) {
+        return MainLayout(
+          child: Scaffold(
+            appBar: _buildAppBar(context),
+            body: _buildBody(context),
+            bottomNavigationBar: _buildBottomActions(context),
+          ),
+        );
+      },
     );
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return AppBar(
-      title: Text(
-        'Session Details',
-        style: TextStyle(
-          color: ColorTheme.textPrimary,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      backgroundColor: Colors.white,
-      elevation: 0,
-      iconTheme: IconThemeData(color: ColorTheme.primary),
+      title: const Text('Session Details'),
       actions: [
-        IconButton(
-          icon: const Icon(Icons.delete_outline),
-          tooltip: 'Delete Session',
-          onPressed: () {
-            _showDeleteConfirmation(context);
+        PopupMenuButton<String>(
+          icon: const Icon(Icons.more_vert_rounded),
+          onSelected: (value) {
+            if (value == 'delete') {
+              _showDeleteConfirmation(context);
+            }
           },
+          itemBuilder:
+              (context) => [
+                PopupMenuItem<String>(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.delete_outline_rounded,
+                        color: colorScheme.error,
+                      ),
+                      const SizedBox(width: M3Spacing.md),
+                      Text(
+                        'Delete Session',
+                        style: TextStyle(color: colorScheme.error),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
         ),
       ],
     );
@@ -68,99 +82,150 @@ class _SessionDetailViewState extends State<SessionDetailView> {
 
   Widget _buildBody(BuildContext context) {
     return RefreshIndicator(
-      onRefresh: () async {
-        await sessionController.getSessionById(session.id);
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Colors.white, ColorTheme.primary.withValues(alpha: 0.05)],
-          ),
-        ),
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Obx(() {
-              final currentSession =
-                  sessionController.currentSession.value ?? session;
-              return Column(
+      onRefresh: () async => await sessionController.getSessionById(session.id),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: M3Spacing.md),
+        child: Obx(() {
+          final currentSession =
+              sessionController.currentSession.value ?? session;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: M3Spacing.md),
+              _buildStatusHeader(context, currentSession),
+              const SizedBox(height: M3Spacing.lg),
+              _buildSessionInfoCard(context, currentSession),
+              const SizedBox(height: M3Spacing.lg),
+              _buildTimeSlotInfoCard(context, currentSession),
+              const SizedBox(height: M3Spacing.lg),
+              _buildStaffInfoCard(context, currentSession),
+              const SizedBox(height: M3Spacing.lg),
+              _buildReservationCard(context, currentSession),
+              const SizedBox(height: 120),
+            ],
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildStatusHeader(BuildContext context, Session session) {
+    final isBooked = session.isBooked;
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    final Color containerColor =
+        isBooked ? colorScheme.errorContainer : colorScheme.primaryContainer;
+    final Color contentColor =
+        isBooked
+            ? colorScheme.onErrorContainer
+            : colorScheme.onPrimaryContainer;
+    final IconData icon =
+        isBooked ? Icons.event_busy_rounded : Icons.event_available_rounded;
+
+    return Card(
+      color: containerColor,
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(M3Spacing.lg),
+        child: Row(
+          children: [
+            Icon(icon, color: contentColor, size: 40),
+            const SizedBox(width: M3Spacing.md),
+            Expanded(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildStatusHeader(currentSession),
-                  const SizedBox(height: 20),
-                  _buildSessionInfoCard(currentSession),
-                  const SizedBox(height: 20),
-                  _buildTimeSlotInfoCard(currentSession),
-                  const SizedBox(height: 20),
-                  _buildStaffInfoCard(currentSession),
-                  const SizedBox(height: 20),
-                  _buildReservationCard(currentSession),
-                  const SizedBox(height: 100), // Space for bottom actions
+                  Text(
+                    isBooked ? 'Booked Session' : 'Available Session',
+                    style: textTheme.titleLarge?.copyWith(
+                      color: contentColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: M3Spacing.xs),
+                  Text(
+                    isBooked
+                        ? 'This session is currently booked.'
+                        : 'This session is available for booking.',
+                    style: textTheme.bodyMedium?.copyWith(color: contentColor),
+                  ),
                 ],
-              );
-            }),
-          ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildStatusHeader(Session session) {
-    final isBooked = session.isBooked;
+  Widget _buildInfoCard({
+    required BuildContext context,
+    required String title,
+    required IconData icon,
+    required List<Widget> children,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors:
-              isBooked
-                  ? [Colors.red.shade100, Colors.red.shade50]
-                  : [Colors.green.shade100, Colors.green.shade50],
-        ),
+    return Card(
+      elevation: 0,
+      color: colorScheme.surfaceVariant.withOpacity(0.5),
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: colorScheme.outlineVariant),
       ),
-      child: Row(
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: isBooked ? Colors.red.shade200 : Colors.green.shade200,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              isBooked ? Icons.event_busy : Icons.event_available,
-              color: isBooked ? Colors.red.shade700 : Colors.green.shade700,
-              size: 32,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          Padding(
+            padding: const EdgeInsets.all(M3Spacing.md),
+            child: Row(
               children: [
+                Icon(icon, color: colorScheme.onSurfaceVariant, size: 20),
+                const SizedBox(width: M3Spacing.sm),
                 Text(
-                  isBooked ? 'Booked Session' : 'Available Session',
-                  style: TextStyle(
-                    fontSize: 20,
+                  title,
+                  style: textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color:
-                        isBooked ? Colors.red.shade700 : Colors.green.shade700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  isBooked
-                      ? 'This session is currently booked'
-                      : 'This session is available for booking',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: ColorTheme.textSecondary,
                   ),
                 ),
               ],
+            ),
+          ),
+          Divider(height: 1, color: colorScheme.outlineVariant),
+          Padding(
+            padding: const EdgeInsets.all(M3Spacing.md),
+            child: Column(children: children),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(BuildContext context, String label, String value) {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: M3Spacing.sm + 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(
+              label,
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          const SizedBox(width: M3Spacing.md),
+          Expanded(
+            child: SelectableText(
+              value,
+              style: textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -168,17 +233,20 @@ class _SessionDetailViewState extends State<SessionDetailView> {
     );
   }
 
-  Widget _buildSessionInfoCard(Session session) {
+  Widget _buildSessionInfoCard(BuildContext context, Session session) {
     return _buildInfoCard(
+      context: context,
       title: 'Session Information',
-      icon: Icons.info_outline,
+      icon: Icons.info_outline_rounded,
       children: [
-        _buildInfoRow('Session ID', session.id),
+        _buildInfoRow(context, 'Session ID', session.id),
         _buildInfoRow(
+          context,
           'Booking Status',
           session.isBooked ? 'Booked' : 'Available',
         ),
         _buildInfoRow(
+          context,
           'Created At',
           TimeZoneUtil.formatISOToIndonesiaTime(
             session.createdAt.toIso8601String(),
@@ -186,6 +254,7 @@ class _SessionDetailViewState extends State<SessionDetailView> {
           ),
         ),
         _buildInfoRow(
+          context,
           'Last Updated',
           TimeZoneUtil.formatISOToIndonesiaTime(
             session.updatedAt.toIso8601String(),
@@ -196,15 +265,16 @@ class _SessionDetailViewState extends State<SessionDetailView> {
     );
   }
 
-  Widget _buildTimeSlotInfoCard(Session session) {
+  Widget _buildTimeSlotInfoCard(BuildContext context, Session session) {
     final timeSlot = session.timeSlot;
-
     return _buildInfoCard(
+      context: context,
       title: 'Time Slot Information',
-      icon: Icons.access_time,
+      icon: Icons.access_time_rounded,
       children: [
         if (timeSlot != null) ...[
           _buildInfoRow(
+            context,
             'Date',
             TimeZoneUtil.formatISOToIndonesiaTime(
               timeSlot.startTime.toIso8601String(),
@@ -212,6 +282,7 @@ class _SessionDetailViewState extends State<SessionDetailView> {
             ),
           ),
           _buildInfoRow(
+            context,
             'Start Time',
             TimeZoneUtil.formatISOToIndonesiaTime(
               timeSlot.startTime.toIso8601String(),
@@ -219,6 +290,7 @@ class _SessionDetailViewState extends State<SessionDetailView> {
             ),
           ),
           _buildInfoRow(
+            context,
             'End Time',
             TimeZoneUtil.formatISOToIndonesiaTime(
               timeSlot.endTime.toIso8601String(),
@@ -226,379 +298,258 @@ class _SessionDetailViewState extends State<SessionDetailView> {
             ),
           ),
           _buildInfoRow(
+            context,
             'Duration',
             '${timeSlot.endTime.difference(timeSlot.startTime).inMinutes} minutes',
           ),
-        ] else ...[
-          _buildInfoRow('Time Slot ID', session.timeSlotId),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8),
-            child: Text(
-              'Time slot details not loaded',
-              style: TextStyle(
-                color: Colors.orange,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ),
-        ],
+        ] else
+          _buildInfoRow(context, 'Time Slot ID', session.timeSlotId),
       ],
     );
   }
 
-  Widget _buildStaffInfoCard(Session session) {
+  Widget _buildStaffInfoCard(BuildContext context, Session session) {
     final staff = session.staff;
-
     return _buildInfoCard(
+      context: context,
       title: 'Staff Information',
-      icon: Icons.person,
+      icon: Icons.person_outline_rounded,
       children: [
         if (staff != null) ...[
-          _buildInfoRow('Staff Name', staff.name),
-          _buildInfoRow('Email', staff.email),
-          _buildInfoRow('Phone', staff.phoneNumber),
-          _buildInfoRow('Status', staff.isActive ? 'Active' : 'Inactive'),
-        ] else ...[
-          _buildInfoRow('Staff ID', session.staffId),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8),
-            child: Text(
-              'Staff details not loaded',
-              style: TextStyle(
-                color: Colors.orange,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
+          _buildInfoRow(context, 'Staff Name', staff.name),
+          _buildInfoRow(context, 'Email', staff.email),
+          _buildInfoRow(context, 'Phone', staff.phoneNumber),
+          _buildInfoRow(
+            context,
+            'Status',
+            staff.isActive ? 'Active' : 'Inactive',
           ),
-        ],
+        ] else
+          _buildInfoRow(context, 'Staff ID', session.staffId),
       ],
     );
   }
 
-  Widget _buildReservationCard(Session session) {
-    final reservation = session.reservation;
-    final hasReservation = reservation != null;
+  Widget _buildEmptyReservationState(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
+    return Container(
+      padding: const EdgeInsets.all(M3Spacing.lg),
+      decoration: BoxDecoration(
+        color: colorScheme.secondaryContainer.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.event_note_outlined,
+            size: 48,
+            color: colorScheme.onSecondaryContainer,
+          ),
+          const SizedBox(height: M3Spacing.md),
+          Text(
+            'No Reservation',
+            style: textTheme.titleLarge?.copyWith(
+              color: colorScheme.onSecondaryContainer,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: M3Spacing.sm),
+          Text(
+            'This session is not yet reserved by any customer.',
+            style: textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSecondaryContainer.withOpacity(0.8),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReservationCard(BuildContext context, Session session) {
+    final reservation = session.reservation;
     return _buildInfoCard(
+      context: context,
       title: 'Reservation Information',
-      icon: hasReservation ? Icons.event_note : Icons.event_note_outlined,
+      icon:
+          reservation != null
+              ? Icons.event_note_rounded
+              : Icons.event_note_outlined,
       children: [
-        if (hasReservation) ...[
-          _buildInfoRow('Reservation ID', reservation.id),
+        if (reservation != null) ...[
+          _buildInfoRow(context, 'Reservation ID', reservation.id),
           _buildInfoRow(
+            context,
             'Type',
             _getReservationTypeText(reservation.reservationType),
           ),
-          _buildInfoRow('Baby Name', reservation.babyName),
-          _buildInfoRow('Baby Age', '${reservation.babyAge} months'),
+          _buildInfoRow(context, 'Baby Name', reservation.babyName),
+          _buildInfoRow(context, 'Baby Age', '${reservation.babyAge} months'),
           if (reservation.parentNames != null &&
               reservation.parentNames!.isNotEmpty)
-            _buildInfoRow('Parent Names', reservation.parentNames!),
+            _buildInfoRow(context, 'Parent Names', reservation.parentNames!),
           _buildInfoRow(
+            context,
             'Status',
             _getReservationStatusText(reservation.status),
           ),
           _buildInfoRow(
+            context,
             'Total Price',
             'Rp ${reservation.totalPrice.toStringAsFixed(0)}',
           ),
           if (reservation.notes != null && reservation.notes!.isNotEmpty)
-            _buildInfoRow('Notes', reservation.notes!),
+            _buildInfoRow(context, 'Notes', reservation.notes!),
           _buildInfoRow(
+            context,
             'Reserved At',
             TimeZoneUtil.formatISOToIndonesiaTime(
               reservation.createdAt.toIso8601String(),
               format: 'EEEE, d MMMM yyyy HH:mm',
             ),
           ),
-        ] else ...[
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.blue.shade200),
-            ),
-            child: Column(
-              children: [
-                Icon(
-                  Icons.event_note_outlined,
-                  size: 48,
-                  color: Colors.blue.shade600,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'No Reservation',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue.shade700,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'This session is not yet reserved by any customer',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: ColorTheme.textSecondary,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        ],
+        ] else
+          _buildEmptyReservationState(context),
       ],
     );
   }
 
-  Widget _buildInfoCard({
-    required String title,
-    required IconData icon,
-    required List<Widget> children,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: ColorTheme.primary.withValues(alpha: 0.1),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(icon, color: ColorTheme.primary),
-                const SizedBox(width: 12),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: ColorTheme.primary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: children,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontWeight: FontWeight.w500,
-                color: ColorTheme.textSecondary,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          const Text(': '),
-          Expanded(
-            child: Text(
-              value,
-              style: TextStyle(
-                color: ColorTheme.textPrimary,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildBottomActions(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Obx(() {
       final currentSession = sessionController.currentSession.value ?? session;
       final hasReservation = currentSession.reservation != null;
       final isBooked = currentSession.isBooked;
 
       return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withValues(alpha: 0.2),
-              spreadRadius: 1,
-              blurRadius: 5,
-              offset: const Offset(0, -2),
-            ),
-          ],
+        padding: const EdgeInsets.all(M3Spacing.md).copyWith(
+          bottom: M3Spacing.md + MediaQuery.of(context).padding.bottom,
         ),
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (!hasReservation && !isBooked) ...[
-                AppButton(
-                  text: 'Add Manual Reservation',
-                  icon: Icons.add_circle_outline,
-                  onPressed: () {
-                    _navigateToReservationForm(context, currentSession);
-                  },
-                ),
-              ] else if (hasReservation) ...[
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppButton(
-                        text: 'View Reservation',
-                        icon: Icons.visibility,
-                        onPressed: () {
-                          // Navigasi dengan pattern yang konsisten dengan halaman lain
-                          Get.toNamed(
-                            AppRoutes.reservationDetail.replaceAll(
-                              ':id',
-                              currentSession.reservation!.id,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: AppButton(
-                        text: 'Edit Reservation',
-                        icon: Icons.edit,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-              const SizedBox(height: 12),
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          border: Border(
+            top: BorderSide(color: colorScheme.outlineVariant, width: 1.0),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (!hasReservation && !isBooked)
+              AppButton(
+                text: 'Add Manual Reservation',
+                onPressed:
+                    () => _navigateToReservationForm(context, currentSession),
+                icon: Icons.add_circle_outline,
+                type: AppButtonType.primary,
+                isFullWidth: true,
+              ),
+            if (hasReservation)
               Row(
                 children: [
                   Expanded(
                     child: AppButton(
-                      text: isBooked ? 'Mark as Available' : 'Mark as Booked',
-                      icon: isBooked ? Icons.event_available : Icons.event_busy,
+                      text: 'View',
                       onPressed: () {
-                        _showToggleBookingConfirmation(
-                          context,
-                          currentSession,
-                          !isBooked,
+                        Get.toNamed(
+                          AppRoutes.reservationDetail.replaceAll(
+                            ':id',
+                            currentSession.reservation!.id,
+                          ),
                         );
                       },
+                      type: AppButtonType.outline,
+                      icon: Icons.visibility_outlined,
+                    ),
+                  ),
+                  const SizedBox(width: M3Spacing.md),
+                  Expanded(
+                    child: AppButton(
+                      text: 'Edit',
+                      onPressed: () {
+                        // --- PERUBAHAN DI SINI ---
+                        // Ganti cara navigasi agar konsisten dengan tombol "View"
+                        Get.toNamed(
+                          AppRoutes.reservationEdit.replaceAll(
+                            ':id',
+                            currentSession.reservation!.id,
+                          ),
+                        );
+                        // --- BATAS PERUBAHAN ---
+                      },
+                      type: AppButtonType.primary,
+                      icon: Icons.edit_outlined,
                     ),
                   ),
                 ],
               ),
-            ],
-          ),
+            if (hasReservation) const SizedBox(height: M3Spacing.sm),
+            AppButton(
+              text: isBooked ? 'Mark as Available' : 'Mark as Booked',
+              icon:
+                  isBooked
+                      ? Icons.event_available_outlined
+                      : Icons.event_busy_outlined,
+              onPressed:
+                  () => _showToggleBookingConfirmation(
+                    context,
+                    currentSession,
+                    !isBooked,
+                  ),
+              type: AppButtonType.outline,
+              isFullWidth: true,
+            ),
+          ],
         ),
       );
     });
   }
 
-  String _getReservationTypeText(ReservationType type) {
-    switch (type) {
-      case ReservationType.ONLINE:
-        return 'Online Booking';
-      case ReservationType.MANUAL:
-        return 'Manual Reservation';
-    }
+  void _showCustomSnackbar(
+    String title,
+    String message, {
+    bool isError = false,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    Get.snackbar(
+      title,
+      message,
+      backgroundColor:
+          isError ? colorScheme.errorContainer : colorScheme.primaryContainer,
+      colorText:
+          isError
+              ? colorScheme.onErrorContainer
+              : colorScheme.onPrimaryContainer,
+      snackPosition: SnackPosition.BOTTOM,
+      margin: const EdgeInsets.all(M3Spacing.md),
+      borderRadius: 12,
+      icon: Icon(
+        isError ? Icons.error_outline : Icons.check_circle_outline,
+        color:
+            isError
+                ? colorScheme.onErrorContainer
+                : colorScheme.onPrimaryContainer,
+      ),
+    );
   }
 
-  String _getReservationStatusText(ReservationStatus status) {
-    switch (status) {
-      case ReservationStatus.PENDING:
-        return 'Pending';
-      case ReservationStatus.CONFIRMED:
-        return 'Confirmed';
-      case ReservationStatus.IN_PROGRESS:
-        return 'In Progress';
-      case ReservationStatus.COMPLETED:
-        return 'Completed';
-      case ReservationStatus.CANCELLED:
-        return 'Cancelled';
-      case ReservationStatus.EXPIRED:
-        return 'Expired';
-      case ReservationStatus.PENDING_PAYMENT:
-        return 'Pending';
-    }
-  }
-
-  // Improved navigation method for creating manual reservation
   void _navigateToReservationForm(BuildContext context, Session session) {
-    try {
-      // Navigate directly to reservation form with session data
-      Get.toNamed(
-        AppRoutes.reservationForm,
-        arguments: {
-          'session': session,
-          'type': 'manual',
-          'sessionId': session.id,
-          'timeSlot': session.timeSlot,
-          'staff': session.staff,
-        },
-      )?.then((result) {
-        // Handle result when returning from reservation form
-        if (result != null && result is Map<String, dynamic>) {
-          if (result['success'] == true) {
-            // Refresh session data after successful reservation creation
-            sessionController.getSessionById(session.id);
-
-            // Show success message
-            Get.snackbar(
-              'Success',
-              'Manual reservation created successfully',
-              backgroundColor: Colors.green,
-              colorText: Colors.white,
-              snackPosition: SnackPosition.BOTTOM,
-              duration: const Duration(seconds: 3),
-            );
-          }
-        }
-      });
-    } catch (e) {
-      // Handle navigation error
-      Get.snackbar(
-        'Error',
-        'Failed to navigate to reservation form: ${e.toString()}',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 3),
-      );
-    }
+    Get.toNamed(
+      AppRoutes.reservationForm,
+      arguments: {'session': session},
+    )?.then((result) {
+      if (result == true) {
+        sessionController.getSessionById(session.id);
+        _showCustomSnackbar(
+          'Success',
+          'Manual reservation created successfully',
+        );
+      }
+    });
   }
-
-  // Alternative method using dialog confirmation (keeping the original for reference)
 
   void _showToggleBookingConfirmation(
     BuildContext context,
@@ -606,7 +557,6 @@ class _SessionDetailViewState extends State<SessionDetailView> {
     bool newBookingStatus,
   ) {
     final action = newBookingStatus ? 'book' : 'unbook';
-
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -614,22 +564,23 @@ class _SessionDetailViewState extends State<SessionDetailView> {
           title: Text('${newBookingStatus ? 'Book' : 'Unbook'} Session'),
           content: Text('Are you sure you want to $action this session?'),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
+            AppButton(
+              text: 'Cancel',
+              onPressed: () => Get.back(),
+              type: AppButtonType.text,
+              size: AppButtonSize.small,
             ),
-            TextButton(
+            AppButton(
+              text: newBookingStatus ? 'Book' : 'Unbook',
+              type: AppButtonType.text,
+              size: AppButtonSize.small,
               onPressed: () {
-                Navigator.of(context).pop();
+                Get.back();
                 sessionController.updateSessionBookingStatus(
                   session.id,
                   newBookingStatus,
                 );
               },
-              style: TextButton.styleFrom(
-                foregroundColor: newBookingStatus ? Colors.red : Colors.green,
-              ),
-              child: Text(newBookingStatus ? 'Book' : 'Unbook'),
             ),
           ],
         );
@@ -644,36 +595,56 @@ class _SessionDetailViewState extends State<SessionDetailView> {
         return AlertDialog(
           title: const Text('Delete Session'),
           content: const Text(
-            'Are you sure you want to delete this session? '
-            'This action cannot be undone.',
+            'Are you sure you want to delete this session? This action cannot be undone.',
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
+            AppButton(
+              text: 'Cancel',
+              onPressed: () => Get.back(),
+              type: AppButtonType.text,
+              size: AppButtonSize.small,
             ),
-            TextButton(
+            AppButton(
+              text: 'Delete',
+              type: AppButtonType.text,
+              size: AppButtonSize.small,
               onPressed: () {
-                Navigator.of(context).pop();
+                Get.back(); // Close dialog
                 sessionController.deleteSession(session.id).then((success) {
                   if (success) {
                     Get.back(); // Return to previous screen
-                    Get.snackbar(
+                    _showCustomSnackbar(
                       'Success',
                       'Session deleted successfully',
-                      backgroundColor: Colors.green,
-                      colorText: Colors.white,
-                      snackPosition: SnackPosition.BOTTOM,
                     );
                   }
                 });
               },
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Delete'),
             ),
           ],
         );
       },
     );
+  }
+
+  String _getReservationTypeText(ReservationType type) =>
+      type == ReservationType.ONLINE ? 'Online Booking' : 'Manual Reservation';
+
+  String _getReservationStatusText(ReservationStatus status) {
+    switch (status) {
+      case ReservationStatus.PENDING:
+      case ReservationStatus.PENDING_PAYMENT:
+        return 'Pending';
+      case ReservationStatus.CONFIRMED:
+        return 'Confirmed';
+      case ReservationStatus.IN_PROGRESS:
+        return 'In Progress';
+      case ReservationStatus.COMPLETED:
+        return 'Completed';
+      case ReservationStatus.CANCELLED:
+        return 'Cancelled';
+      case ReservationStatus.EXPIRED:
+        return 'Expired';
+    }
   }
 }

@@ -172,16 +172,6 @@ class _CustomBottomNavigationState extends State<CustomBottomNavigation>
         : ColorTheme.bottomNavInactive;
   }
 
-  Color _getShadowColor() {
-    return _themeController.isDarkMode
-        ? Colors.black.withValues(
-          alpha: 0.2,
-        ) // Kurangi opacity shadow di dark mode
-        : Colors.black.withValues(
-          alpha: 0.08,
-        ); // Kurangi opacity di light mode juga
-  }
-
   Color _getBorderColor() {
     return _themeController.isDarkMode
         ? Colors
@@ -219,57 +209,22 @@ class _CustomBottomNavigationState extends State<CustomBottomNavigation>
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     final screenWidth = MediaQuery.of(context).size.width;
 
-    return Container(
-      decoration: _buildShadowDecoration(),
-      child: ClipPath(
-        clipper: BottomNavClipper(),
+    return ClipPath(
+      clipper: BottomNavClipper(),
+      child: Container(
+        decoration: _buildBackgroundDecoration(),
         child: Container(
-          decoration: _buildBackgroundDecoration(),
-          child: Container(
-            padding: EdgeInsets.only(
-              top: 12,
-              bottom: bottomPadding > 0 ? bottomPadding + 8 : 16,
-              left: 8,
-              right: 8,
-            ),
-            child: Stack(
-              children: [_buildSlideIndicator(screenWidth), _buildNavItems()],
-            ),
+          padding: EdgeInsets.only(
+            top: 12,
+            bottom: bottomPadding > 0 ? bottomPadding + 8 : 16,
+            left: 8,
+            right: 8,
+          ),
+          child: Stack(
+            children: [_buildSlideIndicator(screenWidth), _buildNavItems()],
           ),
         ),
       ),
-    );
-  }
-
-  BoxDecoration _buildShadowDecoration() {
-    final shadowColor = _getShadowColor();
-
-    return BoxDecoration(
-      boxShadow:
-          _themeController.isDarkMode
-              ? [
-                // Shadow yang lebih subtle untuk dark mode
-                BoxShadow(
-                  color: shadowColor,
-                  blurRadius: widget.elevation * 0.6, // Kurangi blur radius
-                  spreadRadius: 0,
-                  offset: const Offset(0, -2), // Kurangi offset
-                ),
-              ]
-              : [
-                BoxShadow(
-                  color: shadowColor,
-                  blurRadius: widget.elevation,
-                  spreadRadius: 0,
-                  offset: const Offset(0, -4),
-                ),
-                BoxShadow(
-                  color: shadowColor.withValues(alpha: 0.06),
-                  blurRadius: widget.elevation / 2,
-                  spreadRadius: 0,
-                  offset: const Offset(0, -2),
-                ),
-              ],
     );
   }
 

@@ -47,6 +47,13 @@ class ApiEndpoints {
       '$reservationsOwner/payment/{id}';
   static const String manualReservationsPaymentUpdateById =
       '$manualReservations/{id}/payment'; // Matches route: /manual/{id}/payment
+  static const String reservationsOwnerUpdateDetailsById =
+      '/reservations/owner/details/{id}'; // Perbaiki ini
+  static const String reservationsOwnerUpdatePaymentProofById =
+      '/reservations/owner/payment-proof/{id}'; // Tambahkan ini
+  static const String reservationsOwnerConfirmWithProof =
+      '/reservations/owner/manual/{id}/confirm-with-proof';
+
   // Payments
   static const String payments = '/payments';
   static const String paymentDetail = '/payments/{id}';

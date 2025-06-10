@@ -3,7 +3,7 @@ import 'package:equatable/equatable.dart';
 
 class Payment extends Equatable {
   final String id;
-  final String? reservationId; // Made nullable since it's not always present
+  final String? reservationId;
   final double amount;
   final String paymentMethod;
   final String paymentStatus;
@@ -18,7 +18,7 @@ class Payment extends Equatable {
 
   const Payment({
     required this.id,
-    this.reservationId, // Made optional since it's nullable
+    this.reservationId,
     required this.amount,
     required this.paymentMethod,
     required this.paymentStatus,
@@ -33,29 +33,48 @@ class Payment extends Equatable {
   });
 
   factory Payment.fromJson(Map<String, dynamic> json) {
+    // Helper untuk memastikan nilai string tidak null
+    String asString(dynamic value, [String fallback = '']) =>
+        value as String? ?? fallback;
+
+    // Helper untuk memastikan nilai angka tidak null
+    double asDouble(dynamic value, [double fallback = 0.0]) =>
+        (value as num?)?.toDouble() ?? fallback;
+
     return Payment(
-      id: json['id'] as String,
-      reservationId: json['reservationId'] as String?, // Safe null handling
-      amount: (json['amount'] as num).toDouble(),
-      paymentMethod: json['paymentMethod'] as String,
-      paymentStatus: json['status'] as String,
-      transactionId: json['transactionId'] as String?,
-      tripayPaymentUrl: json['paymentUrl'] as String?,
-      paymentProof: json['paymentProof'] as String?,
+      id: asString(json['id']),
+      reservationId: asString(json['reservationId']),
+      amount: asDouble(json['amount']),
+      paymentMethod: asString(json['paymentMethod']),
+
+      // === PERBAIKAN UTAMA DI SINI ===
+      // Baca 'paymentStatus' atau 'status' sebagai fallback
+      paymentStatus: asString(
+        json['paymentStatus'] ?? json['status'],
+        'PENDING',
+      ),
+
+      transactionId: asString(json['transactionId']),
+      tripayPaymentUrl: asString(json['paymentUrl']),
+      paymentProof: asString(json['paymentProof']),
       paymentDate:
           json['paymentDate'] != null
-              ? DateTime.parse(json['paymentDate'] as String)
+              ? DateTime.tryParse(asString(json['paymentDate']))
               : null,
       merchantFee:
-          json['merchantFee'] != null
-              ? (json['merchantFee'] as num).toDouble()
-              : null,
+          json['merchantFee'] != null ? asDouble(json['merchantFee']) : null,
       expiryDate:
           json['expiryDate'] != null
-              ? DateTime.parse(json['expiryDate'] as String)
+              ? DateTime.tryParse(asString(json['expiryDate']))
               : null,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      createdAt:
+          json['createdAt'] != null
+              ? DateTime.parse(asString(json['createdAt']))
+              : DateTime.now(),
+      updatedAt:
+          json['updatedAt'] != null
+              ? DateTime.parse(asString(json['updatedAt']))
+              : DateTime.now(),
     );
   }
 
@@ -65,7 +84,7 @@ class Payment extends Equatable {
       'reservationId': reservationId,
       'amount': amount,
       'paymentMethod': paymentMethod,
-      'status': paymentStatus,
+      'paymentStatus': paymentStatus, // Kirim sebagai 'paymentStatus'
       'transactionId': transactionId,
       'paymentUrl': tripayPaymentUrl,
       'paymentProof': paymentProof,

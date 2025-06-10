@@ -1,282 +1,277 @@
 import 'package:flutter/material.dart';
-import 'package:emababyspa/common/theme/text_theme.dart';
+import 'package:emababyspa/common/theme/text_theme.dart'; // Assuming TextThemes is correctly set up
 import 'package:emababyspa/common/theme/color_theme.dart';
 
 class AppTheme {
+  // --- LIGHT THEME ---
   static final ThemeData lightTheme = ThemeData(
     brightness: Brightness.light,
-    primaryColor: ColorTheme.primary,
-    scaffoldBackgroundColor: ColorTheme.background,
-    colorScheme: ColorScheme.light(
-      primary: ColorTheme.primary,
-      secondary: ColorTheme.secondary,
-      error: ColorTheme.error,
-      surface: ColorTheme.surface,
-      onPrimary: Colors.white,
-      onSecondary: Colors.white,
-      onSurface: ColorTheme.textPrimary,
-      onError: Colors.white,
+    // Use the M3 ColorScheme for all core colors
+    colorScheme: const ColorScheme.light(
+      primary: ColorTheme.m3Primary,
+      onPrimary: ColorTheme.m3OnPrimary,
+      primaryContainer: ColorTheme.m3PrimaryContainer,
+      onPrimaryContainer: ColorTheme.m3OnPrimaryContainer,
+      secondary: ColorTheme.m3Secondary,
+      onSecondary: ColorTheme.m3OnSecondary,
+      secondaryContainer: ColorTheme.m3SecondaryContainer,
+      onSecondaryContainer: ColorTheme.m3OnSecondaryContainer,
+      error: ColorTheme.m3Error,
+      onError: ColorTheme.m3OnError,
+      errorContainer: ColorTheme.m3ErrorContainer,
+      onErrorContainer: ColorTheme.m3OnErrorContainer,
+      background: ColorTheme.m3Background,
+      onBackground: ColorTheme.m3OnBackground,
+      surface: ColorTheme.m3Surface,
+      onSurface: ColorTheme.m3OnSurface,
+      surfaceVariant: ColorTheme.m3SurfaceVariant,
+      onSurfaceVariant: ColorTheme.m3OnSurfaceVariant,
+      outline: ColorTheme.m3Outline,
+      outlineVariant: ColorTheme.m3OutlineVariant,
     ),
-    textTheme: TextThemes.textTheme,
+    primaryColor: ColorTheme.m3Primary, // Legacy support
+    scaffoldBackgroundColor: ColorTheme.m3Background,
+    textTheme:
+        TextThemes.textTheme, // Ensure this uses colors from the new scheme
+
     appBarTheme: AppBarTheme(
-      backgroundColor: ColorTheme.primary,
+      backgroundColor: ColorTheme.m3Primary,
+      foregroundColor: ColorTheme.m3OnPrimary, // Use OnPrimary for text/icons
       elevation: 0,
-      iconTheme: IconThemeData(color: Colors.white),
       titleTextStyle: TextThemes.textTheme.titleLarge?.copyWith(
-        color: Colors.white,
+        color: ColorTheme.m3OnPrimary, // Explicitly use OnPrimary
         fontWeight: FontWeight.bold,
       ),
     ),
+
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: ColorTheme.primary,
-        foregroundColor: Colors.white,
-        padding: EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+        backgroundColor: ColorTheme.m3Primary,
+        foregroundColor: ColorTheme.m3OnPrimary, // Text color on the button
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     ),
+
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        foregroundColor: ColorTheme.primary,
-        side: BorderSide(color: ColorTheme.primary),
-        padding: EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+        foregroundColor: ColorTheme.m3Primary,
+        side: const BorderSide(
+          color: ColorTheme.m3Outline,
+        ), // Use outline color for borders
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     ),
+
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
-        foregroundColor: ColorTheme.primary,
-        padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+        foregroundColor: ColorTheme.m3Primary,
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       ),
     ),
+
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: Colors.white,
-      contentPadding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      fillColor: ColorTheme.m3Surface, // Use surface color
+      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: ColorTheme.border),
+        borderSide: const BorderSide(color: ColorTheme.m3Outline),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: ColorTheme.border),
+        borderSide: const BorderSide(color: ColorTheme.m3Outline),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: ColorTheme.primary, width: 2),
+        borderSide: const BorderSide(color: ColorTheme.m3Primary, width: 2),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: ColorTheme.error),
+        borderSide: const BorderSide(color: ColorTheme.m3Error),
       ),
-      labelStyle: TextStyle(color: ColorTheme.textSecondary),
-      hintStyle: TextStyle(color: ColorTheme.textTertiary),
+      labelStyle: const TextStyle(color: ColorTheme.m3OnSurfaceVariant),
+      hintStyle: const TextStyle(color: ColorTheme.m3OnSurfaceVariant),
     ),
+
     cardTheme: CardTheme(
-      color: Colors.white,
-      elevation: 2,
-      shadowColor: Colors.black.withValues(alpha: 0.1),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    ),
-    bottomNavigationBarTheme: BottomNavigationBarThemeData(
-      backgroundColor: Colors.white,
-      selectedItemColor: ColorTheme.primary,
-      unselectedItemColor: ColorTheme.textSecondary,
-      elevation: 8,
-      type: BottomNavigationBarType.fixed, // Add this for consistent behavior
-    ),
-    dividerTheme: DividerThemeData(
-      color: ColorTheme.border,
-      thickness: 1,
-      space: 24,
-    ),
-    bottomSheetTheme: BottomSheetThemeData(
-      backgroundColor: Colors.white,
+      color: ColorTheme.m3Surface,
+      elevation: 1,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: ColorTheme.m3OutlineVariant),
       ),
     ),
-    // Add missing light theme components
+
+    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      backgroundColor: ColorTheme.m3Surface, // M3 uses surface color
+      selectedItemColor: ColorTheme.m3OnSurface, // More aligned with M3 nav
+      unselectedItemColor: ColorTheme.m3OnSurfaceVariant,
+      elevation: 2,
+      type: BottomNavigationBarType.fixed,
+    ),
+
+    dividerTheme: const DividerThemeData(
+      color: ColorTheme.m3OutlineVariant, // Use outline variant for dividers
+      thickness: 1,
+    ),
+
+    // Other component themes updated for M3
     dialogTheme: DialogTheme(
-      backgroundColor: Colors.white,
+      backgroundColor: ColorTheme.m3Surface,
       titleTextStyle: TextStyle(
-        color: ColorTheme.textPrimary,
-        fontSize: 20,
+        color: ColorTheme.m3OnSurface,
+        fontSize: 22,
         fontWeight: FontWeight.bold,
       ),
       contentTextStyle: TextStyle(
-        color: ColorTheme.textSecondary,
+        color: ColorTheme.m3OnSurfaceVariant,
         fontSize: 16,
       ),
     ),
-    snackBarTheme: SnackBarThemeData(
-      backgroundColor: ColorTheme.textPrimary,
-      contentTextStyle: TextStyle(color: Colors.white),
-    ),
-    floatingActionButtonTheme: FloatingActionButtonThemeData(
-      backgroundColor: ColorTheme.primary,
-      foregroundColor: Colors.white,
-    ),
-    switchTheme: SwitchThemeData(
-      thumbColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
-          return ColorTheme.primary;
-        }
-        return ColorTheme.textTertiary;
-      }),
-      trackColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
-          return ColorTheme.primary.withValues(alpha: 0.5);
-        }
-        return ColorTheme.border;
-      }),
-    ),
-    checkboxTheme: CheckboxThemeData(
-      fillColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
-          return ColorTheme.primary;
-        }
-        return Colors.transparent;
-      }),
-      checkColor: WidgetStateProperty.all(Colors.white),
+
+    floatingActionButtonTheme: const FloatingActionButtonThemeData(
+      backgroundColor: ColorTheme.m3PrimaryContainer,
+      foregroundColor: ColorTheme.m3OnPrimaryContainer,
+      elevation: 4,
     ),
   );
 
+  // --- DARK THEME ---
   static final ThemeData darkTheme = ThemeData(
     brightness: Brightness.dark,
-    primaryColor: ColorTheme.primaryLightDark,
-    scaffoldBackgroundColor: ColorTheme.backgroundDark,
-    colorScheme: ColorScheme.dark(
-      primary: ColorTheme.primaryLightDark,
-      secondary: ColorTheme.secondaryDark,
-      error: ColorTheme.errorDark,
-      surface: ColorTheme.surfaceDark,
-      onPrimary: Colors.black,
-      onSecondary: Colors.white,
-      onSurface: ColorTheme.textPrimaryDark,
-      onError: Colors.black,
+    // Use the M3 Dark ColorScheme for all core colors
+    colorScheme: const ColorScheme.dark(
+      primary: ColorTheme.m3PrimaryDark,
+      onPrimary: ColorTheme.m3OnPrimaryDark,
+      primaryContainer: ColorTheme.m3PrimaryContainerDark,
+      onPrimaryContainer: ColorTheme.m3OnPrimaryContainerDark,
+      secondary: ColorTheme.m3SecondaryDark,
+      onSecondary: ColorTheme.m3OnSecondaryDark,
+      secondaryContainer: ColorTheme.m3SecondaryContainerDark,
+      onSecondaryContainer: ColorTheme.m3OnSecondaryContainerDark,
+      error: ColorTheme.m3ErrorDark,
+      onError: ColorTheme.m3OnErrorDark,
+      // Note: M3 dark error containers are not defined in your list, so we map them logically
+      // errorContainer: ColorTheme.m3ErrorContainerDark,
+      // onErrorContainer: ColorTheme.m3OnErrorContainerDark,
+      background: ColorTheme.m3BackgroundDark,
+      onBackground: ColorTheme.m3OnBackgroundDark,
+      surface: ColorTheme.m3SurfaceDark,
+      onSurface: ColorTheme.m3OnSurfaceDark,
+      surfaceVariant: ColorTheme.m3SurfaceVariantDark,
+      onSurfaceVariant: ColorTheme.m3OnSurfaceVariantDark,
+      outline: ColorTheme.m3OutlineDark,
     ),
-    textTheme: TextThemes.darkTextTheme,
+    primaryColor: ColorTheme.m3PrimaryDark, // Legacy support
+    scaffoldBackgroundColor: ColorTheme.m3BackgroundDark,
+    textTheme:
+        TextThemes.darkTextTheme, // Ensure this uses colors from the new scheme
+
     appBarTheme: AppBarTheme(
-      backgroundColor: ColorTheme.surfaceDark,
+      backgroundColor:
+          ColorTheme.m3SurfaceDark, // Dark app bars are typically surface color
+      foregroundColor: ColorTheme.m3OnSurfaceDark, // Text/icons on surface
       elevation: 0,
-      iconTheme: IconThemeData(color: ColorTheme.textPrimaryDark),
       titleTextStyle: TextThemes.darkTextTheme.titleLarge?.copyWith(
-        color: ColorTheme.textPrimaryDark,
+        color:
+            ColorTheme.m3OnSurfaceDark, // Use OnSurface for high emphasis text
         fontWeight: FontWeight.bold,
       ),
     ),
+
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: ColorTheme.primaryLightDark,
-        foregroundColor: Colors.black,
-        padding: EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+        backgroundColor: ColorTheme.m3PrimaryDark,
+        foregroundColor: ColorTheme.m3OnPrimaryDark,
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     ),
+
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        foregroundColor: ColorTheme.primaryLightDark,
-        side: BorderSide(color: ColorTheme.primaryLightDark),
-        padding: EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+        foregroundColor: ColorTheme.m3PrimaryDark,
+        side: const BorderSide(color: ColorTheme.m3OutlineDark),
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     ),
+
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
-        foregroundColor: ColorTheme.primaryLightDark,
-        padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+        foregroundColor: ColorTheme.m3PrimaryDark,
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       ),
     ),
+
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: ColorTheme.surfaceDark,
-      contentPadding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      fillColor:
+          ColorTheme
+              .m3SurfaceVariantDark, // A subtle contrast against the background
+      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: ColorTheme.borderDark),
+        borderSide: const BorderSide(color: ColorTheme.m3OutlineDark),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: ColorTheme.borderDark),
+        borderSide: const BorderSide(color: ColorTheme.m3OutlineDark),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: ColorTheme.primaryLightDark, width: 2),
+        borderSide: const BorderSide(color: ColorTheme.m3PrimaryDark, width: 2),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: ColorTheme.errorDark),
+        borderSide: const BorderSide(color: ColorTheme.m3ErrorDark),
       ),
-      labelStyle: TextStyle(color: ColorTheme.textSecondaryDark),
-      hintStyle: TextStyle(color: ColorTheme.textTertiaryDark),
+      labelStyle: const TextStyle(color: ColorTheme.m3OnSurfaceVariantDark),
+      hintStyle: const TextStyle(color: ColorTheme.m3OnSurfaceVariantDark),
     ),
+
     cardTheme: CardTheme(
-      color: ColorTheme.surfaceDark,
-      elevation: 2,
-      shadowColor: Colors.black.withValues(alpha: 0.3),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    ),
-    bottomNavigationBarTheme: BottomNavigationBarThemeData(
-      backgroundColor: ColorTheme.surfaceDark,
-      selectedItemColor: ColorTheme.primaryLightDark,
-      unselectedItemColor: ColorTheme.textSecondaryDark,
-      elevation: 8,
-      type: BottomNavigationBarType.fixed, // Add this for consistent behavior
-    ),
-    dividerTheme: DividerThemeData(
-      color: ColorTheme.borderDark,
-      thickness: 1,
-      space: 24,
-    ),
-    bottomSheetTheme: BottomSheetThemeData(
-      backgroundColor: ColorTheme.surfaceDark,
+      color: ColorTheme.m3SurfaceDark,
+      elevation: 1,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: ColorTheme.m3OutlineDark),
       ),
     ),
+
+    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      backgroundColor: ColorTheme.m3SurfaceDark,
+      selectedItemColor: ColorTheme.m3OnSurfaceDark,
+      unselectedItemColor: ColorTheme.m3OnSurfaceVariantDark,
+      elevation: 2,
+      type: BottomNavigationBarType.fixed,
+    ),
+
+    dividerTheme: const DividerThemeData(
+      color: ColorTheme.m3OutlineDark,
+      thickness: 1,
+    ),
+
+    // Other component themes updated for M3
     dialogTheme: DialogTheme(
-      backgroundColor: ColorTheme.surfaceDark,
+      backgroundColor: ColorTheme.m3SurfaceDark,
       titleTextStyle: TextStyle(
-        color: ColorTheme.textPrimaryDark,
-        fontSize: 20,
+        color: ColorTheme.m3OnSurfaceDark,
+        fontSize: 22,
         fontWeight: FontWeight.bold,
       ),
       contentTextStyle: TextStyle(
-        color: ColorTheme.textSecondaryDark,
+        color: ColorTheme.m3OnSurfaceVariantDark,
         fontSize: 16,
       ),
     ),
-    snackBarTheme: SnackBarThemeData(
-      backgroundColor: ColorTheme.surfaceDark,
-      contentTextStyle: TextStyle(color: ColorTheme.textPrimaryDark),
-    ),
-    floatingActionButtonTheme: FloatingActionButtonThemeData(
-      backgroundColor: ColorTheme.primaryLightDark,
-      foregroundColor: Colors.black,
-    ),
-    switchTheme: SwitchThemeData(
-      thumbColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
-          return ColorTheme.primaryLightDark;
-        }
-        return ColorTheme.textTertiaryDark;
-      }),
-      trackColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
-          return ColorTheme.primaryLightDark.withValues(alpha: 0.5);
-        }
-        return ColorTheme.borderDark;
-      }),
-    ),
-    checkboxTheme: CheckboxThemeData(
-      fillColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
-          return ColorTheme.primaryLightDark;
-        }
-        return Colors.transparent;
-      }),
-      checkColor: WidgetStateProperty.all(Colors.black),
+
+    floatingActionButtonTheme: const FloatingActionButtonThemeData(
+      backgroundColor: ColorTheme.m3PrimaryContainerDark,
+      foregroundColor: ColorTheme.m3OnPrimaryContainerDark,
+      elevation: 4,
     ),
   );
 }

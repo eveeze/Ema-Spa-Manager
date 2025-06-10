@@ -1,4 +1,5 @@
 // lib/features/schedule/views/schedule_view.dart
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -15,365 +16,241 @@ import 'package:emababyspa/utils/app_routes.dart';
 import 'package:emababyspa/features/operating_schedule/widgets/operating_schedule_dialog.dart';
 import 'package:emababyspa/features/time_slot/widgets/time_slot_dialog.dart';
 import 'package:emababyspa/utils/timezone_utils.dart';
+import 'package:emababyspa/features/theme/controllers/theme_controller.dart';
+import 'package:emababyspa/common/theme/text_theme.dart';
 
 class ScheduleView extends GetView<ScheduleController> {
   const ScheduleView({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final themeController = Get.find<ThemeController>();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       controller.refreshScheduleData(controller.selectedDate.value);
     });
 
     return MainLayout(
-      child: Scaffold(
-        body: Obx(() {
-          if (controller.isLoading.value || controller.isGenerating.value) {
-            return const Center(
-              child: LoadingWidget(
-                color: ColorTheme.primary,
-                fullScreen: true,
-                message: "Loading...",
-                size: LoadingSize.medium,
-              ),
-            );
-          }
+      child: Obx(() {
+        final isDark = themeController.isDarkMode;
+        final backgroundColor =
+            isDark ? ColorTheme.backgroundDark : ColorTheme.background;
 
-          return _buildContent(
-            context,
-            Get.find<OperatingScheduleController>(),
-            Get.find<TimeSlotController>(),
-            Get.find<SessionController>(),
-          );
-        }),
-        floatingActionButton: _buildFloatingActionButton(),
-      ),
+        return Scaffold(
+          backgroundColor: backgroundColor,
+          body: Obx(() {
+            if (controller.isLoading.value || controller.isGenerating.value) {
+              return const Center(
+                child: LoadingWidget(
+                  color: ColorTheme.primary,
+                  fullScreen: true,
+                  message: "Loading...",
+                  size: LoadingSize.medium,
+                ),
+              );
+            }
+            return _buildContent(context);
+          }),
+          floatingActionButton: _buildFloatingActionButton(context),
+        );
+      }),
     );
   }
 
-  // Helper function to compare dates without time component
   bool _isSameDate(String? apiDate, String targetDate) {
     if (apiDate == null) return false;
-
-    // Handle ISO date format (2025-05-17T00:00:00.000Z)
     if (apiDate.contains('T')) {
       final datePart = apiDate.split('T')[0];
       return datePart == targetDate;
     }
-
     return apiDate == targetDate;
   }
 
-  Widget _buildFloatingActionButton() {
+  Widget _buildFloatingActionButton(BuildContext context) {
     return FloatingActionButton(
       onPressed: () => Get.toNamed(AppRoutes.operatingScheduleForm),
-      backgroundColor: ColorTheme.primary,
       tooltip: 'Add Operating Schedule',
-      child: const Icon(Icons.add, color: Colors.white),
+      heroTag: 'add_schedule_fab',
+      child: const Icon(Icons.add),
     );
   }
 
-  Widget _buildContent(
-    BuildContext context,
-    OperatingScheduleController operatingScheduleController,
-    TimeSlotController timeSlotController,
-    SessionController sessionController,
-  ) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Colors.white, ColorTheme.primary.withValues(alpha: 0.05)],
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildHeader(),
-          const SizedBox(height: 12),
-          _buildTableCalendar(operatingScheduleController, timeSlotController),
-          const SizedBox(height: 12),
-          Expanded(
-            child: Obx(() {
-              if (!controller.isDataLoaded.value) {
-                return Center(
-                  child: LoadingWidget(
-                    color: ColorTheme.primary,
-                    size: LoadingSize.small,
-                    message: "Loading schedule data...",
-                  ),
-                );
-              }
-
-              return _buildDailySchedule(
-                context,
-                controller.selectedDate.value,
-                operatingScheduleController,
-                timeSlotController,
-                sessionController,
+  Widget _buildContent(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildTableCalendar(context),
+        const SizedBox(height: M3Spacing.md),
+        Expanded(
+          child: Obx(() {
+            if (!controller.isDataLoaded.value) {
+              return const Center(
+                child: LoadingWidget(
+                  color: ColorTheme.primary,
+                  size: LoadingSize.small,
+                  message: "Loading schedule data...",
+                ),
               );
-            }),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(15),
-          bottomRight: Radius.circular(15),
+            }
+            return _buildDailySchedule(context, controller.selectedDate.value);
+          }),
         ),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.event_note_rounded, size: 32, color: ColorTheme.primary),
-          const SizedBox(width: 12),
-          Text(
-            'Schedule',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: ColorTheme.textPrimary,
-              fontFamily: 'JosefinSans',
-              letterSpacing: 0.5,
-            ),
-          ),
-        ],
-      ),
+      ],
     );
   }
 
-  Widget _buildTableCalendar(
-    OperatingScheduleController operatingScheduleController,
-    TimeSlotController timeSlotController,
-  ) {
+  Widget _buildTableCalendar(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final operatingScheduleController = Get.find<OperatingScheduleController>();
+
     return Obx(() {
-      return Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withValues(alpha: 0.1),
-              spreadRadius: 1,
-              blurRadius: 5,
-              offset: const Offset(0, 2),
-            ),
-          ],
+      return Card(
+        margin: const EdgeInsets.symmetric(horizontal: M3Spacing.md),
+        elevation: 0,
+        // REMOVED: Explicit color. The Card now uses the color from your AppTheme's
+        // cardTheme, which we updated to use a subtle light-blue color.
+        shape: RoundedRectangleBorder(
+          // UPDATED: Uses the theme's primary color and standard opacity for the border.
+          side: BorderSide(color: colorScheme.primary.withOpacity(0.1)),
+          borderRadius: BorderRadius.circular(M3Spacing.md),
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: TableCalendar(
-            firstDay: DateTime.now().subtract(const Duration(days: 365)),
-            lastDay: DateTime.now().add(const Duration(days: 365)),
-            focusedDay: controller.focusedDate.value,
-            calendarFormat: controller.calendarFormat.value,
-            selectedDayPredicate: (day) {
-              return isSameDay(controller.selectedDate.value, day);
-            },
-            onDaySelected: (selectedDay, focusedDay) {
-              controller.selectedDate.value = selectedDay;
-              controller.focusedDate.value = focusedDay;
-              controller.refreshScheduleData(selectedDay);
-            },
-            onFormatChanged: (format) {
-              controller.calendarFormat.value = format;
-            },
-            onPageChanged: (focusedDay) {
-              controller.focusedDate.value = focusedDay;
-            },
-            calendarStyle: CalendarStyle(
-              todayDecoration: BoxDecoration(
-                color: ColorTheme.primary.withValues(alpha: 0.5),
-                shape: BoxShape.circle,
-              ),
-              selectedDecoration: BoxDecoration(
-                color: ColorTheme.primary,
-                shape: BoxShape.circle,
-              ),
-              markerDecoration: const BoxDecoration(
-                color: Colors.amber,
-                shape: BoxShape.circle,
-              ),
-              markersMaxCount: 3,
-              markerSize: 5.0,
-              weekendTextStyle: TextStyle(color: Colors.red.shade800),
-              outsideTextStyle: TextStyle(color: Colors.grey.shade400),
+        child: TableCalendar(
+          firstDay: DateTime.now().subtract(const Duration(days: 365)),
+          lastDay: DateTime.now().add(const Duration(days: 365)),
+          focusedDay: controller.focusedDate.value,
+          calendarFormat: controller.calendarFormat.value,
+          selectedDayPredicate:
+              (day) => isSameDay(controller.selectedDate.value, day),
+          onDaySelected: (selectedDay, focusedDay) {
+            controller.onDateSelected(selectedDay, focusedDay);
+          },
+          onFormatChanged: (format) {
+            controller.calendarFormat.value = format;
+          },
+          onPageChanged: (focusedDay) {
+            controller.focusedDate.value = focusedDay;
+            controller.refreshScheduleData(focusedDay);
+          },
+          availableCalendarFormats: const {
+            CalendarFormat.month: 'Month',
+            CalendarFormat.week: 'Week',
+          },
+          calendarStyle: CalendarStyle(
+            todayDecoration: BoxDecoration(
+              color: colorScheme.primary.withOpacity(0.1),
+              shape: BoxShape.circle,
+              border: Border.all(color: colorScheme.primary, width: 1.5),
             ),
-            calendarBuilders: CalendarBuilders(
-              defaultBuilder: (context, day, focusedDay) {
-                final formattedDay = DateFormat('yyyy-MM-dd').format(day);
+            todayTextStyle: textTheme.bodyMedium!.copyWith(
+              color: colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
+            selectedDecoration: BoxDecoration(
+              color: colorScheme.primary,
+              shape: BoxShape.circle,
+            ),
+            selectedTextStyle: textTheme.bodyMedium!.copyWith(
+              color: colorScheme.onPrimary,
+              fontWeight: FontWeight.bold,
+            ),
+            weekendTextStyle: textTheme.bodyMedium!.copyWith(
+              color: colorScheme.error,
+            ),
+            outsideTextStyle: textTheme.bodyMedium!.copyWith(
+              color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+            ),
+            defaultTextStyle: textTheme.bodyMedium!.copyWith(
+              color: colorScheme.onSurface,
+            ),
+          ),
+          calendarBuilders: CalendarBuilders(
+            defaultBuilder: (context, day, focusedDay) {
+              final formattedDay = DateFormat('yyyy-MM-dd').format(day);
+              final isHoliday = operatingScheduleController.schedulesList.any(
+                (schedule) =>
+                    _isSameDate(
+                      schedule.date.toIso8601String(),
+                      formattedDay,
+                    ) &&
+                    schedule.isHoliday == true,
+              );
 
-                final hasSchedule = operatingScheduleController.schedulesList
-                    .any(
-                      (schedule) => _isSameDate(
-                        schedule.date.toIso8601String(),
-                        formattedDay,
-                      ),
-                    );
-
-                final isHoliday = operatingScheduleController.schedulesList.any(
-                  (schedule) =>
-                      _isSameDate(
-                        schedule.date.toIso8601String(),
-                        formattedDay,
-                      ) &&
-                      schedule.isHoliday == true,
-                );
-
-                if (isHoliday) {
-                  return Container(
-                    margin: const EdgeInsets.all(4.0),
-                    alignment: Alignment.center,
+              if (isHoliday) {
+                return Center(
+                  child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.red.withValues(alpha: 0.3),
+                      color: colorScheme.errorContainer.withOpacity(0.5),
                       shape: BoxShape.circle,
                     ),
-                    child: Text(
-                      '${day.day}',
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  );
-                } else if (hasSchedule) {
-                  return Container(
-                    margin: const EdgeInsets.all(4.0),
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: Colors.green.withValues(alpha: 0.3),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Text(
-                      '${day.day}',
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  );
-                }
-                return null;
-              },
-              markerBuilder: (context, date, events) {
-                final formattedDate = DateFormat('yyyy-MM-dd').format(date);
-
-                final schedule = operatingScheduleController.schedulesList
-                    .firstWhereOrNull(
-                      (s) =>
-                          _isSameDate(s.date.toIso8601String(), formattedDate),
-                    );
-
-                if (schedule == null) return const SizedBox.shrink();
-
-                final slots =
-                    timeSlotController.timeSlots
-                        .where(
-                          (slot) => slot.operatingScheduleId == schedule.id,
-                        )
-                        .toList();
-
-                if (slots.isEmpty) return const SizedBox.shrink();
-
-                return Positioned(
-                  bottom: 1,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: List.generate(
-                      slots.length > 3 ? 3 : slots.length,
-                      (index) => Container(
-                        width: 5.0,
-                        height: 5.0,
-                        margin: const EdgeInsets.symmetric(horizontal: 0.5),
-                        decoration: BoxDecoration(
-                          color: ColorTheme.primary,
-                          borderRadius: BorderRadius.circular(5.0),
+                    margin: const EdgeInsets.all(6.0),
+                    child: Center(
+                      child: Text(
+                        '${day.day}',
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onErrorContainer,
                         ),
                       ),
                     ),
                   ),
                 );
-              },
-              headerTitleBuilder: (context, day) {
-                final month = DateFormat('MMMM yyyy').format(day);
-                return Center(
+              }
+              return null;
+            },
+            markerBuilder: (context, date, events) {
+              final formattedDate = DateFormat('yyyy-MM-dd').format(date);
+              final hasSchedule = operatingScheduleController.schedulesList.any(
+                (s) => _isSameDate(s.date.toIso8601String(), formattedDate),
+              );
+
+              if (hasSchedule) {
+                return Positioned(
+                  bottom: 5,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
+                    height: 7,
+                    width: 7,
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          ColorTheme.primary.withValues(alpha: 0.7),
-                          ColorTheme.primary,
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      month,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
+                      color: colorScheme.secondary,
+                      shape: BoxShape.circle,
                     ),
                   ),
                 );
-              },
+              }
+              return null;
+            },
+          ),
+          headerStyle: HeaderStyle(
+            formatButtonVisible: true,
+            titleCentered: true,
+            formatButtonDecoration: BoxDecoration(
+              border: Border.all(color: colorScheme.outline),
+              borderRadius: BorderRadius.circular(20.0),
             ),
-            headerStyle: HeaderStyle(
-              formatButtonVisible: true,
-              titleCentered: true,
-              formatButtonDecoration: BoxDecoration(
-                color: ColorTheme.primary,
-                borderRadius: BorderRadius.circular(16.0),
-              ),
-              formatButtonTextStyle: const TextStyle(color: Colors.white),
-              titleTextStyle: TextStyle(
-                color: Colors.transparent,
-                fontSize: 18.0,
-                fontWeight: FontWeight.bold,
-              ),
-              headerMargin: const EdgeInsets.only(bottom: 8),
-              headerPadding: const EdgeInsets.symmetric(vertical: 10),
-              leftChevronIcon: Icon(
-                Icons.chevron_left_rounded,
-                color: ColorTheme.primary,
-                size: 28,
-              ),
-              rightChevronIcon: Icon(
-                Icons.chevron_right_rounded,
-                color: ColorTheme.primary,
-                size: 28,
-              ),
+            formatButtonTextStyle: textTheme.labelMedium!.copyWith(
+              color: colorScheme.onSurface,
             ),
-            daysOfWeekStyle: DaysOfWeekStyle(
-              weekdayStyle: TextStyle(
-                color: ColorTheme.textPrimary,
-                fontWeight: FontWeight.bold,
-              ),
-              weekendStyle: TextStyle(
-                color: Colors.red.shade800,
-                fontWeight: FontWeight.bold,
-              ),
-              decoration: BoxDecoration(color: Colors.grey.shade100),
+            titleTextStyle: textTheme.titleMedium!.copyWith(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.bold,
+            ),
+            leftChevronIcon: Icon(
+              Icons.chevron_left_rounded,
+              color: colorScheme.primary,
+              size: 28,
+            ),
+            rightChevronIcon: Icon(
+              Icons.chevron_right_rounded,
+              color: colorScheme.primary,
+              size: 28,
+            ),
+          ),
+          daysOfWeekStyle: DaysOfWeekStyle(
+            weekdayStyle: textTheme.bodySmall!.copyWith(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.bold,
+            ),
+            weekendStyle: textTheme.bodySmall!.copyWith(
+              color: colorScheme.error,
+              fontWeight: FontWeight.bold,
             ),
           ),
         ),
@@ -381,72 +258,65 @@ class ScheduleView extends GetView<ScheduleController> {
     });
   }
 
-  Widget _buildDailySchedule(
-    BuildContext context,
-    DateTime selectedDate,
-    OperatingScheduleController operatingScheduleController,
-    TimeSlotController timeSlotController,
-    SessionController sessionController,
-  ) {
+  Widget _buildDailySchedule(BuildContext context, DateTime selectedDate) {
+    final operatingScheduleController = Get.find<OperatingScheduleController>();
+    final timeSlotController = Get.find<TimeSlotController>();
+    final sessionController = Get.find<SessionController>();
     final formattedDate = DateFormat('yyyy-MM-dd').format(selectedDate);
-
     final schedule = operatingScheduleController.schedulesList.firstWhereOrNull(
       (s) => _isSameDate(s.date.toIso8601String(), formattedDate),
     );
 
     if (schedule == null) {
-      return _buildNoScheduleView(formattedDate, selectedDate);
+      return _buildNoScheduleView(context, formattedDate, selectedDate);
     }
-
     if (schedule.isHoliday == true) {
-      return _buildHolidayView(schedule);
+      return _buildHolidayView(context, schedule);
     }
 
     final timeSlots =
         timeSlotController.timeSlots
             .where((slot) => slot.operatingScheduleId == schedule.id)
             .toList();
+    timeSlots.sort((a, b) => a.startTime.compareTo(b.startTime));
 
     if (timeSlots.isEmpty) {
-      return _buildNoTimeSlotsView(schedule);
+      return _buildNoTimeSlotsView(context, schedule);
     }
-
-    timeSlots.sort((a, b) => a.startTime.compareTo(b.startTime));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildDailyHeader(selectedDate, schedule),
+        _buildDailyHeader(context, selectedDate, schedule),
         Expanded(
-          child: ListView.builder(
+          child: ListView.separated(
             itemCount: timeSlots.length + 1,
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16.0,
-              vertical: 8.0,
-            ),
+            padding: const EdgeInsets.fromLTRB(
+              M3Spacing.md,
+              M3Spacing.sm,
+              M3Spacing.md,
+              80,
+            ), // Padding for FAB
             physics: const BouncingScrollPhysics(),
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               if (index == timeSlots.length) {
-                return _buildAddTimeSlotButton(schedule.id);
+                return _buildAddTimeSlotButton(context, schedule.id);
               }
-
               final timeSlot = timeSlots[index];
-
               return Obx(() {
                 final sessionsForSlot =
                     sessionController.sessions
                         .where((session) => session.timeSlotId == timeSlot.id)
                         .toList();
-
                 String displayStartTime = _formatTimeSlot(
                   timeSlot.startTime.toIso8601String(),
                 );
-
                 return _buildTimeSlotItem(
+                  context,
                   timeSlot,
                   displayStartTime,
                   sessionsForSlot,
-                  sessionController,
                 );
               });
             },
@@ -456,182 +326,78 @@ class ScheduleView extends GetView<ScheduleController> {
     );
   }
 
-  Widget _buildAddTimeSlotButton(dynamic scheduleId) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
-            spreadRadius: 1,
-            blurRadius: 3,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () async {
-              final timeSlotController = Get.find<TimeSlotController>();
-              await timeSlotController.fetchTimeSlotsByScheduleId(scheduleId);
+  Widget _buildAddTimeSlotButton(BuildContext context, dynamic scheduleId) {
+    final colorScheme = Theme.of(context).colorScheme;
 
-              showDialog(
-                context: Get.context!,
-                builder:
-                    (context) =>
-                        TimeSlotDialog(operatingScheduleId: scheduleId),
-              );
-            },
-            child: Container(
-              padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    ColorTheme.primary.withValues(alpha: 0.2),
-                    ColorTheme.primary.withValues(alpha: 0.1),
-                  ],
-                ),
-              ),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.add_circle_outline,
-                      color: ColorTheme.primary,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      'Add New Time Slot',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: ColorTheme.primary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
+    return DottedBorderButton(
+      onTap: () {
+        showDialog(
+          context: Get.context!,
+          builder: (context) => TimeSlotDialog(operatingScheduleId: scheduleId),
+        );
+      },
+      text: 'Add New Time Slot',
+      icon: Icons.add,
+      color: colorScheme.primary,
     );
   }
 
-  Widget _buildDailyHeader(DateTime selectedDate, dynamic schedule) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildDailyHeader(
+    BuildContext context,
+    DateTime selectedDate,
+    dynamic schedule,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, M3Spacing.sm, M3Spacing.sm),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: ColorTheme.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      Icons.calendar_today_rounded,
-                      color: ColorTheme.primary,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        TimeZoneUtil.formatDate(selectedDate),
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: ColorTheme.textPrimary,
-                        ),
-                      ),
-                      Text(
-                        DateFormat(
-                          'EEEE',
-                        ).format(TimeZoneUtil.toIndonesiaTime(selectedDate)),
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: ColorTheme.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              IconButton(
-                onPressed: () => _showDeleteConfirmationDialog(schedule),
-                icon: Icon(
-                  Icons.delete_outline,
-                  color: Colors.red.shade400,
-                  size: 24,
+              Text(
+                TimeZoneUtil.formatDate(selectedDate),
+                style: textTheme.titleLarge?.copyWith(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.bold,
                 ),
-                tooltip: 'Delete Schedule',
+              ),
+              Text(
+                DateFormat('EEEE').format(selectedDate),
+                style: textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
-          if (schedule.notes != null && schedule.notes!.isNotEmpty)
-            Container(
-              margin: const EdgeInsets.only(top: 8),
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.amber.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.sticky_note_2_outlined,
-                    color: Colors.amber,
-                    size: 18,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      schedule.notes!,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontStyle: FontStyle.italic,
-                        color: ColorTheme.textSecondary,
+          PopupMenuButton(
+            icon: Icon(Icons.more_vert, color: colorScheme.onSurfaceVariant),
+            tooltip: "More options",
+            itemBuilder:
+                (context) => [
+                  PopupMenuItem(
+                    onTap:
+                        () => _showDeleteConfirmationDialog(context, schedule),
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(
+                        Icons.delete_outline_rounded,
+                        color: colorScheme.error,
+                      ),
+                      title: Text(
+                        'Delete Schedule',
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.error,
+                        ),
                       ),
                     ),
                   ),
                 ],
-              ),
-            ),
+          ),
         ],
       ),
     );
@@ -642,540 +408,309 @@ class ScheduleView extends GetView<ScheduleController> {
   }
 
   Widget _buildTimeSlotItem(
+    BuildContext context,
     dynamic timeSlot,
     String displayStartTime,
     List<dynamic> sessions,
-    SessionController sessionController,
   ) {
-    final int totalSessions = sessions.length;
-    final int bookedSessions =
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final totalSessions = sessions.length;
+    final isFull =
+        totalSessions > 0 &&
+        sessions.every((session) => session.isBooked == true);
+    final bookedCount =
         sessions.where((session) => session.isBooked == true).length;
-    final bool allBooked = totalSessions > 0 && bookedSessions == totalSessions;
+    final progress = totalSessions > 0 ? bookedCount / totalSessions : 0.0;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
-            spreadRadius: 1,
-            blurRadius: 3,
-            offset: const Offset(0, 1),
-          ),
-        ],
+    final Color statusColor = isFull ? colorScheme.error : ColorTheme.success;
+
+    return Card(
+      elevation: 0,
+      // REMOVED: Explicit color to respect the central theme definition.
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(M3Spacing.md),
+        // UPDATED: Use theme color for consistency.
+        side: BorderSide(color: colorScheme.primary.withOpacity(0.1)),
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () async {
-              // Simpan tanggal yang sedang dilihat
-              final dateBeforeNavigation = controller.selectedDate.value;
-              final focusedDateBeforeNavigation = controller.focusedDate.value;
-              await Get.toNamed(
-                AppRoutes.timeSlotDetail,
-                arguments: {
-                  'timeSlot': timeSlot,
-                }, // timeSlot is the item being tapped
-              );
-              // Reset state saat kembali
-              controller.selectedDate.value = dateBeforeNavigation;
-              controller.focusedDate.value = focusedDateBeforeNavigation;
-              Get.find<TimeSlotController>().resetTimeSlotState();
-              Get.find<SessionController>().resetSessionState();
-
-              // Refresh data untuk tanggal yang sama
-              await controller.refreshScheduleData(dateBeforeNavigation);
-            },
-            child: Container(
-              padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors:
-                      allBooked
-                          ? [Colors.red.shade100, Colors.red.shade50]
-                          : [Colors.green.shade100, Colors.green.shade50],
-                ),
-              ),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () async {
+          final dateBeforeNavigation = controller.selectedDate.value;
+          await Get.toNamed(
+            AppRoutes.timeSlotDetail,
+            arguments: {'timeSlot': timeSlot},
+          );
+          controller.refreshScheduleData(dateBeforeNavigation);
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(M3Spacing.md),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 70,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      decoration: BoxDecoration(
-                        color:
-                            allBooked
-                                ? Colors.red.shade50
-                                : Colors.green.shade50,
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(10),
-                          bottomLeft: Radius.circular(10),
-                        ),
+                    Text(
+                      displayStartTime,
+                      style: textTheme.headlineSmall?.copyWith(
+                        color: colorScheme.onSurface,
+                        fontWeight: FontWeight.bold,
                       ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            displayStartTime,
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color:
-                                  allBooked
-                                      ? Colors.red.shade700
-                                      : Colors.green.shade700,
-                            ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Container(
+                          width: M3Spacing.sm,
+                          height: M3Spacing.sm,
+                          decoration: BoxDecoration(
+                            color: statusColor,
+                            shape: BoxShape.circle,
                           ),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  width: 32,
-                                  height: 32,
-                                  decoration: BoxDecoration(
-                                    color:
-                                        allBooked ? Colors.red : Colors.green,
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: (allBooked
-                                                ? Colors.red
-                                                : Colors.green)
-                                            .withValues(alpha: 0.3),
-                                        spreadRadius: 1,
-                                        blurRadius: 2,
-                                        offset: const Offset(0, 1),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Icon(
-                                    Icons.group,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      totalSessions > 0
-                                          ? '$bookedSessions/$totalSessions Terbooking'
-                                          : 'Tidak ada sesi',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
-                                        color: ColorTheme.textPrimary,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    if (totalSessions > 0)
-                                      SizedBox(
-                                        width: 120,
-                                        child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(
-                                            10,
-                                          ),
-                                          child: LinearProgressIndicator(
-                                            value:
-                                                1 -
-                                                (bookedSessions /
-                                                    totalSessions),
-                                            backgroundColor:
-                                                Colors.grey.shade200,
-                                            valueColor:
-                                                AlwaysStoppedAnimation<Color>(
-                                                  allBooked
-                                                      ? Colors.red
-                                                      : Colors.green,
-                                                ),
-                                            minHeight: 6,
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.only(
-                                top: 8.0,
-                                left: 4.0,
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    allBooked
-                                        ? Icons.event_busy
-                                        : Icons.event_available,
-                                    size: 16,
-                                    color:
-                                        allBooked ? Colors.red : Colors.green,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    allBooked
-                                        ? "Fully Booked"
-                                        : "Sessions Available",
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                      color:
-                                          allBooked ? Colors.red : Colors.green,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                        const SizedBox(width: M3Spacing.sm),
+                        Text(
+                          isFull ? "Fully Booked" : "Available",
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: statusColor,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          totalSessions > 0
+                              ? '$bookedCount/$totalSessions Booked'
+                              : 'No Sessions',
+                          style: textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (totalSessions > 0) ...[
+                      const SizedBox(height: M3Spacing.sm),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          backgroundColor: colorScheme.surfaceContainerHighest,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            statusColor,
+                          ),
+                          minHeight: 6,
                         ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
-            ),
+              const SizedBox(width: M3Spacing.md),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: colorScheme.onSurfaceVariant.withOpacity(0.6),
+                size: M3Spacing.xl,
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildNoScheduleView(String formattedDate, DateTime selectedDate) {
-    return Center(
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withValues(alpha: 0.1),
-              spreadRadius: 1,
-              blurRadius: 5,
-              offset: const Offset(0, 2),
+  Widget _buildStatusView({
+    required BuildContext context,
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    Widget? actions,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Container(
+      padding: const EdgeInsets.all(M3Spacing.xl),
+      width: double.infinity,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(icon, size: 64, color: iconColor),
+          const SizedBox(height: M3Spacing.lg),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: textTheme.headlineSmall?.copyWith(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.bold,
             ),
+          ),
+          const SizedBox(height: M3Spacing.sm),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: textTheme.bodyLarge?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          if (actions != null) ...[
+            const SizedBox(height: M3Spacing.xl),
+            actions,
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoScheduleView(
+    BuildContext context,
+    String formattedDate,
+    DateTime selectedDate,
+  ) {
+    return _buildStatusView(
+      context: context,
+      icon: Icons.calendar_month_outlined,
+      // UPDATED: Use theme color for a more integrated and professional look.
+      iconColor: Theme.of(context).colorScheme.secondary,
+      title: 'No Schedule Found',
+      subtitle: 'There is no operating schedule for\n$formattedDate.',
+      actions: AppButton(
+        text: 'Create Schedule',
+        icon: Icons.add_circle_outline,
+        onPressed: () {
+          showDialog(
+            context: Get.context!,
+            barrierDismissible: false,
+            builder:
+                (context) =>
+                    OperatingScheduleDialog(selectedDate: selectedDate),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildHolidayView(BuildContext context, dynamic schedule) {
+    return _buildStatusView(
+      context: context,
+      icon: Icons.celebration_outlined,
+      // UPDATED: Use the standard error color from the theme.
+      iconColor: Theme.of(context).colorScheme.error,
+      title: 'It\'s a Holiday!',
+      subtitle:
+          schedule.notes != null && schedule.notes!.isNotEmpty
+              ? schedule.notes!
+              : 'This day is marked as a day off.',
+      actions: SizedBox(
+        width: double.infinity,
+        child: AppButton(
+          text: 'Set to Active Day',
+          icon: Icons.edit_calendar_outlined,
+          type: AppButtonType.secondary,
+          onPressed: () {
+            controller.toggleHolidayStatus(schedule.id, false);
+          },
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.amber.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.event_busy,
-                size: 64,
-                color: Colors.amber.shade700,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Tidak ada jadwal operasional',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: ColorTheme.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'untuk tanggal $formattedDate',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: ColorTheme.textSecondary),
-            ),
-            const SizedBox(height: 24),
-            AppButton(
-              text: 'Buat Jadwal',
-              icon: Icons.add_circle_outline,
-              onPressed: () {
-                showDialog(
-                  context: Get.context!,
-                  barrierDismissible: false,
-                  builder:
-                      (context) =>
-                          OperatingScheduleDialog(selectedDate: selectedDate),
+      ),
+    );
+  }
+
+  Widget _buildNoTimeSlotsView(BuildContext context, dynamic schedule) {
+    return _buildStatusView(
+      context: context,
+      icon: Icons.hourglass_empty_rounded,
+      // UPDATED: Use the primary theme color to guide the user's attention.
+      iconColor: Theme.of(context).colorScheme.primary,
+      title: 'No Time Slots',
+      subtitle:
+          'This schedule has no time slots yet. Add them manually or generate a set.',
+      actions: Column(
+        children: [
+          SizedBox(
+            width: double.infinity,
+            child: AppButton(
+              text: 'Generate Slots',
+              icon: Icons.auto_awesome_outlined,
+              onPressed: () async {
+                final timeSlotController = Get.find<TimeSlotController>();
+                await timeSlotController.generateFixedIntervalTimeSlots(
+                  operatingScheduleId: schedule.id,
+                  startDate: schedule.date,
+                  firstSlotStart: const TimeOfDay(hour: 7, minute: 0),
+                  lastSlotEnd: const TimeOfDay(hour: 15, minute: 0),
+                  slotDuration: const Duration(minutes: 60),
+                );
+                await timeSlotController.fetchTimeSlotsByScheduleId(
+                  schedule.id,
                 );
               },
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: DottedBorderButton(
+              onTap: () {
+                showDialog(
+                  context: Get.context!,
+                  builder:
+                      (context) =>
+                          TimeSlotDialog(operatingScheduleId: schedule.id),
+                );
+              },
+              text: 'Add Manually',
+              icon: Icons.add,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildHolidayView(dynamic schedule) {
-    return Center(
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withValues(alpha: 0.1),
-              spreadRadius: 1,
-              blurRadius: 5,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.red.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.beach_access,
-                size: 64,
-                color: Colors.red.shade700,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Hari Libur',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.red.shade700,
-              ),
-            ),
-            const SizedBox(height: 16),
-            if (schedule.notes != null && schedule.notes!.isNotEmpty)
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.red.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
-                ),
-                child: Text(
-                  schedule.notes!,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: ColorTheme.textSecondary,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                AppButton(
-                  text: 'Ubah Status Libur',
-                  icon: Icons.edit_calendar,
-                  onPressed: () {
-                    controller.toggleHolidayStatus(schedule.id, false);
-                  },
-                ),
-                const SizedBox(width: 12),
-                AppButton(
-                  text: 'Hapus Jadwal',
-                  icon: Icons.delete_outline,
-                  type: AppButtonType.values[1],
-                  onPressed: () => _showDeleteConfirmationDialog(schedule),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  void _showDeleteConfirmationDialog(BuildContext context, dynamic schedule) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
-  Widget _buildNoTimeSlotsView(dynamic schedule) {
-    return Center(
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withValues(alpha: 0.1),
-              spreadRadius: 1,
-              blurRadius: 5,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.blue.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.schedule,
-                size: 64,
-                color: Colors.blue.shade700,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Tidak ada slot waktu',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: ColorTheme.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Jadwal telah dibuat namun belum memiliki slot waktu',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: ColorTheme.textSecondary),
-            ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                AppButton(
-                  text: 'Generate Slot Waktu',
-                  icon: Icons.add_alarm,
-                  onPressed: () async {
-                    final scheduleDate = schedule.date;
-                    final timeSlotController = Get.find<TimeSlotController>();
-
-                    await timeSlotController.generateFixedIntervalTimeSlots(
-                      operatingScheduleId: schedule.id,
-                      startDate: scheduleDate,
-                      firstSlotStart: const TimeOfDay(hour: 7, minute: 0),
-                      lastSlotEnd: const TimeOfDay(hour: 15, minute: 0),
-                      slotDuration: const Duration(minutes: 60),
-                    );
-
-                    await timeSlotController.fetchTimeSlotsByScheduleId(
-                      schedule.id,
-                    );
-                  },
-                ),
-                const SizedBox(width: 12),
-                AppButton(
-                  text: 'Hapus Jadwal',
-                  icon: Icons.delete_outline,
-                  type: AppButtonType.values[1],
-                  onPressed: () => _showDeleteConfirmationDialog(schedule),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showDeleteConfirmationDialog(dynamic schedule) {
     Get.dialog(
       Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-          ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        child: Padding(
+          padding: const EdgeInsets.all(M3Spacing.lg),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.red.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.warning_amber_rounded,
-                  size: 48,
-                  color: Colors.red.shade700,
-                ),
+              Icon(
+                Icons.warning_amber_rounded,
+                size: M3Spacing.lg,
+                color: colorScheme.error,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: M3Spacing.md),
+              Text('Delete Schedule?', style: textTheme.headlineSmall),
+              const SizedBox(height: M3Spacing.md),
               Text(
-                'Hapus Jadwal Operasional',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: ColorTheme.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Yakin ingin menghapus jadwal operasional ini? Semua slot waktu dan sesi yang terkait juga akan dihapus.',
+                'This will permanently delete the schedule and all its related time slots.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, color: ColorTheme.textSecondary),
+                style: textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: M3Spacing.lg),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  ElevatedButton(
+                  TextButton(
                     onPressed: () => Get.back(),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey.shade200,
-                      foregroundColor: ColorTheme.textPrimary,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Text('Batal'),
+                    child: const Text('Cancel'),
                   ),
-                  ElevatedButton(
+                  const SizedBox(width: M3Spacing.sm),
+                  TextButton(
                     onPressed: () => _deleteSchedule(schedule),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                    style: TextButton.styleFrom(
+                      foregroundColor: colorScheme.error,
                     ),
-                    child: const Text('Hapus'),
+                    child: const Text('Delete'),
                   ),
                 ],
               ),
@@ -1188,55 +723,93 @@ class ScheduleView extends GetView<ScheduleController> {
 
   void _deleteSchedule(dynamic schedule) async {
     final operatingScheduleController = Get.find<OperatingScheduleController>();
-    final timeSlotController = Get.find<TimeSlotController>();
-
     Get.back();
 
     try {
       final success = await operatingScheduleController.deleteOperatingSchedule(
         schedule.id,
       );
-
-      if (Get.isDialogOpen ?? false) {
-        Get.back();
-      }
-
       if (success) {
-        final formattedDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
-        await operatingScheduleController.fetchAllSchedules(
-          date: formattedDate,
-        );
-
-        final sessionController = Get.find<SessionController>();
-        await sessionController.fetchSessionsByDate(DateTime.now());
-
-        timeSlotController.timeSlots.clear();
-
+        controller.refreshScheduleData(controller.selectedDate.value);
         Get.snackbar(
           'Success',
-          'Jadwal operasional berhasil dihapus',
-          backgroundColor: ColorTheme.success.withValues(alpha: 0.1),
+          'The schedule has been successfully deleted.',
+          backgroundColor: ColorTheme.success.withOpacity(0.1),
           colorText: ColorTheme.success,
         );
       } else {
-        Get.snackbar(
-          'Error',
-          'Gagal menghapus jadwal operasional',
-          backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
-          colorText: ColorTheme.error,
-        );
+        throw Exception('Failed to delete.');
       }
     } catch (e) {
-      if (Get.isDialogOpen ?? false) {
-        Get.back();
-      }
-
       Get.snackbar(
         'Error',
-        'Gagal menghapus jadwal operasional: ${e.toString()}',
-        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
+        'Could not delete the schedule: ${e.toString()}',
+        backgroundColor: ColorTheme.error.withOpacity(0.1),
         colorText: ColorTheme.error,
       );
     }
+  }
+}
+
+class DottedBorderButton extends StatelessWidget {
+  final VoidCallback onTap;
+  final String text;
+  final IconData icon;
+  final Color color;
+
+  const DottedBorderButton({
+    super.key,
+    required this.onTap,
+    required this.text,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.3), width: 1.5),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color),
+            const SizedBox(width: 10),
+            Text(
+              text,
+              style: Theme.of(
+                context,
+              ).textTheme.labelLarge?.copyWith(color: color),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+extension ScheduleControllerActions on ScheduleController {
+  void onDateSelected(DateTime selectedDay, DateTime focusedDay) {
+    if (!isSameDay(selectedDate.value, selectedDay)) {
+      selectedDate.value = selectedDay;
+      focusedDate.value = focusedDay;
+      refreshScheduleData(selectedDay);
+    }
+  }
+
+  Future<void> toggleHolidayStatus(dynamic scheduleId, bool isHoliday) async {
+    final operatingScheduleController = Get.find<OperatingScheduleController>();
+    await operatingScheduleController.updateOperatingSchedule(
+      id: scheduleId,
+      isHoliday: isHoliday,
+    );
+    await refreshScheduleData(selectedDate.value);
   }
 }

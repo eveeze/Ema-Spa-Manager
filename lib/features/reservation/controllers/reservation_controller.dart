@@ -156,16 +156,26 @@ class ReservationController extends GetxController {
     try {
       isLoading.value = true;
       errorMessage.value = '';
+
+      selectedReservation.value = null;
+      selectedPaymentDetails.value = null;
+
       if (id.isEmpty) {
         throw Exception("Reservation ID is required");
       }
+
+      // 1. CUKUP SATU PANGGILAN API INI SAJA
       final reservation = await _reservationRepository.getReservationById(id);
+
+      // 2. ATUR KEDUA STATE DARI SATU SUMBER
       selectedReservation.value = reservation;
+      selectedPaymentDetails.value = reservation.payment;
     } catch (e) {
       errorMessage.value =
           'Failed to fetch reservation details: ${e.toString()}';
       _logger.error('Error fetching reservation by ID: $e');
       selectedReservation.value = null;
+      selectedPaymentDetails.value = null;
     } finally {
       isLoading.value = false;
     }
@@ -257,22 +267,25 @@ class ReservationController extends GetxController {
 
       // Validate the structure of response
       if (response['reservation'] != null &&
-          response['reservation'] is Map<String, dynamic> &&
+          response['reservation'] is Reservation &&
           response['payment'] != null &&
-          response['payment'] is Map<String, dynamic> &&
-          response['customer'] !=
-              null /* You might want to add 'is Map<String, dynamic>' if customer is always a map */ ) {
-        final reservationData = response['reservation'] as Map<String, dynamic>;
-        final paymentData = response['payment'] as Map<String, dynamic>;
+          response['payment'] is Payment &&
+          response['customer'] != null) {
+        // Directly use the objects without re-parsing them.
+        final Reservation reservation = response['reservation'];
+        final Payment payment = response['payment'];
+
         Get.snackbar(
           'Success',
           'Manual reservation created successfully',
           backgroundColor: ColorTheme.success.withValues(alpha: 0.1),
           colorText: ColorTheme.success,
         );
+
+        // Return the map with the correct object types.
         return {
-          'reservation': Reservation.fromJson(reservationData),
-          'payment': Payment.fromJson(paymentData),
+          'reservation': reservation,
+          'payment': payment,
           'customer': response['customer'],
         };
       } else {
@@ -353,28 +366,60 @@ class ReservationController extends GetxController {
     }
   }
 
-  Future<void> verifyManualPayment(String paymentId, bool isVerified) async {
+  Future<void> updateExistingPaymentProof(
+    String reservationId,
+    File paymentProofFile,
+  ) async {
     try {
-      isStatusUpdating.value =
-          true; // Re-use for generic update operations, or create a new one
-      // Repository returns the updated Payment object.
-      await _reservationRepository.verifyManualPayment(paymentId, isVerified);
-      await refreshData(); // Refresh list
-      // Potentially re-fetch selected reservation if its payment was verified
-      // This depends on how `paymentId` relates to `selectedReservation.value`
+      isPaymentUploading.value = true;
+      await _reservationRepository.updateManualPaymentProof(
+        reservationId,
+        paymentProofFile,
+      );
+      await fetchReservationById(reservationId); // Refresh data
       Get.snackbar(
         'Success',
-        isVerified
-            ? 'Payment verified successfully'
-            : 'Payment verification removed',
+        'Payment proof updated successfully. Please verify again.',
         backgroundColor: ColorTheme.success.withValues(alpha: 0.1),
         colorText: ColorTheme.success,
       );
     } catch (e) {
       Get.snackbar(
         'Error',
-        'Failed to verify payment',
+        'Failed to update payment proof: ${e.toString()}',
         backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
+        colorText: ColorTheme.error,
+      );
+      _logger.error('Error updating payment proof: $e');
+    } finally {
+      isPaymentUploading.value = false;
+    }
+  }
+
+  Future<void> verifyManualPayment(String paymentId, bool isVerified) async {
+    try {
+      isStatusUpdating.value = true;
+      await _reservationRepository.verifyManualPayment(paymentId, isVerified);
+
+      // Refresh the details of the currently selected reservation
+      if (selectedReservation.value != null) {
+        await fetchReservationById(selectedReservation.value!.id);
+      }
+      await refreshData(); // Also refresh the main list
+
+      Get.snackbar(
+        'Success',
+        isVerified
+            ? 'Payment verified successfully and reservation confirmed.'
+            : 'Payment rejected and reservation cancelled.',
+        backgroundColor: ColorTheme.success.withAlpha(25),
+        colorText: ColorTheme.success,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to verify payment. Please try again. Error: $e',
+        backgroundColor: ColorTheme.error.withAlpha(25),
         colorText: ColorTheme.error,
       );
       _logger.error('Error verifying payment: $e');
@@ -543,30 +588,86 @@ class ReservationController extends GetxController {
     }
   }
 
-  // Get Payment Details for a Reservation by Owner
-  Future<void> fetchOwnerPaymentDetails(String reservationId) async {
+  Future<void> updateReservationDetails({
+    required String id,
+    required String customerName,
+    required String babyName,
+    required int babyAge,
+    required String parentNames,
+    required String notes,
+  }) async {
     try {
-      isLoadingPaymentDetails.value = true;
-      paymentDetailsErrorMessage.value = '';
-      selectedPaymentDetails.value = null;
-      reservationForPaymentDetails.value = null;
+      isFormSubmitting.value = true;
+      errorMessage.value = '';
 
-      final response = await _reservationRepository.getOwnerPaymentDetails(
-        reservationId,
+      final Map<String, dynamic> updateData = {
+        'customerName': customerName,
+        'babyName': babyName,
+        'babyAge': babyAge,
+        'parentNames': parentNames,
+        'notes': notes,
+      };
+
+      final updatedReservation = await _reservationRepository
+          .updateReservationDetails(id, updateData);
+
+      // Update state lokal
+      selectedReservation.value = updatedReservation;
+
+      // Refresh daftar utama jika perlu
+      final index = reservationList.indexWhere((item) => item['id'] == id);
+      if (index != -1) {
+        reservationList[index] = updatedReservation.toJson();
+        reservationList.refresh();
+      }
+
+      Get.back(); // Kembali ke halaman detail setelah sukses
+      Get.snackbar(
+        'Success',
+        'Reservation details updated successfully.',
+        backgroundColor: ColorTheme.success.withValues(alpha: 0.1),
+        colorText: ColorTheme.success,
       );
-      // Repository returns Map<String, dynamic> with 'payment' and 'reservation'
-      selectedPaymentDetails.value = response['payment'] as Payment?;
-      reservationForPaymentDetails.value =
-          response['reservation'] as Reservation?;
     } catch (e) {
-      paymentDetailsErrorMessage.value = 'Failed to load payment details.';
-      _logger.error(
-        'Error fetching owner payment details for $reservationId: $e',
+      Get.snackbar(
+        'Error',
+        'Failed to update reservation: ${e.toString()}',
+        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
+        colorText: ColorTheme.error,
       );
-      selectedPaymentDetails.value = null;
-      reservationForPaymentDetails.value = null;
+      _logger.error('Error updating reservation details: $e');
     } finally {
-      isLoadingPaymentDetails.value = false;
+      isFormSubmitting.value = false;
+    }
+  }
+
+  Future<void> confirmManualReservationWithProof(
+    String reservationId,
+    File paymentProofFile,
+  ) async {
+    try {
+      isPaymentUploading.value = true;
+      await _reservationRepository.confirmManualWithProof(
+        reservationId,
+        paymentProofFile,
+      );
+      await fetchReservationById(reservationId); // Langsung refresh data
+      Get.snackbar(
+        'Success',
+        'Reservation has been confirmed successfully.',
+        backgroundColor: ColorTheme.success.withValues(alpha: 0.1),
+        colorText: ColorTheme.success,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to confirm reservation: ${e.toString()}',
+        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
+        colorText: ColorTheme.error,
+      );
+      _logger.error('Error confirming reservation with proof: $e');
+    } finally {
+      isPaymentUploading.value = false;
     }
   }
 
@@ -578,7 +679,6 @@ class ReservationController extends GetxController {
   }) async {
     try {
       isUpdatingManualPayment.value = true;
-      // Repository returns a Map<String, dynamic> like { success: true, message: "..." }
       final response = await _reservationRepository
           .updateManualReservationPaymentStatus(
             reservationId,
@@ -590,33 +690,26 @@ class ReservationController extends GetxController {
         'Success',
         response['message'] as String? ??
             'Payment status updated successfully!',
-        backgroundColor: ColorTheme.success.withValues(alpha: 0.1),
+        backgroundColor: ColorTheme.success.withAlpha(25),
         colorText: ColorTheme.success,
       );
-      // Refresh relevant data
+
+      // Refresh data
+      await fetchReservationById(reservationId); // Refresh details
       await refreshData(); // Refresh the main list
-      if (selectedReservation.value?.id == reservationId) {
-        await fetchReservationById(
-          reservationId,
-        ); // Refresh details if it was selected
-      }
-      // Also refresh payment details if they were being viewed for this reservation
-      if (reservationForPaymentDetails.value?.id == reservationId) {
-        await fetchOwnerPaymentDetails(reservationId);
-      }
+
       return true;
     } catch (e) {
       String errorMessage = 'Failed to update payment status.';
       if (e is DioException && e.response?.data is Map) {
         errorMessage = e.response?.data['message'] ?? errorMessage;
       } else if (e is Exception) {
-        // For custom exceptions thrown by repository
         errorMessage = e.toString().replaceFirst("Exception: ", "");
       }
       Get.snackbar(
         'Error',
         errorMessage,
-        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
+        backgroundColor: ColorTheme.error.withAlpha(25),
         colorText: ColorTheme.error,
       );
       _logger.error(

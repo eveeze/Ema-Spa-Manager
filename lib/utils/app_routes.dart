@@ -31,6 +31,7 @@ import 'package:emababyspa/features/service_category/bindings/service_category_b
 import 'package:emababyspa/features/service_category/views/service_category_edit_view.dart';
 import 'package:emababyspa/features/schedule/views/schedule_view.dart';
 import 'package:emababyspa/features/schedule/bindings/schedule_bindings.dart';
+import 'package:emababyspa/features/reservation/views/reservation_edit_view.dart';
 
 class AppRoutes {
   static const String splash = '/splash';
@@ -57,6 +58,8 @@ class AppRoutes {
   static const String customerDetail = '/customers/:id';
   static const String reservationList = '/reservations';
   static const String reservationDetail = '/reservations/:id';
+  static const String reservationEdit = '/reservations/edit/:id';
+
   static const String reservationForm = '/reservations/form';
   static const String paymentList = '/payments';
   static const String paymentDetail = '/payments/:id';
@@ -173,6 +176,11 @@ class AppRoutes {
       page: () => const ReservationDetailView(), // Add this page
       binding:
           ReservationBindings(), // Assuming ReservationBindings is appropriate
+    ),
+    GetPage(
+      name: reservationEdit,
+      page: () => const ReservationEditView(),
+      binding: ReservationBindings(),
     ),
     // Rute detail dan form akan ditambahkan disini
   ];

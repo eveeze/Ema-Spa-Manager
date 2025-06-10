@@ -134,6 +134,83 @@ class ReservationProvider {
     }
   }
 
+  Future<Map<String, dynamic>> updateReservation(
+    String id,
+    Map<String, dynamic> data,
+  ) async {
+    try {
+      _logger.info('Provider: Updating reservation $id (Owner)');
+      // PERBAIKI ENDPOINT DI SINI
+      return await _apiClient.putValidated(
+        ApiEndpoints.reservationsOwnerUpdateDetailsById,
+        pathParams: {'id': id},
+        data: data,
+      );
+    } catch (e) {
+      _logger.error('Provider: Error updating reservation $id (Owner): $e');
+      rethrow;
+    }
+  }
+
+  // TAMBAHKAN FUNGSI BARU INI
+  Future<Map<String, dynamic>> updateManualPaymentProof(
+    String reservationId,
+    File paymentProofFile,
+  ) async {
+    try {
+      _logger.info(
+        'Provider: Updating manual payment proof for reservation $reservationId (Owner)',
+      );
+      String fileName = path.basename(paymentProofFile.path);
+      FormData formData = FormData.fromMap({
+        'paymentProof': await MultipartFile.fromFile(
+          paymentProofFile.path,
+          filename: fileName,
+          contentType: MediaType.parse(_getContentType(fileName)),
+        ),
+      });
+
+      return await _apiClient.putMultipartValidated(
+        ApiEndpoints.reservationsOwnerUpdatePaymentProofById, // Endpoint baru
+        pathParams: {'id': reservationId},
+        data: formData,
+      );
+    } catch (e) {
+      _logger.error(
+        'Provider: Error updating payment proof for $reservationId (Owner): $e',
+      );
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> confirmManualWithProof(
+    String reservationId,
+    File paymentProofFile,
+  ) async {
+    try {
+      _logger.info(
+        'Provider: Confirming manual reservation $reservationId with proof.',
+      );
+      String fileName = path.basename(paymentProofFile.path);
+      FormData formData = FormData.fromMap({
+        'paymentProof': await MultipartFile.fromFile(
+          paymentProofFile.path,
+          filename: fileName,
+          contentType: MediaType.parse(_getContentType(fileName)),
+        ),
+      });
+
+      return await _apiClient.postMultipartValidated(
+        ApiEndpoints.reservationsOwnerConfirmWithProof, // Endpoint baru
+        pathParams: {'id': reservationId},
+        data: formData,
+      );
+    } catch (e) {
+      _logger.error('Provider: Error confirming reservation with proof: $e');
+      rethrow;
+    }
+  }
+
   // Create manual reservation by Owner
   Future<Map<String, dynamic>> createManualReservation({
     required String customerName,

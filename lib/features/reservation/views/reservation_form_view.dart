@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'package:emababyspa/common/theme/color_theme.dart';
 import 'package:emababyspa/common/layouts/main_layout.dart';
 import 'package:emababyspa/common/widgets/app_button.dart';
 import 'package:emababyspa/features/reservation/controllers/reservation_controller.dart';
@@ -12,6 +11,7 @@ import 'package:emababyspa/features/service/controllers/service_controller.dart'
 import 'package:emababyspa/data/models/session.dart';
 import 'package:emababyspa/data/models/service.dart';
 import 'package:emababyspa/utils/timezone_utils.dart';
+import 'package:emababyspa/features/theme/controllers/theme_controller.dart';
 
 class ReservationFormView extends StatefulWidget {
   const ReservationFormView({super.key});
@@ -23,10 +23,10 @@ class ReservationFormView extends StatefulWidget {
 class _ReservationFormViewState extends State<ReservationFormView> {
   final reservationController = Get.find<ReservationController>();
   final serviceController = Get.find<ServiceController>();
+  final themeController = Get.find<ThemeController>();
 
   final _formKey = GlobalKey<FormState>();
 
-  // Form controllers
   final _customerNameController = TextEditingController();
   final _customerPhoneController = TextEditingController();
   final _customerAddressController = TextEditingController();
@@ -37,7 +37,6 @@ class _ReservationFormViewState extends State<ReservationFormView> {
   final _notesController = TextEditingController();
   final _paymentNotesController = TextEditingController();
 
-  // Form state
   Session? selectedSession;
   Service? selectedService;
   String? selectedPriceTierId;
@@ -80,7 +79,6 @@ class _ReservationFormViewState extends State<ReservationFormView> {
   }
 
   void _loadServiceData() {
-    // Load all services since all staff can perform all services
     serviceController.fetchServices();
   }
 
@@ -88,35 +86,39 @@ class _ReservationFormViewState extends State<ReservationFormView> {
   Widget build(BuildContext context) {
     return MainLayout(
       child: Scaffold(
-        appBar: _buildAppBar(),
-        body: _buildBody(),
-        bottomNavigationBar: _buildBottomActions(),
+        backgroundColor: Theme.of(context).colorScheme.background,
+        appBar: _buildAppBar(context),
+        body: _buildBody(context),
+        bottomNavigationBar: _buildBottomActions(context),
       ),
     );
   }
 
-  PreferredSizeWidget _buildAppBar() {
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
+    final appBarTheme = Theme.of(context).appBarTheme;
     return AppBar(
       title: Text(
         'Create Manual Reservation',
-        style: TextStyle(
-          color: ColorTheme.textPrimary,
-          fontWeight: FontWeight.bold,
-        ),
+        style: appBarTheme.titleTextStyle,
       ),
-      backgroundColor: Colors.white,
-      elevation: 0,
-      iconTheme: IconThemeData(color: ColorTheme.primary),
+      backgroundColor: appBarTheme.backgroundColor,
+      elevation: appBarTheme.elevation,
+      iconTheme: appBarTheme.iconTheme,
+      foregroundColor: appBarTheme.foregroundColor,
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Colors.white, ColorTheme.primary.withValues(alpha: 0.05)],
+          colors: [
+            colorScheme.background,
+            colorScheme.primary.withOpacity(0.05),
+          ],
         ),
       ),
       child: SingleChildScrollView(
@@ -126,18 +128,18 @@ class _ReservationFormViewState extends State<ReservationFormView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (selectedSession != null) _buildSessionInfoCard(),
+              if (selectedSession != null) _buildSessionInfoCard(context),
               const SizedBox(height: 20),
-              _buildCustomerInfoCard(),
+              _buildCustomerInfoCard(context),
               const SizedBox(height: 20),
-              _buildBabyInfoCard(),
+              _buildBabyInfoCard(context),
               const SizedBox(height: 20),
-              _buildServiceSelectionCard(),
+              _buildServiceSelectionCard(context),
               const SizedBox(height: 20),
-              _buildPaymentInfoCard(),
+              _buildPaymentInfoCard(context),
               const SizedBox(height: 20),
-              _buildNotesCard(),
-              const SizedBox(height: 100), // Space for bottom actions
+              _buildNotesCard(context),
+              const SizedBox(height: 100),
             ],
           ),
         ),
@@ -145,16 +147,18 @@ class _ReservationFormViewState extends State<ReservationFormView> {
     );
   }
 
-  Widget _buildSessionInfoCard() {
+  Widget _buildSessionInfoCard(BuildContext context) {
     return _buildInfoCard(
+      context: context,
       title: 'Session Information',
       icon: Icons.event,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildInfoRow('Session ID', selectedSession!.id),
+          _buildInfoRow(context, 'Session ID', selectedSession!.id),
           if (selectedSession!.timeSlot != null) ...[
             _buildInfoRow(
+              context,
               'Date',
               TimeZoneUtil.formatISOToIndonesiaTime(
                 selectedSession!.timeSlot!.startTime.toIso8601String(),
@@ -162,25 +166,28 @@ class _ReservationFormViewState extends State<ReservationFormView> {
               ),
             ),
             _buildInfoRow(
+              context,
               'Time',
               '${TimeZoneUtil.formatISOToIndonesiaTime(selectedSession!.timeSlot!.startTime.toIso8601String(), format: 'HH:mm')} - ${TimeZoneUtil.formatISOToIndonesiaTime(selectedSession!.timeSlot!.endTime.toIso8601String(), format: 'HH:mm')}',
             ),
           ],
           if (selectedSession!.staff != null) ...[
-            _buildInfoRow('Staff', selectedSession!.staff!.name),
+            _buildInfoRow(context, 'Staff', selectedSession!.staff!.name),
           ],
         ],
       ),
     );
   }
 
-  Widget _buildCustomerInfoCard() {
+  Widget _buildCustomerInfoCard(BuildContext context) {
     return _buildInfoCard(
+      context: context,
       title: 'Customer Information',
       icon: Icons.person,
       child: Column(
         children: [
           _buildTextFormField(
+            context: context,
             controller: _customerNameController,
             label: 'Customer Name',
             hint: 'Enter customer full name',
@@ -197,6 +204,7 @@ class _ReservationFormViewState extends State<ReservationFormView> {
           ),
           const SizedBox(height: 16),
           _buildTextFormField(
+            context: context,
             controller: _customerPhoneController,
             label: 'Phone Number',
             hint: 'Enter phone number (e.g., 08123456789)',
@@ -218,6 +226,7 @@ class _ReservationFormViewState extends State<ReservationFormView> {
           ),
           const SizedBox(height: 16),
           _buildTextFormField(
+            context: context,
             controller: _customerAddressController,
             label: 'Address (Optional)',
             hint: 'Enter customer address',
@@ -226,6 +235,7 @@ class _ReservationFormViewState extends State<ReservationFormView> {
           ),
           const SizedBox(height: 16),
           _buildTextFormField(
+            context: context,
             controller: _customerInstagramController,
             label: 'Instagram (Optional)',
             hint: 'Enter Instagram username',
@@ -237,13 +247,15 @@ class _ReservationFormViewState extends State<ReservationFormView> {
     );
   }
 
-  Widget _buildBabyInfoCard() {
+  Widget _buildBabyInfoCard(BuildContext context) {
     return _buildInfoCard(
+      context: context,
       title: 'Baby Information',
       icon: Icons.child_care,
       child: Column(
         children: [
           _buildTextFormField(
+            context: context,
             controller: _babyNameController,
             label: 'Baby Name',
             hint: 'Enter baby name',
@@ -257,6 +269,7 @@ class _ReservationFormViewState extends State<ReservationFormView> {
           ),
           const SizedBox(height: 16),
           _buildTextFormField(
+            context: context,
             controller: _babyAgeController,
             label: 'Baby Age (months)',
             hint: 'Enter baby age in months',
@@ -279,6 +292,7 @@ class _ReservationFormViewState extends State<ReservationFormView> {
           ),
           const SizedBox(height: 16),
           _buildTextFormField(
+            context: context,
             controller: _parentNamesController,
             label: 'Parent Names (Optional)',
             hint: 'Enter parent names',
@@ -289,12 +303,15 @@ class _ReservationFormViewState extends State<ReservationFormView> {
     );
   }
 
-  Widget _buildServiceSelectionCard() {
+  Widget _buildServiceSelectionCard(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return _buildInfoCard(
+      context: context,
       title: 'Service Selection',
       icon: Icons.spa,
       child: Obx(() {
-        // Use the correct property name from ServiceController
         final services = serviceController.services;
 
         if (serviceController.isLoadingServices.value) {
@@ -311,20 +328,24 @@ class _ReservationFormViewState extends State<ReservationFormView> {
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
-                Icon(Icons.spa_outlined, size: 48, color: Colors.grey.shade400),
+                Icon(
+                  Icons.spa_outlined,
+                  size: 48,
+                  color: colorScheme.onSurface.withOpacity(0.4),
+                ),
                 const SizedBox(height: 12),
                 Text(
                   'No Services Available',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey.shade600,
+                  style: textTheme.titleMedium?.copyWith(
+                    color: colorScheme.onSurface.withOpacity(0.8),
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'No services found. Please check your service configuration.',
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -338,13 +359,9 @@ class _ReservationFormViewState extends State<ReservationFormView> {
             DropdownButtonFormField<Service>(
               decoration: InputDecoration(
                 labelText: 'Select Service',
-                prefixIcon: Icon(Icons.spa_outlined, color: ColorTheme.primary),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: ColorTheme.primary, width: 2),
+                prefixIcon: Icon(
+                  Icons.spa_outlined,
+                  color: colorScheme.primary,
                 ),
               ),
               value: selectedService,
@@ -358,17 +375,15 @@ class _ReservationFormViewState extends State<ReservationFormView> {
                         children: [
                           Text(
                             service.name,
-                            style: const TextStyle(
-                              fontSize: 14,
+                            style: textTheme.bodyLarge?.copyWith(
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                           if (service.description.isNotEmpty == true)
                             Text(
                               service.description,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade600,
+                              style: textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -380,7 +395,7 @@ class _ReservationFormViewState extends State<ReservationFormView> {
               onChanged: (Service? value) {
                 setState(() {
                   selectedService = value;
-                  selectedPriceTierId = null; // Reset price tier selection
+                  selectedPriceTierId = null;
                 });
               },
               validator: (value) {
@@ -392,7 +407,7 @@ class _ReservationFormViewState extends State<ReservationFormView> {
             ),
             if (selectedService != null) ...[
               const SizedBox(height: 16),
-              _buildPriceTierSelection(),
+              _buildPriceTierSelection(context),
             ],
           ],
         );
@@ -400,25 +415,23 @@ class _ReservationFormViewState extends State<ReservationFormView> {
     );
   }
 
-  Widget _buildPriceTierSelection() {
+  Widget _buildPriceTierSelection(BuildContext context) {
     if (selectedService?.priceTiers == null ||
         selectedService!.priceTiers!.isEmpty) {
       return const SizedBox.shrink();
     }
+
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Price Tier',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: ColorTheme.textPrimary,
-          ),
+          style: textTheme.titleMedium?.copyWith(color: colorScheme.onSurface),
         ),
         const SizedBox(height: 8),
-        // Fixed: Removed unnecessary .toList() in spread operator
         ...selectedService!.priceTiers!.map((priceTier) {
           return Container(
             margin: const EdgeInsets.only(bottom: 8),
@@ -426,36 +439,33 @@ class _ReservationFormViewState extends State<ReservationFormView> {
               border: Border.all(
                 color:
                     selectedPriceTierId == priceTier.id
-                        ? ColorTheme.primary
-                        : Colors.grey.shade300,
+                        ? colorScheme.primary
+                        : colorScheme.outline,
                 width: selectedPriceTierId == priceTier.id ? 2 : 1,
               ),
               borderRadius: BorderRadius.circular(12),
             ),
             child: RadioListTile<String>(
               title: Text(
-                // Fixed: Use tierName instead of name
                 priceTier.tierName,
-                style: const TextStyle(
-                  fontSize: 14,
+                style: textTheme.bodyLarge?.copyWith(
                   fontWeight: FontWeight.w500,
                 ),
               ),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Fixed: Removed description as it doesn't exist in PriceTier model
-                  // If you need description, you should add it to the PriceTier model
                   Text(
                     'Age: ${priceTier.minBabyAge}-${priceTier.maxBabyAge} months',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                   ),
                   Text(
                     'Rp ${priceTier.price.toStringAsFixed(0)}',
-                    style: TextStyle(
-                      fontSize: 14,
+                    style: textTheme.bodyLarge?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: ColorTheme.primary,
+                      color: colorScheme.primary,
                     ),
                   ),
                 ],
@@ -467,7 +477,7 @@ class _ReservationFormViewState extends State<ReservationFormView> {
                   selectedPriceTierId = value;
                 });
               },
-              activeColor: ColorTheme.primary,
+              activeColor: colorScheme.primary,
             ),
           );
         }),
@@ -475,8 +485,11 @@ class _ReservationFormViewState extends State<ReservationFormView> {
     );
   }
 
-  Widget _buildPaymentInfoCard() {
+  Widget _buildPaymentInfoCard(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
     return _buildInfoCard(
+      context: context,
       title: 'Payment Information',
       icon: Icons.payment,
       child: Column(
@@ -487,14 +500,7 @@ class _ReservationFormViewState extends State<ReservationFormView> {
               labelText: 'Payment Method',
               prefixIcon: Icon(
                 Icons.payment_outlined,
-                color: ColorTheme.primary,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: ColorTheme.primary, width: 2),
+                color: colorScheme.primary,
               ),
             ),
             value: selectedPaymentMethod,
@@ -513,11 +519,11 @@ class _ReservationFormViewState extends State<ReservationFormView> {
           ),
           const SizedBox(height: 16),
           SwitchListTile(
-            title: const Text('Payment Received'),
+            title: Text('Payment Received', style: textTheme.bodyLarge),
             subtitle: Text(
               isPaid ? 'Payment has been received' : 'Payment not yet received',
-              style: TextStyle(
-                color: isPaid ? Colors.green.shade600 : Colors.orange.shade600,
+              style: textTheme.bodyMedium?.copyWith(
+                color: isPaid ? Colors.green.shade400 : Colors.orange.shade400,
               ),
             ),
             value: isPaid,
@@ -526,14 +532,19 @@ class _ReservationFormViewState extends State<ReservationFormView> {
                 isPaid = value;
               });
             },
-            activeColor: ColorTheme.primary,
+            activeColor: colorScheme.primary,
+            tileColor: colorScheme.surfaceVariant.withOpacity(0.3),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
           if (isPaid && selectedPaymentMethod != 'CASH') ...[
             const SizedBox(height: 16),
-            _buildPaymentProofSection(),
+            _buildPaymentProofSection(context),
           ],
           const SizedBox(height: 16),
           _buildTextFormField(
+            context: context,
             controller: _paymentNotesController,
             label: 'Payment Notes (Optional)',
             hint: 'Enter payment notes',
@@ -545,36 +556,41 @@ class _ReservationFormViewState extends State<ReservationFormView> {
     );
   }
 
-  Widget _buildPaymentProofSection() {
+  Widget _buildPaymentProofSection(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final bool isDark = themeController.isDarkMode;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Payment Proof',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: ColorTheme.textPrimary,
-          ),
-        ),
+        Text('Payment Proof', style: textTheme.titleMedium),
         const SizedBox(height: 8),
         if (paymentProofFile != null) ...[
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.green.shade50,
+              color:
+                  isDark ? Colors.green.withOpacity(0.2) : Colors.green.shade50,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.green.shade200),
+              border: Border.all(
+                color: isDark ? Colors.green.shade700 : Colors.green.shade200,
+              ),
             ),
             child: Row(
               children: [
-                Icon(Icons.check_circle, color: Colors.green.shade600),
+                Icon(
+                  Icons.check_circle,
+                  color: isDark ? Colors.green.shade300 : Colors.green.shade600,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     'Payment proof selected',
-                    style: TextStyle(
-                      color: Colors.green.shade700,
+                    style: textTheme.bodyLarge?.copyWith(
+                      color:
+                          isDark
+                              ? Colors.green.shade200
+                              : Colors.green.shade800,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -595,22 +611,19 @@ class _ReservationFormViewState extends State<ReservationFormView> {
             onPressed: _pickPaymentProof,
             icon: const Icon(Icons.camera_alt_outlined),
             label: const Text('Upload Payment Proof'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: ColorTheme.primary,
-              side: BorderSide(color: ColorTheme.primary),
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            ),
           ),
         ],
       ],
     );
   }
 
-  Widget _buildNotesCard() {
+  Widget _buildNotesCard(BuildContext context) {
     return _buildInfoCard(
+      context: context,
       title: 'Additional Notes',
       icon: Icons.note,
       child: _buildTextFormField(
+        context: context,
         controller: _notesController,
         label: 'Notes (Optional)',
         hint: 'Enter any additional notes or special requests',
@@ -621,17 +634,21 @@ class _ReservationFormViewState extends State<ReservationFormView> {
   }
 
   Widget _buildInfoCard({
+    required BuildContext context,
     required String title,
     required IconData icon,
     required Widget child,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final cardTheme = Theme.of(context).cardTheme;
+
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardTheme.color ?? colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
+            color: Theme.of(context).shadowColor.withOpacity(0.05),
             spreadRadius: 1,
             blurRadius: 5,
             offset: const Offset(0, 2),
@@ -644,7 +661,7 @@ class _ReservationFormViewState extends State<ReservationFormView> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: ColorTheme.primary.withValues(alpha: 0.1),
+              color: colorScheme.primaryContainer,
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(16),
                 topRight: Radius.circular(16),
@@ -652,14 +669,14 @@ class _ReservationFormViewState extends State<ReservationFormView> {
             ),
             child: Row(
               children: [
-                Icon(icon, color: ColorTheme.primary),
+                Icon(icon, color: colorScheme.onPrimaryContainer),
                 const SizedBox(width: 12),
                 Text(
                   title,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: ColorTheme.primary,
+                    color: colorScheme.onPrimaryContainer,
                   ),
                 ),
               ],
@@ -672,6 +689,7 @@ class _ReservationFormViewState extends State<ReservationFormView> {
   }
 
   Widget _buildTextFormField({
+    required BuildContext context,
     required TextEditingController controller,
     required String label,
     required String hint,
@@ -682,26 +700,14 @@ class _ReservationFormViewState extends State<ReservationFormView> {
     int maxLines = 1,
     String? prefixText,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     return TextFormField(
       controller: controller,
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        prefixIcon: Icon(icon, color: ColorTheme.primary),
+        prefixIcon: Icon(icon, color: colorScheme.primary),
         prefixText: prefixText,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: ColorTheme.primary, width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.red, width: 1),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.red, width: 2),
-        ),
       ),
       validator: validator,
       keyboardType: keyboardType,
@@ -710,7 +716,10 @@ class _ReservationFormViewState extends State<ReservationFormView> {
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
+  Widget _buildInfoRow(BuildContext context, String label, String value) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
@@ -720,20 +729,20 @@ class _ReservationFormViewState extends State<ReservationFormView> {
             width: 100,
             child: Text(
               label,
-              style: TextStyle(
-                fontWeight: FontWeight.w500,
-                color: ColorTheme.textSecondary,
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
           ),
           const SizedBox(width: 8),
-          const Text(': '),
+          Text(':', style: textTheme.bodyMedium),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               value,
-              style: TextStyle(
-                color: ColorTheme.textPrimary,
-                fontWeight: FontWeight.w400,
+              style: textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w500,
+                color: colorScheme.onSurface,
               ),
             ),
           ),
@@ -742,14 +751,15 @@ class _ReservationFormViewState extends State<ReservationFormView> {
     );
   }
 
-  Widget _buildBottomActions() {
+  Widget _buildBottomActions(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.2),
+            color: Theme.of(context).shadowColor.withOpacity(0.1),
             spreadRadius: 1,
             blurRadius: 5,
             offset: const Offset(0, -2),
@@ -789,6 +799,7 @@ class _ReservationFormViewState extends State<ReservationFormView> {
   }
 
   Future<void> _pickPaymentProof() async {
+    final colorScheme = Theme.of(context).colorScheme;
     try {
       final ImagePicker picker = ImagePicker();
       final XFile? pickedFile = await picker.pickImage(
@@ -807,14 +818,15 @@ class _ReservationFormViewState extends State<ReservationFormView> {
       Get.snackbar(
         'Error',
         'Failed to pick image: ${e.toString()}',
-
-        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
-        colorText: ColorTheme.error,
+        backgroundColor: colorScheme.errorContainer,
+        colorText: colorScheme.onErrorContainer,
       );
     }
   }
 
   Future<void> _submitForm() async {
+    final colorScheme = Theme.of(context).colorScheme;
+
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -823,8 +835,8 @@ class _ReservationFormViewState extends State<ReservationFormView> {
       Get.snackbar(
         'Error',
         'Please select a service',
-        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
-        colorText: ColorTheme.error,
+        backgroundColor: colorScheme.errorContainer,
+        colorText: colorScheme.onErrorContainer,
       );
       return;
     }
