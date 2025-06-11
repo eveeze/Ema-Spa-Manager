@@ -52,10 +52,7 @@ class ServiceEditView extends GetView<ServiceController> {
           appBar: CustomAppBar(
             title: 'Edit Service',
             showBackButton: true,
-            backgroundColor:
-                themeController.isDarkMode
-                    ? ColorTheme.surfaceDark
-                    : ColorTheme.surface, // Use surface for AppBar
+
             elevation: 0,
           ),
           body: Obx(() {

@@ -1,5 +1,6 @@
 // lib/features/staff/views/staff_form_view.dart
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:emababyspa/common/theme/color_theme.dart'; // Import ColorTheme
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'dart:io';
@@ -20,8 +21,9 @@ class StaffFormView extends GetView<StaffController> {
   Widget build(BuildContext context) {
     final ThemeController themeController =
         Get.find(); // Get ThemeController instance
-    final ThemeData theme = Theme.of(context); // Get current theme data
-    final ColorScheme colorScheme = theme.colorScheme; // Get color scheme
+    // No longer need ThemeData or ColorScheme here, will use themeController directly for consistency
+    // final ThemeData theme = Theme.of(context);
+    // final ColorScheme colorScheme = theme.colorScheme;
 
     // Form controllers
     final nameController = TextEditingController();
@@ -70,245 +72,303 @@ class StaffFormView extends GetView<StaffController> {
 
     const double fieldSpacing = 18.0;
     const double sectionSpacing = 28.0;
-    const EdgeInsets inputErrorPadding = EdgeInsets.only(top: 6.0, left: 12.0);
+    final EdgeInsets inputErrorPadding = const EdgeInsets.only(
+      top: 6.0,
+      left: 12.0,
+      bottom: 6.0,
+    ); // Added bottom padding
 
     return MainLayout(
-      child: Scaffold(
-        // AppBar will use its theme settings from AppTheme
-        appBar: const CustomAppBar(
-          title: 'Add New Staff',
-          showBackButton: true,
-        ),
-        body: SafeArea(
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Form(
-                key: formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Form title
-                    Text(
-                      'Staff Information',
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onSurface,
-                        // fontFamily: 'JosefinSans', // Assuming TextTheme handles this
+      child: Obx(
+        () => Scaffold(
+          // *** ✨ UI/UX Improvement ✨ ***
+          // Applying the consistent, theme-aware background.
+          backgroundColor:
+              themeController.isDarkMode
+                  ? ColorTheme.backgroundDark
+                  : ColorTheme.background,
+          appBar: const CustomAppBar(
+            title: 'Add New Staff',
+            showBackButton: true,
+          ),
+          body: SafeArea(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Form title
+                      Text(
+                        'Staff Information',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color:
+                              themeController.isDarkMode
+                                  ? ColorTheme.textPrimaryDark
+                                  : ColorTheme.textPrimary,
+                          fontFamily: 'JosefinSans',
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Enter the details for the new staff member below.',
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        // fontFamily: 'JosefinSans',
+                      const SizedBox(height: 8),
+                      Text(
+                        'Enter the details for the new staff member below.',
+                        style: TextStyle(
+                          fontSize: 15,
+                          color:
+                              themeController.isDarkMode
+                                  ? ColorTheme.textSecondaryDark
+                                  : ColorTheme.textSecondary,
+                          fontFamily: 'JosefinSans',
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: sectionSpacing),
+                      const SizedBox(height: sectionSpacing),
 
-                    // Profile Picture Selection
-                    Center(
-                      child: Column(
-                        children: [
-                          Obx(
-                            () => GestureDetector(
-                              onTap:
+                      // Profile Picture Selection
+                      Center(
+                        child: Column(
+                          children: [
+                            Obx(
+                              () => GestureDetector(
+                                onTap:
+                                    () => _selectImage(
+                                      profilePicture,
+                                      permissionUtils,
+                                      context,
+                                      themeController,
+                                    ),
+                                child: Container(
+                                  width: 120,
+                                  height: 120,
+                                  decoration: BoxDecoration(
+                                    color:
+                                        themeController.isDarkMode
+                                            ? ColorTheme.surfaceDark
+                                            : ColorTheme.surface,
+                                    borderRadius: BorderRadius.circular(60),
+                                    border: Border.all(
+                                      color: (themeController.isDarkMode
+                                              ? ColorTheme.primaryLightDark
+                                              : ColorTheme.primary)
+                                          .withOpacity(0.5),
+                                      width: 2.5,
+                                    ),
+                                    image:
+                                        profilePicture.value != null
+                                            ? DecorationImage(
+                                              image: FileImage(
+                                                profilePicture.value!,
+                                              ),
+                                              fit: BoxFit.cover,
+                                            )
+                                            : null,
+                                  ),
+                                  child:
+                                      profilePicture.value == null
+                                          ? Icon(
+                                            Icons.person_add_alt_1_rounded,
+                                            size: 50,
+                                            color:
+                                                themeController.isDarkMode
+                                                    ? ColorTheme
+                                                        .textTertiaryDark
+                                                    : ColorTheme.textTertiary,
+                                          )
+                                          : null,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            TextButton.icon(
+                              onPressed:
                                   () => _selectImage(
                                     profilePicture,
                                     permissionUtils,
-                                    context, // Pass context for theming bottom sheet
-                                    themeController, // Pass theme controller
+                                    context,
+                                    themeController,
                                   ),
-                              child: CircleAvatar(
-                                radius: 55,
-                                backgroundColor: colorScheme.primaryContainer,
-                                backgroundImage:
-                                    profilePicture.value != null
-                                        ? FileImage(profilePicture.value!)
-                                        : null,
-                                child:
-                                    profilePicture.value == null
-                                        ? Icon(
-                                          Icons.person_add_alt_1_rounded,
-                                          size: 50,
-                                          color: colorScheme.onPrimaryContainer,
-                                        )
-                                        : null,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          TextButton.icon(
-                            onPressed:
-                                () => _selectImage(
-                                  profilePicture,
-                                  permissionUtils,
-                                  context,
-                                  themeController,
+                              icon: Obx(
+                                () => Icon(
+                                  profilePicture.value != null
+                                      ? Icons.edit_outlined
+                                      : Icons.add_a_photo_outlined,
+                                  color:
+                                      themeController.isDarkMode
+                                          ? ColorTheme.primaryLightDark
+                                          : ColorTheme.primary,
+                                  size: 20,
                                 ),
-                            icon: Icon(
-                              profilePicture.value != null
-                                  ? Icons.edit_outlined
-                                  : Icons.add_a_photo_outlined,
-                              color: colorScheme.primary,
-                              size: 20,
-                            ),
-                            label: Text(
-                              profilePicture.value != null
-                                  ? 'Change Picture'
-                                  : 'Add Profile Picture',
-                              style: theme.textTheme.labelLarge?.copyWith(
-                                color: colorScheme.primary,
-                                fontWeight: FontWeight.w600,
+                              ),
+                              label: Obx(
+                                () => Text(
+                                  profilePicture.value != null
+                                      ? 'Change Picture'
+                                      : 'Add Profile Picture',
+                                  style: TextStyle(
+                                    color:
+                                        themeController.isDarkMode
+                                            ? ColorTheme.primaryLightDark
+                                            : ColorTheme.primary,
+                                    fontWeight: FontWeight.w600,
+                                    fontFamily: 'JosefinSans',
+                                    fontSize: 15,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: sectionSpacing),
+                      const SizedBox(height: sectionSpacing),
 
-                    // Name field with validation
-                    AppTextField(
-                      controller: nameController,
-                      label: 'Full Name',
-                      placeholder: 'Enter staff full name',
-                      prefix: const Icon(Icons.person_outline_rounded),
-                      isRequired: true,
-                      onChanged: (value) {
-                        if (nameError.value.isNotEmpty &&
-                            value.trim().isNotEmpty) {
-                          nameError.value = '';
-                        }
-                      },
-                    ),
-                    Obx(
-                      () =>
-                          nameError.value.isNotEmpty
-                              ? Padding(
-                                padding: inputErrorPadding,
-                                child: Text(
-                                  nameError.value,
-                                  style: TextStyle(
-                                    color: colorScheme.error,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              )
-                              : const SizedBox.shrink(),
-                    ),
-                    const SizedBox(height: fieldSpacing),
-
-                    // Email field with validation
-                    AppTextField(
-                      controller: emailController,
-                      label: 'Email Address',
-                      placeholder: 'Enter staff email',
-                      prefix: const Icon(Icons.email_outlined),
-                      keyboardType: TextInputType.emailAddress,
-                      isRequired: true,
-                      onChanged: (value) {
-                        if (emailError.value.isNotEmpty &&
-                            value.trim().isNotEmpty &&
-                            GetUtils.isEmail(value.trim())) {
-                          emailError.value = '';
-                        }
-                      },
-                    ),
-                    Obx(
-                      () =>
-                          emailError.value.isNotEmpty
-                              ? Padding(
-                                padding: inputErrorPadding,
-                                child: Text(
-                                  emailError.value,
-                                  style: TextStyle(
-                                    color: colorScheme.error,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              )
-                              : const SizedBox.shrink(),
-                    ),
-                    const SizedBox(height: fieldSpacing),
-
-                    // Phone number field with validation
-                    AppTextField(
-                      controller: phoneController,
-                      label: 'Phone Number',
-                      placeholder: 'Enter staff phone number',
-                      prefix: const Icon(Icons.phone_outlined),
-                      keyboardType: TextInputType.phone,
-                      isRequired: true,
-                      onChanged: (value) {
-                        if (phoneError.value.isNotEmpty &&
-                            value.trim().isNotEmpty) {
-                          phoneError.value = '';
-                        }
-                      },
-                    ),
-                    Obx(
-                      () =>
-                          phoneError.value.isNotEmpty
-                              ? Padding(
-                                padding: inputErrorPadding,
-                                child: Text(
-                                  phoneError.value,
-                                  style: TextStyle(
-                                    color: colorScheme.error,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              )
-                              : const SizedBox.shrink(),
-                    ),
-                    const SizedBox(height: fieldSpacing),
-
-                    // Address field
-                    AppTextField(
-                      controller: addressController,
-                      label: 'Address (Optional)',
-                      placeholder: 'Enter staff address',
-                      prefix: const Icon(Icons.location_on_outlined),
-                      maxLines: 3,
-                    ),
-                    const SizedBox(height: sectionSpacing * 1.5),
-
-                    // Submit button
-                    Obx(
-                      () => AppButton(
-                        text: 'Save Staff Member',
-                        isLoading: controller.isFormSubmitting.value,
-                        type:
-                            AppButtonType
-                                .primary, // AppButton should handle its own theming
-                        size: AppButtonSize.large, // Make button more prominent
-                        isFullWidth: true,
-                        icon: Icons.save_alt_outlined,
-                        onPressed: () async {
-                          if (validateForm()) {
-                            try {
-                              await controller.addStaff(
-                                name: nameController.text.trim(),
-                                email: emailController.text.trim(),
-                                phoneNumber: phoneController.text.trim(),
-                                address:
-                                    addressController.text.trim().isNotEmpty
-                                        ? addressController.text.trim()
-                                        : null,
-                                profilePicture: profilePicture.value,
-                              );
-                              Get.back(); // Navigate back after successful submission
-                            } catch (e) {
-                              // Error is already handled in controller via snackbar
-                            }
+                      // Name field with validation
+                      AppTextField(
+                        controller: nameController,
+                        label: 'Full Name',
+                        placeholder: 'Enter staff full name',
+                        prefix: const Icon(Icons.person_outline_rounded),
+                        isRequired: true,
+                        onChanged: (value) {
+                          if (nameError.value.isNotEmpty &&
+                              value.trim().isNotEmpty) {
+                            nameError.value = '';
                           }
                         },
                       ),
-                    ),
-                    const SizedBox(height: fieldSpacing), // For bottom padding
-                  ],
+                      Obx(
+                        () =>
+                            nameError.value.isNotEmpty
+                                ? Padding(
+                                  padding: inputErrorPadding,
+                                  child: Text(
+                                    nameError.value,
+                                    style: TextStyle(
+                                      color:
+                                          themeController.isDarkMode
+                                              ? ColorTheme.errorDark
+                                              : ColorTheme.error,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                )
+                                : const SizedBox(height: fieldSpacing - 6),
+                      ),
+
+                      // Email field with validation
+                      AppTextField(
+                        controller: emailController,
+                        label: 'Email Address',
+                        placeholder: 'Enter staff email',
+                        prefix: const Icon(Icons.email_outlined),
+                        keyboardType: TextInputType.emailAddress,
+                        isRequired: true,
+                        onChanged: (value) {
+                          if (emailError.value.isNotEmpty &&
+                              value.trim().isNotEmpty &&
+                              GetUtils.isEmail(value.trim())) {
+                            emailError.value = '';
+                          }
+                        },
+                      ),
+                      Obx(
+                        () =>
+                            emailError.value.isNotEmpty
+                                ? Padding(
+                                  padding: inputErrorPadding,
+                                  child: Text(
+                                    emailError.value,
+                                    style: TextStyle(
+                                      color:
+                                          themeController.isDarkMode
+                                              ? ColorTheme.errorDark
+                                              : ColorTheme.error,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                )
+                                : const SizedBox(height: fieldSpacing - 6),
+                      ),
+
+                      // Phone number field with validation
+                      AppTextField(
+                        controller: phoneController,
+                        label: 'Phone Number',
+                        placeholder: 'Enter staff phone number',
+                        prefix: const Icon(Icons.phone_outlined),
+                        keyboardType: TextInputType.phone,
+                        isRequired: true,
+                        onChanged: (value) {
+                          if (phoneError.value.isNotEmpty &&
+                              value.trim().isNotEmpty) {
+                            phoneError.value = '';
+                          }
+                        },
+                      ),
+                      Obx(
+                        () =>
+                            phoneError.value.isNotEmpty
+                                ? Padding(
+                                  padding: inputErrorPadding,
+                                  child: Text(
+                                    phoneError.value,
+                                    style: TextStyle(
+                                      color:
+                                          themeController.isDarkMode
+                                              ? ColorTheme.errorDark
+                                              : ColorTheme.error,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                )
+                                : const SizedBox(height: fieldSpacing - 6),
+                      ),
+
+                      // Address field
+                      AppTextField(
+                        controller: addressController,
+                        label: 'Address (Optional)',
+                        placeholder: 'Enter staff address',
+                        prefix: const Icon(Icons.location_on_outlined),
+                        maxLines: 3,
+                      ),
+                      const SizedBox(height: sectionSpacing * 1.5),
+
+                      // Submit button
+                      Obx(
+                        () => AppButton(
+                          text: 'Save Staff Member',
+                          isLoading: controller.isFormSubmitting.value,
+                          type: AppButtonType.primary,
+                          size: AppButtonSize.large,
+                          isFullWidth: true,
+                          icon: Icons.save_alt_outlined,
+                          onPressed: () async {
+                            if (validateForm()) {
+                              try {
+                                await controller.addStaff(
+                                  name: nameController.text.trim(),
+                                  email: emailController.text.trim(),
+                                  phoneNumber: phoneController.text.trim(),
+                                  address:
+                                      addressController.text.trim().isNotEmpty
+                                          ? addressController.text.trim()
+                                          : null,
+                                  profilePicture: profilePicture.value,
+                                );
+                                Get.back();
+                              } catch (e) {
+                                // Error is already handled in controller
+                              }
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: fieldSpacing),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -318,83 +378,68 @@ class StaffFormView extends GetView<StaffController> {
     );
   }
 
-  Widget _buildSheetOption({
-    required IconData iconData,
-    required String label,
-    required VoidCallback onTap,
-    required ThemeData theme,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 10.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircleAvatar(
-              radius: 30,
-              backgroundColor: theme.colorScheme.primaryContainer,
-              child: Icon(
-                iconData,
-                size: 28,
-                color: theme.colorScheme.onPrimaryContainer,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              label,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // ... rest of the functions (_selectImage, _isAndroid13OrAbove, etc.) remain the same
+  // But I will update _selectImage to use the more modern design from StaffEditView for consistency
 
   Future<void> _selectImage(
     Rx<File?> profilePicture,
     PermissionUtils permissionUtils,
-    BuildContext context, // Added context
-    ThemeController themeCtl, // Added theme controller
+    BuildContext context,
+    ThemeController themeController,
   ) async {
-    final ThemeData theme = Theme.of(
-      context,
-    ); // Get current theme data for bottom sheet
-
     try {
       await Get.bottomSheet(
         Container(
-          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color:
-                theme.bottomSheetTheme.backgroundColor ??
-                theme.cardColor, // Use themed background
+                themeController.isDarkMode
+                    ? ColorTheme.surfaceDark
+                    : Colors.white,
             borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
             ),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10),
+            ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                'Choose Profile Picture',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onSurface,
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 15),
+                decoration: BoxDecoration(
+                  color: Colors.grey[400],
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              const SizedBox(height: 25),
+              Text(
+                'Choose Profile Picture',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color:
+                      themeController.isDarkMode
+                          ? ColorTheme.textPrimaryDark
+                          : ColorTheme.textPrimary,
+                  fontFamily: 'JosefinSans',
+                ),
+              ),
+              const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _buildSheetOption(
-                    iconData: Icons.camera_alt_outlined,
+                  _buildImageSourceOption(
+                    icon: Icons.camera_alt_outlined,
                     label: 'Camera',
-                    theme: theme,
+                    themeController: themeController,
+                    color:
+                        themeController.isDarkMode
+                            ? ColorTheme.primaryLightDark
+                            : ColorTheme.primary,
                     onTap: () async {
                       Get.back();
                       final status = await Permission.camera.request();
@@ -407,23 +452,26 @@ class StaffFormView extends GetView<StaffController> {
                               'Camera permission is required to take photos. Please enable it in app settings.',
                         );
                       } else {
-                        permissionUtils.showToast('Camera permission denied.');
+                        permissionUtils.showToast('Camera permission denied');
                       }
                     },
                   ),
-                  _buildSheetOption(
-                    iconData: Icons.photo_library_outlined,
+                  _buildImageSourceOption(
+                    icon: Icons.photo_library_outlined,
                     label: 'Gallery',
-                    theme: theme,
+                    themeController: themeController,
+                    color:
+                        themeController.isDarkMode
+                            ? ColorTheme.infoDark
+                            : ColorTheme.info,
                     onTap: () async {
                       Get.back();
                       Permission permission;
                       if (Platform.isAndroid) {
-                        if (await _isAndroid13OrAbove()) {
-                          permission = Permission.photos;
-                        } else {
-                          permission = Permission.storage;
-                        }
+                        permission =
+                            await _isAndroid13OrAbove()
+                                ? Permission.photos
+                                : Permission.storage;
                       } else {
                         permission = Permission.photos;
                       }
@@ -437,7 +485,7 @@ class StaffFormView extends GetView<StaffController> {
                               'Storage permission is required to select photos. Please enable it in app settings.',
                         );
                       } else {
-                        permissionUtils.showToast('Storage permission denied.');
+                        permissionUtils.showToast('Storage permission denied');
                       }
                     },
                   ),
@@ -447,12 +495,55 @@ class StaffFormView extends GetView<StaffController> {
             ],
           ),
         ),
-        backgroundColor: Colors.transparent, // Allow container to provide bg
+        backgroundColor: Colors.transparent,
         elevation: 0,
       );
     } catch (e) {
       permissionUtils.showToast('Error selecting image: ${e.toString()}');
     }
+  }
+
+  Widget _buildImageSourceOption({
+    required IconData icon,
+    required String label,
+    required ThemeController themeController,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(100),
+                border: Border.all(color: color.withOpacity(0.3)),
+              ),
+              child: Icon(icon, color: color, size: 32),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              label,
+              style: TextStyle(
+                color:
+                    themeController.isDarkMode
+                        ? ColorTheme.textSecondaryDark
+                        : ColorTheme.textSecondary,
+                fontFamily: 'JosefinSans',
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<bool> _isAndroid13OrAbove() async {
@@ -473,12 +564,11 @@ class StaffFormView extends GetView<StaffController> {
       final XFile? photo = await picker.pickImage(
         source: ImageSource.camera,
         imageQuality: 80,
-        maxWidth: 800,
-        maxHeight: 800,
+        maxWidth: 1024,
+        maxHeight: 1024,
       );
       if (photo != null) {
         profilePicture.value = File(photo.path);
-        permissionUtils.showToast('Image captured successfully!');
       }
     } catch (e) {
       permissionUtils.showToast('Failed to capture image: $e');
@@ -494,12 +584,11 @@ class StaffFormView extends GetView<StaffController> {
       final XFile? image = await picker.pickImage(
         source: ImageSource.gallery,
         imageQuality: 80,
-        maxWidth: 800,
-        maxHeight: 800,
+        maxWidth: 1024,
+        maxHeight: 1024,
       );
       if (image != null) {
         profilePicture.value = File(image.path);
-        permissionUtils.showToast('Image selected successfully!');
       }
     } catch (e) {
       permissionUtils.showToast('Failed to select image: $e');

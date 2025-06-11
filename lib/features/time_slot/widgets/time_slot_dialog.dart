@@ -8,6 +8,7 @@ import 'package:emababyspa/features/operating_schedule/controllers/operating_sch
 import 'package:emababyspa/data/models/time_slot.dart';
 import 'package:emababyspa/data/models/operating_schedule.dart'; // For OperatingSchedule type hint
 import 'package:emababyspa/common/utils/date_utils.dart' as app_date_utils;
+import 'package:emababyspa/features/theme/controllers/theme_controller.dart'; // Import ThemeController
 
 class TimeSlotDialog extends StatefulWidget {
   final String operatingScheduleId;
@@ -27,6 +28,8 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
   final TimeSlotController _timeSlotController = Get.find<TimeSlotController>();
   final OperatingScheduleController _scheduleController =
       Get.find<OperatingScheduleController>();
+  // Access the ThemeController to check the current theme state
+  final ThemeController _themeController = Get.find<ThemeController>();
 
   late TimeOfDay _startTime;
   late TimeOfDay _endTime;
@@ -58,6 +61,7 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
 
   @override
   Widget build(BuildContext context) {
+    // No changes here, the dialog background is transparent by default
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 0,
@@ -67,16 +71,21 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
   }
 
   Widget _buildDialogContent(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        // Use surface color which adapts to light/dark themes
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1), // Standard opacity
-            spreadRadius: 2, // Reduced spread
-            blurRadius: 8, // Reduced blur
+            // A subtle shadow that works on both themes
+            color: Colors.black.withOpacity(0.1),
+            spreadRadius: 2,
+            blurRadius: 8,
             offset: const Offset(0, 4),
           ),
         ],
@@ -85,7 +94,7 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildHeader(),
+            _buildHeader(context),
             const SizedBox(height: 24),
             _buildTimeSelectors(context),
             const SizedBox(height: 20),
@@ -97,7 +106,8 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
                     child: Text(
                       _timeSlotController.errorMessage.value,
                       style: TextStyle(
-                        color: Colors.red.shade700,
+                        // Use the theme's error color
+                        color: colorScheme.error,
                         fontSize: 14,
                       ),
                       textAlign: TextAlign.center,
@@ -111,30 +121,33 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Column(
       children: [
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: ColorTheme.primary.withValues(
-              alpha: 0.1,
-            ), // Standard opacity
+            // Use primary container for a subtle, theme-aware background
+            color: colorScheme.primaryContainer,
             shape: BoxShape.circle,
           ),
           child: Icon(
-            Icons.access_time_filled_rounded, // Changed Icon
+            Icons.access_time_filled_rounded,
             size: 36,
-            color: ColorTheme.primary,
+            // Use the primary color, which is defined for both light and dark themes
+            color: colorScheme.primary,
           ),
         ),
         const SizedBox(height: 16),
         Text(
           isEditMode ? 'Edit Time Slot' : 'Add New Time Slot',
-          style: TextStyle(
-            fontSize: 20, // Adjusted size
+          style: theme.textTheme.headlineSmall?.copyWith(
+            // Use onSurface color for high-emphasis text
+            color: colorScheme.onSurface,
             fontWeight: FontWeight.bold,
-            color: ColorTheme.textPrimary,
           ),
         ),
         const SizedBox(height: 8),
@@ -143,22 +156,23 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
               ? 'Update the start and end time for this slot.'
               : 'Set the start and end time for the new slot.',
           textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 15,
-            color: ColorTheme.textSecondary,
-          ), // Adjusted size
+          style: theme.textTheme.bodyMedium?.copyWith(
+            // Use onSurfaceVariant for medium-emphasis text
+            color: colorScheme.onSurfaceVariant,
+          ),
         ),
       ],
     );
   }
 
   Widget _buildTimeSelectors(BuildContext context) {
+    // This widget now implicitly uses theme colors passed down from its children.
     return Column(
       children: [
         _buildTimeSelectorField(
           context: context,
           label: 'Start Time',
-          icon: Icons.schedule_rounded, // Changed icon
+          icon: Icons.schedule_rounded,
           time: _startTime,
           onTap: () => _selectTime(context, true),
         ),
@@ -166,12 +180,12 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
         _buildTimeSelectorField(
           context: context,
           label: 'End Time',
-          icon: Icons.update_rounded, // Changed icon
+          icon: Icons.update_rounded,
           time: _endTime,
           onTap: () => _selectTime(context, false),
         ),
-        const SizedBox(height: 12), // Adjusted spacing
-        _buildDurationDisplay(),
+        const SizedBox(height: 12),
+        _buildDurationDisplay(context), // Pass context to access the theme
       ],
     );
   }
@@ -183,7 +197,9 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
     required TimeOfDay time,
     required VoidCallback onTap,
   }) {
-    // Create a DateTime just for formatting TimeOfDay with app_date_utils
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     final DateTime tempDateTime = DateTime(2000, 1, 1, time.hour, time.minute);
     final String timeString = app_date_utils.DateUtils.formatTime(tempDateTime);
 
@@ -191,54 +207,60 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
-        ), // Adjusted padding
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.grey.shade50, // Softer background
+          // Use a subtle color that works on both themes
+          color:
+              _themeController.isDarkMode
+                  ? colorScheme.surfaceVariant.withOpacity(0.3)
+                  : ColorTheme.surfaceAlt,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade300),
+          // Use the theme's outline color for borders
+          border: Border.all(color: colorScheme.outline.withOpacity(0.5)),
         ),
         child: Row(
           children: [
-            Icon(icon, color: ColorTheme.primary, size: 22), // Adjusted size
+            Icon(icon, color: colorScheme.primary, size: 22),
             const SizedBox(width: 12),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   label,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: ColorTheme.textSecondary.withValues(alpha: 0.8),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    // Use onSurfaceVariant for labels
+                    color: colorScheme.onSurfaceVariant,
                   ),
-                ), // Adjusted style
+                ),
                 const SizedBox(height: 3),
                 Text(
                   timeString,
-                  style: TextStyle(
-                    fontSize: 17,
+                  style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: ColorTheme.textPrimary,
-                  ), // Adjusted style
+                    // Use onSurface for the main time text
+                    color: colorScheme.onSurface,
+                  ),
                 ),
               ],
             ),
             const Spacer(),
             Icon(
               Icons.arrow_drop_down_rounded,
-              color: ColorTheme.textSecondary,
+              color: colorScheme.onSurfaceVariant,
               size: 28,
-            ), // Adjusted size
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildDurationDisplay() {
-    final DateTime nowDate = DateTime.now(); // Base for today's date context
+  Widget _buildDurationDisplay(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    // Your existing duration logic remains unchanged
+    final DateTime nowDate = DateTime.now();
     DateTime startDt = DateTime(
       nowDate.year,
       nowDate.month,
@@ -254,7 +276,6 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
       _endTime.minute,
     );
 
-    // If TimeOfDay for end is earlier than or same as start, assume it's next day for duration calc
     if (_endTime.hour < _startTime.hour ||
         (_endTime.hour == _startTime.hour &&
             _endTime.minute <= _startTime.minute)) {
@@ -266,38 +287,47 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
     final String durationText =
         isValid ? app_date_utils.DateUtils.formatDuration(duration) : "N/A";
 
+    // Determine theme-aware colors for valid/invalid states
+    final Color backgroundColor =
+        isValid
+            ? (_themeController.isDarkMode
+                ? Colors.teal.withOpacity(0.15)
+                : ColorTheme.success.withOpacity(0.1))
+            : colorScheme.errorContainer;
+    final Color borderColor =
+        isValid
+            ? (_themeController.isDarkMode
+                ? Colors.teal.withOpacity(0.4)
+                : ColorTheme.success.withOpacity(0.4))
+            : colorScheme.error;
+    final Color contentColor =
+        isValid
+            ? (_themeController.isDarkMode
+                ? Colors.teal.shade200
+                : ColorTheme.success)
+            : colorScheme.onErrorContainer;
+    final IconData icon =
+        isValid ? Icons.timer_outlined : Icons.error_outline_rounded;
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
       decoration: BoxDecoration(
-        color:
-            isValid
-                ? Colors.teal.withValues(alpha: 0.05)
-                : Colors.red.withValues(alpha: 0.05),
+        color: backgroundColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color:
-              isValid
-                  ? Colors.teal.withValues(alpha: 0.3)
-                  : Colors.red.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: borderColor),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            isValid ? Icons.timer_outlined : Icons.error_outline_rounded,
-            color: isValid ? Colors.teal.shade600 : Colors.red.shade600,
-            size: 18,
-          ),
+          Icon(icon, color: contentColor, size: 18),
           const SizedBox(width: 8),
           Text(
             isValid
                 ? 'Duration: $durationText'
                 : 'End time must be after start',
-            style: TextStyle(
-              color: isValid ? Colors.teal.shade700 : Colors.red.shade700,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: contentColor,
               fontWeight: FontWeight.w500,
-              fontSize: 13,
             ),
           ),
         ],
@@ -306,6 +336,8 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
   }
 
   Widget _buildActionButtons() {
+    // This widget uses AppButton, which should already be theme-aware.
+    // No changes are needed here assuming AppButton uses theme colors.
     return Obx(() {
       final bool isLoading =
           isEditMode
@@ -339,22 +371,15 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
   }
 
   Future<void> _selectTime(BuildContext context, bool isStartSelection) async {
+    // This function now uses the main app theme directly for the time picker.
     final TimeOfDay initialTime = isStartSelection ? _startTime : _endTime;
     final TimeOfDay? pickedTime = await showTimePicker(
       context: context,
       initialTime: initialTime,
+      // The builder now correctly inherits the app's theme for the picker.
       builder: (context, child) {
         return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: ColorTheme.primary,
-              onPrimary: Colors.white,
-              onSurface: ColorTheme.textPrimary,
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(foregroundColor: ColorTheme.primary),
-            ),
-          ),
+          data: Theme.of(context), // This passes the entire theme context
           child: child!,
         );
       },
@@ -370,40 +395,36 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
     }
   }
 
+  // No changes needed for the methods below as they are logic-based.
+  // ... existing _getScheduleDate, _createDateTimeValues, _validateTimeRange, and _saveTimeSlot methods ...
   DateTime _getScheduleDate() {
     final OperatingSchedule? schedule = _scheduleController.schedulesList
         .firstWhereOrNull((s) => s.id == widget.operatingScheduleId);
     if (schedule == null) {
       _timeSlotController.errorMessage.value =
           'Jadwal operasi tidak ditemukan. Menggunakan tanggal hari ini.';
-      // Return current date, ensuring its time components are zeroed out for consistency if needed.
       final now = DateTime.now();
       return DateTime(now.year, now.month, now.day);
     }
-    // schedule.date is already a local DateTime (date part only usually from API)
     return schedule.date;
   }
 
   List<DateTime> _createDateTimeValues() {
-    final DateTime scheduleDate = _getScheduleDate(); // This is a local date
-
+    final DateTime scheduleDate = _getScheduleDate();
     DateTime startDateTime = DateTime(
       scheduleDate.year,
       scheduleDate.month,
       scheduleDate.day,
       _startTime.hour,
       _startTime.minute,
-    ); // Local DateTime
-
+    );
     DateTime endDateTime = DateTime(
       scheduleDate.year,
       scheduleDate.month,
       scheduleDate.day,
       _endTime.hour,
       _endTime.minute,
-    ); // Local DateTime
-
-    // If end TimeOfDay is earlier than or same as start TimeOfDay, assume end is on the next day.
+    );
     if (_endTime.hour < _startTime.hour ||
         (_endTime.hour == _startTime.hour &&
             _endTime.minute <= _startTime.minute)) {
@@ -413,7 +434,7 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
   }
 
   bool _validateTimeRange() {
-    _timeSlotController.clearErrors(); // Clear previous before new validation
+    _timeSlotController.clearErrors();
     final List<DateTime> dateTimeValues = _createDateTimeValues();
     final DateTime localStartDateTime = dateTimeValues[0];
     final DateTime localEndDateTime = dateTimeValues[1];
@@ -424,16 +445,14 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
       return false;
     }
 
-    // Overlap Check:
-    // TimeSlot model stores UTC. Proposed slot needs to be UTC for hasOverlap.
     final TimeSlot proposedSlotForCheck = TimeSlot(
       id:
           isEditMode
               ? widget.timeSlot!.id
               : 'temp-${DateTime.now().millisecondsSinceEpoch}',
       operatingScheduleId: widget.operatingScheduleId,
-      startTime: localStartDateTime.toUtc(), // Convert to UTC for hasOverlap
-      endTime: localEndDateTime.toUtc(), // Convert to UTC for hasOverlap
+      startTime: localStartDateTime.toUtc(),
+      endTime: localEndDateTime.toUtc(),
       createdAt:
           (isEditMode ? widget.timeSlot!.createdAt : DateTime.now().toUtc()),
       updatedAt: DateTime.now().toUtc(),
@@ -445,7 +464,6 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
             .where((s) => s.operatingScheduleId == widget.operatingScheduleId)
             .toList();
 
-    // If editing, exclude the current slot being edited from the overlap check list
     if (isEditMode) {
       existingSlotsForSchedule.removeWhere((s) => s.id == widget.timeSlot!.id);
     }
@@ -465,48 +483,46 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
 
   Future<void> _saveTimeSlot() async {
     if (!_validateTimeRange()) {
-      return; // Error message is set by _validateTimeRange
+      return;
     }
 
     final List<DateTime> localDateTimeValues = _createDateTimeValues();
-    final DateTime localStart = localDateTimeValues[0]; // Local DateTime
-    final DateTime localEnd = localDateTimeValues[1]; // Local DateTime
+    final DateTime localStart = localDateTimeValues[0];
+    final DateTime localEnd = localDateTimeValues[1];
 
     TimeSlot? result;
     if (isEditMode && widget.timeSlot != null) {
       result = await _timeSlotController.updateTimeSlot(
         id: widget.timeSlot!.id,
-        startTime: localStart, // Pass local DateTime
-        endTime: localEnd, // Pass local DateTime
-        operatingScheduleId:
-            widget.operatingScheduleId, // Pass in case it can be changed
+        startTime: localStart,
+        endTime: localEnd,
+        operatingScheduleId: widget.operatingScheduleId,
       );
     } else {
       result = await _timeSlotController.createTimeSlot(
         operatingScheduleId: widget.operatingScheduleId,
-        startTime: localStart, // Pass local DateTime
-        endTime: localEnd, // Pass local DateTime
+        startTime: localStart,
+        endTime: localEnd,
       );
     }
 
     if (result != null && _timeSlotController.errorMessage.isEmpty) {
-      Get.back(); // Close dialog
+      Get.back();
       Get.snackbar(
         'Berhasil',
         isEditMode
             ? 'Slot waktu berhasil diperbarui.'
             : 'Slot waktu berhasil dibuat.',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green.withValues(alpha: 0.9),
+        backgroundColor: Colors.green.withOpacity(0.9),
         colorText: Colors.white,
         margin: const EdgeInsets.all(12),
         borderRadius: 8,
         icon: const Icon(Icons.check_circle, color: Colors.white),
       );
-      // No need to call fetchTimeSlotsByScheduleId here, as it's done within the controller methods.
     }
-    // If error, it will be displayed in the dialog via Obx
   }
 }
 
+// Keep this extension as it is
 extension _FirstWhereOrNull<E> on Iterable<E> {}
