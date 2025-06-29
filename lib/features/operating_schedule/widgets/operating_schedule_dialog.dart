@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
-import 'package:emababyspa/common/theme/color_theme.dart';
 import 'package:emababyspa/common/widgets/app_button.dart';
 import 'package:emababyspa/features/operating_schedule/controllers/operating_schedule_controller.dart';
 
@@ -36,7 +35,6 @@ class _OperatingScheduleDialogState extends State<OperatingScheduleDialog> {
   }
 
   String _formatDateIndonesian(DateTime date) {
-    // Manual formatting to avoid locale initialization issues
     final List<String> dayNames = [
       'Senin',
       'Selasa',
@@ -46,7 +44,6 @@ class _OperatingScheduleDialogState extends State<OperatingScheduleDialog> {
       'Sabtu',
       'Minggu',
     ];
-
     final List<String> monthNames = [
       'Januari',
       'Februari',
@@ -61,59 +58,54 @@ class _OperatingScheduleDialogState extends State<OperatingScheduleDialog> {
       'November',
       'Desember',
     ];
-
     final dayName = dayNames[date.weekday - 1];
     final monthName = monthNames[date.month - 1];
-
     return '$dayName, ${date.day} $monthName ${date.year}';
   }
 
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      elevation: 8,
+      shape: Theme.of(context).dialogTheme.shape,
+      elevation: Theme.of(context).dialogTheme.elevation ?? 8,
+      backgroundColor: Theme.of(context).dialogTheme.backgroundColor,
       child: Container(
         constraints: const BoxConstraints(maxWidth: 400),
         padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Colors.white, ColorTheme.primary.withValues(alpha: 0.02)],
-          ),
-        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeader(),
+            _buildHeader(context),
             const SizedBox(height: 24),
-            _buildForm(),
+            _buildForm(context),
             const SizedBox(height: 24),
-            _buildActionButtons(),
+            _buildActionButtons(context),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: ColorTheme.primary.withValues(alpha: 0.1),
+                color: colorScheme.primaryContainer,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 Icons.event_note_rounded,
-                color: ColorTheme.primary,
+                color: colorScheme.primary,
                 size: 28,
               ),
             ),
@@ -124,19 +116,16 @@ class _OperatingScheduleDialogState extends State<OperatingScheduleDialog> {
                 children: [
                   Text(
                     'Buat Jadwal Operasional',
-                    style: TextStyle(
-                      fontSize: 20,
+                    style: textTheme.titleLarge?.copyWith(
+                      color: colorScheme.onSurface,
                       fontWeight: FontWeight.bold,
-                      color: ColorTheme.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     _formatDateIndonesian(widget.selectedDate),
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: ColorTheme.textSecondary,
-                      fontWeight: FontWeight.w500,
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -144,119 +133,81 @@ class _OperatingScheduleDialogState extends State<OperatingScheduleDialog> {
             ),
             IconButton(
               onPressed: () => Navigator.of(context).pop(),
-              icon: Icon(Icons.close_rounded, color: ColorTheme.textSecondary),
+              icon: Icon(
+                Icons.close_rounded,
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
-        Container(
-          width: double.infinity,
-          height: 2,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                ColorTheme.primary.withValues(alpha: 0.3),
-                ColorTheme.primary.withValues(alpha: 0.1),
-                Colors.transparent,
-              ],
-            ),
-            borderRadius: BorderRadius.circular(1),
-          ),
-        ),
+        const SizedBox(height: 16),
+        const Divider(),
       ],
     );
   }
 
-  Widget _buildForm() {
+  Widget _buildForm(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Form(
       key: _formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Schedule Type Selection
           Text(
             'Tipe Jadwal',
-            style: TextStyle(
-              fontSize: 16,
+            style: textTheme.titleMedium?.copyWith(
+              color: colorScheme.onSurface,
               fontWeight: FontWeight.w600,
-              color: ColorTheme.textPrimary,
             ),
           ),
           const SizedBox(height: 12),
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: ColorTheme.primary.withValues(alpha: 0.2),
-                width: 1.5,
-              ),
-            ),
+          Card(
+            margin: EdgeInsets.zero,
+            clipBehavior: Clip.antiAlias,
             child: Column(
               children: [
                 _buildScheduleTypeOption(
+                  context: context,
                   title: 'Hari Buka',
                   subtitle: 'Spa buka dan beroperasi normal',
                   icon: Icons.event_available_rounded,
                   isSelected: !_isHoliday,
                   onTap: () => setState(() => _isHoliday = false),
-                  color: Colors.green,
+                  color: colorScheme.primary,
                 ),
-                Divider(
-                  height: 1,
-                  color: ColorTheme.primary.withValues(alpha: 0.1),
-                ),
+                const Divider(height: 1),
                 _buildScheduleTypeOption(
+                  context: context,
                   title: 'Hari Libur',
                   subtitle: 'Spa tutup atau tidak beroperasi',
                   icon: Icons.event_busy_rounded,
                   isSelected: _isHoliday,
                   onTap: () => setState(() => _isHoliday = true),
-                  color: Colors.red,
+                  color: colorScheme.error,
                 ),
               ],
             ),
           ),
           const SizedBox(height: 20),
-
-          // Notes Section
           Text(
             'Catatan (Opsional)',
-            style: TextStyle(
-              fontSize: 16,
+            style: textTheme.titleMedium?.copyWith(
+              color: colorScheme.onSurface,
               fontWeight: FontWeight.w600,
-              color: ColorTheme.textPrimary,
             ),
           ),
           const SizedBox(height: 8),
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: Colors.grey.withValues(alpha: 0.3),
-                width: 1,
-              ),
-            ),
-            child: TextFormField(
-              controller: _notesController,
-              maxLines: 3,
-              decoration: InputDecoration(
-                hintText:
-                    _isHoliday
-                        ? 'Contoh: Libur Nasional - Hari Raya Nyepi'
-                        : 'Contoh: Operasional normal, staff lengkap',
-                hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.all(16),
-                prefixIcon: Padding(
-                  padding: const EdgeInsets.only(left: 16, right: 12, top: 16),
-                  child: Icon(
-                    Icons.sticky_note_2_outlined,
-                    color: Colors.grey.shade500,
-                    size: 20,
-                  ),
-                ),
-              ),
-              style: const TextStyle(fontSize: 14),
+          TextFormField(
+            controller: _notesController,
+            maxLines: 3,
+            decoration: InputDecoration(
+              hintText:
+                  _isHoliday
+                      ? 'Contoh: Libur Nasional - Hari Raya Nyepi'
+                      : 'Contoh: Operasional normal, staff lengkap',
+              prefixIcon: const Icon(Icons.sticky_note_2_outlined),
             ),
           ),
         ],
@@ -265,6 +216,7 @@ class _OperatingScheduleDialogState extends State<OperatingScheduleDialog> {
   }
 
   Widget _buildScheduleTypeOption({
+    required BuildContext context,
     required String title,
     required String subtitle,
     required IconData icon,
@@ -272,23 +224,27 @@ class _OperatingScheduleDialogState extends State<OperatingScheduleDialog> {
     required VoidCallback onTap,
     required Color color,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final unselectedColor = colorScheme.onSurfaceVariant;
+    final unselectedBorderColor = colorScheme.outline;
+    final unselectedIconBg = colorScheme.surfaceContainerHighest;
+
     return Material(
-      color: Colors.transparent,
+      color: isSelected ? color.withValues(alpha: 0.05) : Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(11),
-        child: Container(
+        child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              // Radio button
               Container(
                 width: 20,
                 height: 20,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: isSelected ? color : Colors.grey.shade400,
+                    color: isSelected ? color : unselectedBorderColor,
                     width: 2,
                   ),
                 ),
@@ -304,44 +260,38 @@ class _OperatingScheduleDialogState extends State<OperatingScheduleDialog> {
                         : null,
               ),
               const SizedBox(width: 16),
-
-              // Icon
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color:
                       isSelected
                           ? color.withValues(alpha: 0.1)
-                          : Colors.grey.withValues(alpha: 0.1),
+                          : unselectedIconBg,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
                   icon,
-                  color: isSelected ? color : Colors.grey.shade600,
+                  color: isSelected ? color : unselectedColor,
                   size: 20,
                 ),
               ),
               const SizedBox(width: 12),
-
-              // Text content
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       title,
-                      style: TextStyle(
-                        fontSize: 16,
+                      style: textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: isSelected ? color : ColorTheme.textPrimary,
+                        color: isSelected ? color : colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: ColorTheme.textSecondary,
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -354,41 +304,24 @@ class _OperatingScheduleDialogState extends State<OperatingScheduleDialog> {
     );
   }
 
-  Widget _buildActionButtons() {
+  Widget _buildActionButtons(BuildContext context) {
     return Obx(() {
+      final isLoading = _controller.isFormSubmitting.value;
       return Row(
         children: [
           Expanded(
             child: OutlinedButton(
-              onPressed:
-                  _controller.isFormSubmitting.value
-                      ? null
-                      : () => Navigator.of(context).pop(),
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: ColorTheme.primary),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              child: Text(
-                'Batal',
-                style: TextStyle(
-                  color: ColorTheme.primary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              onPressed: isLoading ? null : () => Navigator.of(context).pop(),
+              child: const Text('Batal'),
             ),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: AppButton(
               text: 'Buat Jadwal',
-              icon:
-                  _controller.isFormSubmitting.value ? null : Icons.add_rounded,
-              onPressed:
-                  _controller.isFormSubmitting.value ? null : _submitForm,
-              isLoading: _controller.isFormSubmitting.value,
+              icon: isLoading ? null : Icons.add_rounded,
+              onPressed: isLoading ? null : _submitForm,
+              isLoading: isLoading,
             ),
           ),
         ],
@@ -398,23 +331,18 @@ class _OperatingScheduleDialogState extends State<OperatingScheduleDialog> {
 
   Future<void> _submitForm() async {
     if (_formKey.currentState?.validate() ?? false) {
-      // Format date for API
       final formattedDate = DateFormat(
         'yyyy-MM-dd',
       ).format(widget.selectedDate);
-
-      // Get notes (trim and handle empty string)
       final notes = _notesController.text.trim();
       final notesToSend = notes.isEmpty ? null : notes;
 
-      // Submit the form
       final success = await _controller.addOperatingSchedule(
         date: formattedDate,
         isHoliday: _isHoliday,
         notes: notesToSend,
       );
 
-      // Close dialog if successful
       if (success && mounted) {
         Navigator.of(context).pop();
       }

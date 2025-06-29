@@ -1,46 +1,62 @@
-// lib/features/dashboard/controllers/dashboard_controller.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:emababyspa/data/models/owner.dart';
-import 'package:emababyspa/data/models/reservation.dart'; // Import Reservation model
+import 'package:emababyspa/data/models/reservation.dart';
 import 'package:emababyspa/utils/storage_utils.dart';
 import 'package:emababyspa/features/reservation/controllers/reservation_controller.dart';
+import 'package:emababyspa/data/repository/reservation_repository.dart';
 
 class DashboardController extends GetxController {
   final StorageUtils _storageUtils = StorageUtils();
   late final ReservationController _reservationController;
 
-  // Owner data
+  // Data pemilik
   final Rx<Owner?> owner = Rx<Owner?>(null);
 
-  // Dashboard specific data
+  // --- Data spesifik dasbor ---
   final RxString todayAppointments = '0'.obs;
   final RxString activeClients = '0'.obs;
   final RxString completedSessions = '0'.obs;
   final RxList<Map<String, dynamic>> recentActivities =
       <Map<String, dynamic>>[].obs;
 
-  // Dashboard summary data
+  // --- Data ringkasan untuk HARI INI ---
   final RxString totalRevenueToday = 'Rp 0'.obs;
   final RxString upcomingReservationsTodayCount = '0'.obs;
 
-  // NEW: For the upcoming reservations carousel
+  // Untuk carousel reservasi mendatang
   final RxList<Reservation> upcomingReservationsTodayList = <Reservation>[].obs;
   final RxInt currentUpcomingReservationIndex = 0.obs;
-  final RxBool isLoadingUpcomingCarousel =
-      false.obs; // Specific loader for this section
+  final RxBool isLoadingUpcomingCarousel = false.obs;
 
-  // Loading states
+  // State untuk Analitik Bulanan
+  final RxString totalRevenueThisMonth = 'Rp 0'.obs;
+  final RxString totalReservationsThisMonth = '0'.obs;
+  final RxString completedReservationsThisMonth = '0'.obs;
+  final RxString cancelledReservationsThisMonth = '0'.obs;
+
+  // State Loading
   final RxBool isLoadingOwner = false.obs;
   final RxBool isLoadingStats = false.obs;
   final RxBool isLoadingActivities = false.obs;
   final RxBool isLoadingRevenue = false.obs;
-  // isLoadingUpcomingReservationsToday can be reused or use isLoadingUpcomingCarousel
+  final RxBool isLoadingAnalytics = false.obs;
 
   @override
   void onInit() {
     super.onInit();
-    _reservationController = Get.find<ReservationController>();
+    // Inisialisasi ReservationController
+    if (Get.isRegistered<ReservationController>()) {
+      _reservationController = Get.find<ReservationController>();
+    } else {
+      _reservationController = Get.put(
+        ReservationController(
+          reservationRepository: Get.find<ReservationRepository>(),
+        ),
+      );
+    }
+    // Muat semua data saat controller diinisialisasi
     loadOwnerData();
     loadDashboardData();
   }
@@ -57,45 +73,117 @@ class DashboardController extends GetxController {
   }
 
   Future<void> loadDashboardData() async {
-    // Set all relevant loading flags to true at the beginning
     isLoadingStats.value = true;
     isLoadingActivities.value = true;
     isLoadingRevenue.value = true;
-    isLoadingUpcomingCarousel.value = true; // Use specific loader
+    isLoadingUpcomingCarousel.value = true;
+    isLoadingAnalytics.value = true;
 
     try {
-      // Parallelize fetching where possible, or sequence if dependent
+      // Menjalankan semua proses loading data secara paralel
       await Future.wait([
+        _loadTodayAnalytics(),
         _loadDashboardStats(),
         _loadRecentActivities(),
-        _loadTodayRevenue(),
-        _loadUpcomingReservationsTodayForCarousel(), // Updated method name
+        _loadUpcomingReservationsTodayForCarousel(),
+        _loadCurrentMonthAnalytics(),
       ]);
     } catch (e) {
       debugPrint('Error loading dashboard data: $e');
-      // Set default/error values for each piece of data if needed
+      // Reset semua state jika terjadi error
       totalRevenueToday.value = 'Rp 0';
+      todayAppointments.value = '0';
       upcomingReservationsTodayCount.value = '0';
       upcomingReservationsTodayList.clear();
-      // etc.
+      totalRevenueThisMonth.value = 'Rp 0';
+      totalReservationsThisMonth.value = '0';
+      completedReservationsThisMonth.value = '0';
+      cancelledReservationsThisMonth.value = '0';
     } finally {
-      // Set all relevant loading flags to false at the end
       isLoadingStats.value = false;
       isLoadingActivities.value = false;
       isLoadingRevenue.value = false;
-      isLoadingUpcomingCarousel.value = false; // Use specific loader
+      isLoadingUpcomingCarousel.value = false;
+      isLoadingAnalytics.value = false;
+    }
+  }
+
+  Future<void> _loadTodayAnalytics() async {
+    try {
+      final now = DateTime.now();
+      // Tentukan waktu mulai (awal hari) dan waktu selesai (akhir hari)
+      final startDate = DateTime(now.year, now.month, now.day);
+      final endDate = DateTime(now.year, now.month, now.day, 23, 59, 59);
+
+      final tempController = ReservationController(
+        reservationRepository: Get.find<ReservationRepository>(),
+      );
+      await tempController.fetchReservationAnalytics(startDate, endDate);
+      final analyticsData = tempController.reservationAnalytics;
+
+      if (analyticsData.isNotEmpty) {
+        todayAppointments.value =
+            (analyticsData['totalReservations'] ?? 0).toString();
+        final revenue = (analyticsData['totalRevenue'] ?? 0.0).toDouble();
+        totalRevenueToday.value = NumberFormat.currency(
+          locale: 'id_ID',
+          symbol: 'Rp ',
+          decimalDigits: 0,
+        ).format(revenue);
+      } else {
+        todayAppointments.value = '0';
+        totalRevenueToday.value = 'Rp 0';
+      }
+    } catch (e) {
+      debugPrint('Error loading today\'s analytics: $e');
+      todayAppointments.value = '0';
+      totalRevenueToday.value = 'Rp 0';
+    }
+  }
+
+  Future<void> _loadCurrentMonthAnalytics() async {
+    try {
+      final now = DateTime.now();
+      final startDate = DateTime(now.year, now.month, 1);
+      final endDate = DateTime(now.year, now.month + 1, 0);
+
+      await _reservationController.fetchReservationAnalytics(
+        startDate,
+        endDate,
+      );
+
+      final analyticsData = _reservationController.reservationAnalytics;
+      if (analyticsData.isNotEmpty) {
+        totalReservationsThisMonth.value =
+            (analyticsData['totalReservations'] ?? 0).toString();
+        completedReservationsThisMonth.value =
+            (analyticsData['completedReservations'] ?? 0).toString();
+        cancelledReservationsThisMonth.value =
+            (analyticsData['cancelledReservations'] ?? 0).toString();
+        final revenue = (analyticsData['totalRevenue'] ?? 0.0).toDouble();
+        totalRevenueThisMonth.value = NumberFormat.currency(
+          locale: 'id_ID',
+          symbol: 'Rp ',
+          decimalDigits: 0,
+        ).format(revenue);
+      }
+    } catch (e) {
+      debugPrint('Error loading monthly analytics: $e');
+      totalRevenueThisMonth.value = 'Rp 0';
+      totalReservationsThisMonth.value = '0';
+      completedReservationsThisMonth.value = '0';
+      cancelledReservationsThisMonth.value = '0';
     }
   }
 
   Future<void> _loadDashboardStats() async {
     try {
       await Future.delayed(const Duration(milliseconds: 500));
-      todayAppointments.value = '5';
+      // Data statis/placeholder
       activeClients.value = '28';
       completedSessions.value = '142';
     } catch (e) {
       debugPrint('Error loading dashboard stats: $e');
-      todayAppointments.value = '0';
       activeClients.value = '0';
       completedSessions.value = '0';
     }
@@ -105,45 +193,30 @@ class DashboardController extends GetxController {
     try {
       await Future.delayed(const Duration(milliseconds: 300));
       recentActivities.clear();
-      // Add example data if needed
     } catch (e) {
       debugPrint('Error loading recent activities: $e');
       recentActivities.clear();
     }
   }
 
-  Future<void> _loadTodayRevenue() async {
-    try {
-      await Future.delayed(const Duration(milliseconds: 400));
-      totalRevenueToday.value = 'Rp 1.250.000';
-    } catch (e) {
-      debugPrint('Error loading today\'s revenue: $e');
-      totalRevenueToday.value = 'Rp 0';
-    }
-  }
-
-  // UPDATED: Load upcoming reservations for today for the carousel
   Future<void> _loadUpcomingReservationsTodayForCarousel() async {
-    isLoadingUpcomingCarousel.value = true; // Set specific loader
+    isLoadingUpcomingCarousel.value = true;
     try {
       final now = DateTime.now();
-      // Fetch all reservations for the day (or a reasonable limit like 20-30 if there could be too many)
-      // The ReservationController will store them in upcomingDayReservationList
       await _reservationController.fetchUpcomingReservationsForDay(
         date: now,
-        limit: 50, // Fetch more items for the carousel
+        limit: 50,
         isRefresh: true,
       );
       upcomingReservationsTodayList.assignAll(
         _reservationController.upcomingDayReservationList,
       );
       upcomingReservationsTodayCount.value =
-          _reservationController.upcomingDayTotalItems.value
-              .toString(); // This can still be used for the summary card
+          _reservationController.upcomingDayTotalItems.value.toString();
       if (upcomingReservationsTodayList.isNotEmpty) {
         currentUpcomingReservationIndex.value = 0;
       } else {
-        currentUpcomingReservationIndex.value = -1; // Indicate no items
+        currentUpcomingReservationIndex.value = -1;
       }
     } catch (e) {
       debugPrint('Error loading upcoming reservations for today carousel: $e');
@@ -151,11 +224,10 @@ class DashboardController extends GetxController {
       upcomingReservationsTodayCount.value = '0';
       currentUpcomingReservationIndex.value = -1;
     } finally {
-      isLoadingUpcomingCarousel.value = false; // Clear specific loader
+      isLoadingUpcomingCarousel.value = false;
     }
   }
 
-  // NEW: Methods for carousel navigation
   void nextUpcomingReservation() {
     if (upcomingReservationsTodayList.isNotEmpty) {
       currentUpcomingReservationIndex.value =
@@ -174,7 +246,6 @@ class DashboardController extends GetxController {
     }
   }
 
-  // NEW: Getter for the currently selected reservation for the carousel
   Rx<Reservation?> get currentReservationForCarousel {
     if (upcomingReservationsTodayList.isNotEmpty &&
         currentUpcomingReservationIndex.value >= 0 &&
@@ -197,8 +268,8 @@ class DashboardController extends GetxController {
       totalRevenueToday.value = 'Rp 0';
       upcomingReservationsTodayCount.value = '0';
       recentActivities.clear();
-      upcomingReservationsTodayList.clear(); // NEW
-      currentUpcomingReservationIndex.value = 0; // NEW
+      upcomingReservationsTodayList.clear();
+      currentUpcomingReservationIndex.value = 0;
       await Get.offAllNamed('/login');
     } catch (e) {
       debugPrint('Sign out error: $e');
@@ -209,10 +280,11 @@ class DashboardController extends GetxController {
     await loadDashboardData();
   }
 
-  bool get isLoading => // Combined loading state
+  bool get isLoading =>
       isLoadingOwner.value ||
       isLoadingStats.value ||
       isLoadingActivities.value ||
       isLoadingRevenue.value ||
-      isLoadingUpcomingCarousel.value; // Include the new loader
+      isLoadingUpcomingCarousel.value ||
+      isLoadingAnalytics.value;
 }

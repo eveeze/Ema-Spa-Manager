@@ -389,7 +389,7 @@ class ReservationDetailView extends GetView<ReservationController> {
         children: [
           Container(
             padding: const EdgeInsets.all(12),
-            color: theme.colorScheme.primaryContainer.withOpacity(0.4),
+            color: theme.colorScheme.primaryContainer.withValues(alpha: 0.4),
             child: Row(
               children: [
                 Icon(

@@ -35,24 +35,27 @@ class _SessionFormViewState extends State<SessionFormView> {
     _timeSlotId = args['timeSlotId'];
     _existingSessions = args['existingSessions'] ?? [];
 
-    _loadAvailableStaff();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadAvailableStaff();
+    });
   }
 
-  /// --- UPDATED ---
-  /// Menggabungkan logika filter dari kode lama ke dalam metode ini.
   Future<void> _loadAvailableStaff() async {
     // 1. Fetch semua staff
     await _staffController.fetchAllStaffs();
+
+    // Pastikan widget masih ada di tree sebelum melanjutkan
+    if (!mounted) return;
 
     // 2. Filter hanya staff yang aktif
     final List<Staff> allActiveStaff =
         _staffController.staffList.where((staff) => staff.isActive).toList();
 
-    // 3. Dapatkan ID dari staff yang sudah punya sesi di slot ini (Logika dari kode lama)
+    // 3. Dapatkan ID dari staff yang sudah punya sesi di slot ini
     final List<String> assignedStaffIds =
         _existingSessions.map((session) => session.staffId.toString()).toList();
 
-    // 4. Filter staff aktif untuk mendapatkan hanya yang tersedia (Logika dari kode lama)
+    // 4. Filter staff aktif untuk mendapatkan hanya yang tersedia
     _availableStaff =
         allActiveStaff
             .where((staff) => !assignedStaffIds.contains(staff.id))
@@ -65,11 +68,10 @@ class _SessionFormViewState extends State<SessionFormView> {
     }
 
     // 6. Atur ulang seleksi awal dengan benar
-    if (mounted) {
-      setState(() {
-        _resetSelections();
-      });
-    }
+    // setState() di sini aman karena kita berada di luar siklus build awal
+    setState(() {
+      _resetSelections();
+    });
   }
 
   @override

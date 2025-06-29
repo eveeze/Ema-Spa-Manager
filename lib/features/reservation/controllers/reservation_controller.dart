@@ -449,8 +449,6 @@ class ReservationController extends GetxController {
     }
   }
 
-  // --- NEW METHODS START HERE ---
-
   // Get upcoming reservations for Owner
   Future<void> fetchUpcomingReservations({
     String? staffId,

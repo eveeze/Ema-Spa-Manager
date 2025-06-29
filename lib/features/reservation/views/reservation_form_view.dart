@@ -59,7 +59,11 @@ class _ReservationFormViewState extends State<ReservationFormView> {
     if (args != null) {
       selectedSession = args['session'];
       if (selectedSession != null) {
-        _loadServiceData();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _loadServiceData();
+          }
+        });
       }
     }
   }
@@ -365,6 +369,16 @@ class _ReservationFormViewState extends State<ReservationFormView> {
                 ),
               ),
               value: selectedService,
+              isExpanded: true,
+              // ✨ --- PERBAIKAN UTAMA DI SINI --- ✨
+              // Builder ini untuk mendefinisikan widget yang tampil SETELAH item dipilih.
+              // Kita gunakan Text sederhana agar pas dan tidak overflow.
+              selectedItemBuilder: (BuildContext context) {
+                return services.map<Widget>((Service item) {
+                  return Text(item.name, overflow: TextOverflow.ellipsis);
+                }).toList();
+              },
+              // Builder 'items' tetap sama untuk menampilkan detail di dalam list.
               items:
                   services.map((service) {
                     return DropdownMenuItem<Service>(

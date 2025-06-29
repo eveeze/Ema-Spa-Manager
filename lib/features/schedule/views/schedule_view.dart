@@ -19,16 +19,34 @@ import 'package:emababyspa/utils/timezone_utils.dart';
 import 'package:emababyspa/features/theme/controllers/theme_controller.dart';
 import 'package:emababyspa/common/theme/text_theme.dart';
 
-class ScheduleView extends GetView<ScheduleController> {
+// ✨ --- PERBAIKAN #1: Mengubah menjadi StatefulWidget --- ✨
+class ScheduleView extends StatefulWidget {
   const ScheduleView({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final themeController = Get.find<ThemeController>();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      controller.refreshScheduleData(controller.selectedDate.value);
-    });
+  State<ScheduleView> createState() => _ScheduleViewState();
+}
 
+class _ScheduleViewState extends State<ScheduleView> {
+  // Ambil controller di sini
+  final ScheduleController controller = Get.find<ScheduleController>();
+  final ThemeController themeController = Get.find<ThemeController>();
+
+  // ✨ --- PERBAIKAN #2: Pindahkan logic pemanggilan data ke initState --- ✨
+  @override
+  void initState() {
+    super.initState();
+    // Panggil data hanya satu kali saat widget pertama kali dibuat
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        controller.refreshScheduleData(controller.selectedDate.value);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Hapus pemanggilan data dari sini
     return MainLayout(
       child: Obx(() {
         final isDark = themeController.isDarkMode;
@@ -107,10 +125,7 @@ class ScheduleView extends GetView<ScheduleController> {
       return Card(
         margin: const EdgeInsets.symmetric(horizontal: M3Spacing.md),
         elevation: 0,
-        // REMOVED: Explicit color. The Card now uses the color from your AppTheme's
-        // cardTheme, which we updated to use a subtle light-blue color.
         shape: RoundedRectangleBorder(
-          // UPDATED: Uses the theme's primary color and standard opacity for the border.
           side: BorderSide(color: colorScheme.primary.withOpacity(0.1)),
           borderRadius: BorderRadius.circular(M3Spacing.md),
         ),
@@ -427,10 +442,8 @@ class ScheduleView extends GetView<ScheduleController> {
 
     return Card(
       elevation: 0,
-      // REMOVED: Explicit color to respect the central theme definition.
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(M3Spacing.md),
-        // UPDATED: Use theme color for consistency.
         side: BorderSide(color: colorScheme.primary.withOpacity(0.1)),
       ),
       clipBehavior: Clip.antiAlias,
@@ -571,7 +584,6 @@ class ScheduleView extends GetView<ScheduleController> {
     return _buildStatusView(
       context: context,
       icon: Icons.calendar_month_outlined,
-      // UPDATED: Use theme color for a more integrated and professional look.
       iconColor: Theme.of(context).colorScheme.secondary,
       title: 'No Schedule Found',
       subtitle: 'There is no operating schedule for\n$formattedDate.',
@@ -595,7 +607,6 @@ class ScheduleView extends GetView<ScheduleController> {
     return _buildStatusView(
       context: context,
       icon: Icons.celebration_outlined,
-      // UPDATED: Use the standard error color from the theme.
       iconColor: Theme.of(context).colorScheme.error,
       title: 'It\'s a Holiday!',
       subtitle:
@@ -620,7 +631,6 @@ class ScheduleView extends GetView<ScheduleController> {
     return _buildStatusView(
       context: context,
       icon: Icons.hourglass_empty_rounded,
-      // UPDATED: Use the primary theme color to guide the user's attention.
       iconColor: Theme.of(context).colorScheme.primary,
       title: 'No Time Slots',
       subtitle:

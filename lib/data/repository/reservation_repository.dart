@@ -349,18 +349,24 @@ class ReservationRepository {
     }
   }
 
-  // Get reservation analytics for Owner
   Future<Map<String, dynamic>> getReservationAnalytics(
     DateTime startDate,
     DateTime endDate,
   ) async {
     try {
       _logger.info('Repository: Getting reservation analytics (Owner).');
-      final response = await _reservationProvider.getReservationAnalytics(
+      // Provider mengembalikan objek yang sudah berisi data analitiknya
+      final responseData = await _reservationProvider.getReservationAnalytics(
         startDate,
         endDate,
       );
-      return response['data'] as Map<String, dynamic>;
+
+      // --- ✨ PERBAIKAN SEBENARNYA DI SINI ✨ ---
+      // Karena `_apiClient.getValidated` sudah mengekstrak isi dari `data`,
+      // `responseData` adalah objek yang kita butuhkan. Kita tidak perlu lagi
+      // mengakses `responseData['data']`.
+
+      return responseData;
     } catch (e) {
       _logger.error('Repository error getting analytics: $e (Owner)');
       rethrow;

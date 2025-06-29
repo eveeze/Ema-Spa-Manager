@@ -37,65 +37,126 @@ class MainLayout extends StatefulWidget {
     this.floatingActionButtonLocation,
   });
 
+  // --- NAMED CONSTRUCTORS ---
+
+  factory MainLayout.dashboard({
+    required Widget child,
+    VoidCallback? onRefresh,
+    Widget? floatingActionButton,
+    FloatingActionButtonLocation? floatingActionButtonLocation,
+  }) {
+    return MainLayout(
+      showBottomNavigation: true,
+      enablePullToRefresh: onRefresh != null,
+      onRefresh: onRefresh,
+      floatingActionButton: floatingActionButton,
+      floatingActionButtonLocation: floatingActionButtonLocation,
+      child: child,
+    );
+  }
+
+  factory MainLayout.form({
+    required Widget child,
+    String? title,
+    List<Widget>? actions,
+    String? parentRoute,
+    Widget? floatingActionButton,
+    FloatingActionButtonLocation? floatingActionButtonLocation,
+  }) {
+    return MainLayout(
+      showBottomNavigation: true,
+      showAppBar: true,
+      appBarTitle: title,
+      appBarActions: actions,
+      parentRoute: parentRoute,
+      floatingActionButton: floatingActionButton,
+      floatingActionButtonLocation: floatingActionButtonLocation,
+      child: child,
+    );
+  }
+
+  factory MainLayout.subPage({
+    required Widget child,
+    required String parentRoute,
+    String? title,
+    List<Widget>? actions,
+    bool showAppBar = true,
+    bool showBottomNavigation = true, // Added for flexibility
+    Widget? floatingActionButton,
+    FloatingActionButtonLocation? floatingActionButtonLocation,
+  }) {
+    return MainLayout(
+      showBottomNavigation: showBottomNavigation,
+      showAppBar: showAppBar,
+      appBarTitle: title,
+      appBarActions: actions,
+      parentRoute: parentRoute,
+      floatingActionButton: floatingActionButton,
+      floatingActionButtonLocation: floatingActionButtonLocation,
+      child: child,
+    );
+  }
+
+  factory MainLayout.withCustomAppBar({
+    required Widget child,
+    required PreferredSizeWidget appBar,
+    bool showBottomNav = true,
+    String? parentRoute,
+    Widget? floatingActionButton,
+    FloatingActionButtonLocation? floatingActionButtonLocation,
+  }) {
+    return MainLayout(
+      customAppBar: appBar,
+      showBottomNavigation: showBottomNav,
+      parentRoute: parentRoute,
+      floatingActionButton: floatingActionButton,
+      floatingActionButtonLocation: floatingActionButtonLocation,
+      child: child,
+    );
+  }
+
   @override
   State<MainLayout> createState() => _MainLayoutState();
 }
 
 class _MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
-  // Navigation state management
   final RxInt selectedIndex = 0.obs;
   final RxBool isNavigating = false.obs;
-
-  // Theme controller
   late ThemeController _themeController;
-
-  // Navigation items definition
   late final List<NavItem> navigationItems;
 
-  // Route mapping for main navigation tabs
   static const Map<int, String> _routeMap = {
     0: AppRoutes.dashboard,
     1: AppRoutes.schedule,
     2: AppRoutes.services,
-    3: AppRoutes.analytics,
+    3: AppRoutes.analyticsView,
     4: '/account',
   };
 
-  // Reverse mapping for route to index
   static const Map<String, int> _indexMap = {
     AppRoutes.dashboard: 0,
     AppRoutes.schedule: 1,
     AppRoutes.services: 2,
-    AppRoutes.analytics: 3,
+    AppRoutes.analyticsView: 3,
     '/account': 4,
   };
 
-  // Parent route mapping untuk child routes
+  // ✨ --- PERBAIKAN --- ✨
+  // Menambahkan AppRoutes.staffEdit ke dalam map
   static const Map<String, String> _parentRouteMap = {
-    // Service related routes
     AppRoutes.serviceManage: AppRoutes.services,
     AppRoutes.serviceForm: AppRoutes.services,
     AppRoutes.serviceEdit: AppRoutes.services,
-
-    // Service Category routes
     AppRoutes.serviceCategoryList: AppRoutes.services,
     AppRoutes.serviceCategoryForm: AppRoutes.services,
     AppRoutes.serviceCategoryEdit: AppRoutes.services,
-
-    // Staff routes
     AppRoutes.staffList: AppRoutes.services,
     AppRoutes.staffForm: AppRoutes.services,
-    AppRoutes.staffEdit: AppRoutes.services,
-
-    // Time slot routes
+    AppRoutes.staffEdit: AppRoutes.services, // <-- BARIS INI DITAMBAHKAN
     AppRoutes.timeSlotDetail: AppRoutes.schedule,
     AppRoutes.timeSlotEdit: AppRoutes.schedule,
-
-    // Session routes
     AppRoutes.sessionForm: AppRoutes.schedule,
     AppRoutes.sessionDetail: AppRoutes.schedule,
-
-    // Reservation routes
     AppRoutes.reservationForm: AppRoutes.schedule,
     AppRoutes.reservationList: AppRoutes.schedule,
     AppRoutes.reservationDetail: AppRoutes.schedule,
@@ -104,10 +165,7 @@ class _MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
-
-    // Register sebagai observer untuk system changes
     WidgetsBinding.instance.addObserver(this);
-
     _themeController = Get.find<ThemeController>();
     _initializeNavigationItems();
     _initializeCurrentRoute();
@@ -116,18 +174,14 @@ class _MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
 
   @override
   void dispose() {
-    // Cleanup observer
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
-  // Override untuk handle system brightness changes
   @override
   void didChangePlatformBrightness() {
     super.didChangePlatformBrightness();
     debugPrint('🌙 MainLayout: System brightness changed');
-
-    // Trigger theme controller update
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _themeController.updateSystemBrightness();
@@ -165,45 +219,32 @@ class _MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
     ];
   }
 
+  // ✨ --- PERBAIKAN --- ✨
+  // Mengganti logika untuk menjadi lebih andal dengan menggunakan `Get.routing.current`.
   void _initializeCurrentRoute() {
-    String routeToCheck = widget.parentRoute ?? Get.currentRoute;
+    // `Get.routing.current` memberikan pola rute (misal, '/staffs/edit/:id')
+    // yang cocok dengan kunci di `_parentRouteMap`.
+    final String currentRoutePattern = Get.routing.current;
 
-    // Check if current route has a parent route mapping
-    if (_parentRouteMap.containsKey(routeToCheck)) {
-      routeToCheck = _parentRouteMap[routeToCheck]!;
-    }
+    // Cek apakah rute saat ini ada di dalam map parent.
+    String? routeToEvaluate = _parentRouteMap[currentRoutePattern];
 
-    // Remove parameters from route
-    final cleanRoute = _cleanRoute(routeToCheck);
-    if (_parentRouteMap.containsKey(cleanRoute)) {
-      routeToCheck = _parentRouteMap[cleanRoute]!;
-    }
+    // Jika tidak ditemukan di map, anggap rute itu adalah rute utama itu sendiri.
+    routeToEvaluate ??= currentRoutePattern;
 
-    selectedIndex.value = _indexMap[routeToCheck] ?? 0;
-  }
+    // Jika `parentRoute` di-passing secara eksplisit ke widget, itu menjadi prioritas utama.
+    routeToEvaluate = widget.parentRoute ?? routeToEvaluate;
 
-  String _cleanRoute(String route) {
-    final segments = route.split('/');
-    if (segments.length > 3) {
-      final lastSegment = segments.last;
-      if (RegExp(r'^\d+$').hasMatch(lastSegment)) {
-        segments.removeLast();
-        return segments.join('/');
-      }
-    }
-    return route;
+    // Set `selectedIndex` berdasarkan rute final yang telah ditentukan.
+    selectedIndex.value = _indexMap[routeToEvaluate] ?? 0;
   }
 
   void _setupRouteListener() {
-    ever(selectedIndex, (int index) {
-      // Route change handling
-    });
+    ever(selectedIndex, (int index) {});
   }
 
-  // Theme-aware color getters dengan improved caching
   Color _getBackgroundColor() {
     if (widget.backgroundColor != null) return widget.backgroundColor!;
-
     return _themeController.isDarkMode
         ? ColorTheme.backgroundDark
         : ColorTheme.background;
@@ -258,16 +299,16 @@ class _MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      // PERBAIKAN: Listen to multiple theme observables untuk memastikan rebuild
+      // Obx di sini untuk me-rebuild layout saat tema berubah
       final isDarkMode = _themeController.isDarkMode;
       final forceRebuild = _themeController.forceRebuild;
-
-      // Debug log untuk tracking rebuild
       debugPrint(
         '🌙 MainLayout rebuild: isDarkMode=$isDarkMode, forceRebuild=$forceRebuild',
       );
-
-      return _buildMainScaffold(context);
+      return AnnotatedRegion<SystemUiOverlayStyle>(
+        value: _getSystemUIOverlayStyle(),
+        child: _buildMainScaffold(context),
+      );
     });
   }
 
@@ -287,7 +328,6 @@ class _MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
   PreferredSizeWidget? _buildAppBar() {
     if (widget.customAppBar != null) return widget.customAppBar;
     if (!widget.showAppBar) return null;
-
     return AppBar(
       title:
           widget.appBarTitle != null
@@ -302,7 +342,6 @@ class _MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
               : null,
       backgroundColor: _getSurfaceColor(),
       elevation: 0,
-      systemOverlayStyle: _getSystemUIOverlayStyle(),
       iconTheme: IconThemeData(color: _getTextPrimaryColor()),
       actions: widget.appBarActions,
       centerTitle: true,
@@ -310,12 +349,12 @@ class _MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
       shadowColor:
           _themeController.isDarkMode
               ? Colors.transparent
-              : Colors.black.withValues(alpha: 0.1),
+              : Colors.black.withOpacity(0.1),
       shape:
           _themeController.isDarkMode
               ? Border(
                 bottom: BorderSide(
-                  color: ColorTheme.borderDark.withValues(alpha: 0.3),
+                  color: ColorTheme.borderDark.withOpacity(0.3),
                   width: 0.5,
                 ),
               )
@@ -335,21 +374,35 @@ class _MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
       );
     }
 
-    body = SafeArea(bottom: widget.showBottomNavigation, child: body);
+    // Fix: Handle SafeArea properly based on AppBar presence
+    body = SafeArea(
+      top:
+          !widget.showAppBar &&
+          widget.customAppBar == null, // Only apply top padding if no AppBar
+      bottom: widget.showBottomNavigation,
+      child: body,
+    );
+
+    // Alternative approach - add manual padding if needed
+    /*
+  if (!widget.showAppBar && widget.customAppBar == null) {
+    body = Padding(
+      padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+      child: body,
+    );
+  }
+  */
 
     return body;
   }
 
   Widget _buildBottomNavigation() {
     return Obx(() {
-      // PERBAIKAN: Multi-observable listening untuk bottom navigation
       final isDarkMode = _themeController.isDarkMode;
       final forceRebuild = _themeController.forceRebuild;
-
       debugPrint(
         '🌙 Bottom navigation rebuild: isDarkMode=$isDarkMode, forceRebuild=$forceRebuild',
       );
-
       return CustomBottomNavigation(
         items: navigationItems,
         currentIndex: selectedIndex.value,
@@ -371,7 +424,6 @@ class _MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
     } else {
       HapticFeedback.lightImpact();
     }
-
     try {
       _navigateToTab(index);
     } catch (e) {
@@ -384,9 +436,7 @@ class _MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
     if (!_isValidIndex(index) || _isDuplicateNavigation(index)) {
       return;
     }
-
     isNavigating.value = true;
-
     try {
       selectedIndex.value = index;
       final targetRoute = _routeMap[index]!;
@@ -415,12 +465,10 @@ class _MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
 
   Future<void> _navigateToRoute(String route) async {
     final routeExists = AppRoutes.pages.any((page) => page.name == route);
-
     if (!routeExists) {
       debugPrint('Route $route does not exist in AppRoutes');
       return;
     }
-
     await Get.offNamed(route);
   }
 
@@ -440,7 +488,6 @@ class _MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
 
   void _showNavigationError() {
     if (Get.isSnackbarOpen) return;
-
     Get.showSnackbar(
       GetSnackBar(
         message: 'Navigation failed. Please try again.',
@@ -457,84 +504,6 @@ class _MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
           ),
         ),
       ),
-    );
-  }
-}
-
-// Enhanced extension dengan method baru
-extension MainLayoutExtensions on MainLayout {
-  static MainLayout dashboard({
-    required Widget child,
-    VoidCallback? onRefresh,
-    Widget? floatingActionButton,
-    FloatingActionButtonLocation? floatingActionButtonLocation,
-  }) {
-    return MainLayout(
-      showBottomNavigation: true,
-      enablePullToRefresh: onRefresh != null,
-      onRefresh: onRefresh,
-      floatingActionButton: floatingActionButton,
-      floatingActionButtonLocation: floatingActionButtonLocation,
-      child: child,
-    );
-  }
-
-  static MainLayout form({
-    required Widget child,
-    String? title,
-    List<Widget>? actions,
-    String? parentRoute,
-    Widget? floatingActionButton,
-    FloatingActionButtonLocation? floatingActionButtonLocation,
-  }) {
-    return MainLayout(
-      showBottomNavigation: true,
-      showAppBar: true,
-      appBarTitle: title,
-      appBarActions: actions,
-      parentRoute: parentRoute,
-      floatingActionButton: floatingActionButton,
-      floatingActionButtonLocation: floatingActionButtonLocation,
-      child: child,
-    );
-  }
-
-  static MainLayout subPage({
-    required Widget child,
-    required String parentRoute,
-    String? title,
-    List<Widget>? actions,
-    bool showAppBar = true,
-    Widget? floatingActionButton,
-    FloatingActionButtonLocation? floatingActionButtonLocation,
-  }) {
-    return MainLayout(
-      showBottomNavigation: true,
-      showAppBar: showAppBar,
-      appBarTitle: title,
-      appBarActions: actions,
-      parentRoute: parentRoute,
-      floatingActionButton: floatingActionButton,
-      floatingActionButtonLocation: floatingActionButtonLocation,
-      child: child,
-    );
-  }
-
-  static MainLayout withCustomAppBar({
-    required Widget child,
-    required PreferredSizeWidget appBar,
-    bool showBottomNav = true,
-    String? parentRoute,
-    Widget? floatingActionButton,
-    FloatingActionButtonLocation? floatingActionButtonLocation,
-  }) {
-    return MainLayout(
-      customAppBar: appBar,
-      showBottomNavigation: showBottomNav,
-      parentRoute: parentRoute,
-      floatingActionButton: floatingActionButton,
-      floatingActionButtonLocation: floatingActionButtonLocation,
-      child: child,
     );
   }
 }

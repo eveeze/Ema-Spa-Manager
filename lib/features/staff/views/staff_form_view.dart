@@ -81,8 +81,6 @@ class StaffFormView extends GetView<StaffController> {
     return MainLayout(
       child: Obx(
         () => Scaffold(
-          // *** ✨ UI/UX Improvement ✨ ***
-          // Applying the consistent, theme-aware background.
           backgroundColor:
               themeController.isDarkMode
                   ? ColorTheme.backgroundDark

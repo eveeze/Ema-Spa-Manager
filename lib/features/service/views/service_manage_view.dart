@@ -7,21 +7,18 @@ import 'package:emababyspa/common/widgets/empty_state_widget.dart';
 import 'package:emababyspa/common/layouts/main_layout.dart';
 import 'package:emababyspa/features/service/controllers/service_controller.dart';
 import 'package:emababyspa/data/models/service.dart';
-import 'package:emababyspa/features/theme/controllers/theme_controller.dart'; // Import ThemeController
+import 'package:emababyspa/features/theme/controllers/theme_controller.dart';
 
 class ServiceManageView extends GetView<ServiceController> {
   const ServiceManageView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final ThemeController themeController =
-        Get.find<ThemeController>(); // Get ThemeController instance
+    final ThemeController themeController = Get.find<ThemeController>();
 
     return MainLayout(
       child: Obx(() {
-        // Wrap with Obx to listen to theme changes
-        // Update status bar style based on theme
-        themeController.updateSystemBrightness(); // Ensure status bar updates
+        themeController.updateSystemBrightness();
 
         return Scaffold(
           backgroundColor:
@@ -39,8 +36,8 @@ class ServiceManageView extends GetView<ServiceController> {
                 BoxShadow(
                   color:
                       themeController.isDarkMode
-                          ? ColorTheme.primaryLightDark.withValues(alpha: 0.3)
-                          : ColorTheme.primary.withValues(alpha: 0.3),
+                          ? ColorTheme.primaryLightDark.withOpacity(0.3)
+                          : ColorTheme.primary.withOpacity(0.3),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -89,13 +86,10 @@ class ServiceManageView extends GetView<ServiceController> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Filter Section
                     Padding(
                       padding: const EdgeInsets.all(20),
                       child: _buildFilterOptions(themeController),
                     ),
-
-                    // Service list
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Obx(() {
@@ -162,8 +156,6 @@ class ServiceManageView extends GetView<ServiceController> {
                         return _buildServiceList(themeController);
                       }),
                     ),
-
-                    // Bottom spacing for FAB
                     const SizedBox(height: 100),
                   ],
                 ),
@@ -186,8 +178,8 @@ class ServiceManageView extends GetView<ServiceController> {
           BoxShadow(
             color:
                 themeController.isDarkMode
-                    ? Colors.black.withValues(alpha: 0.2)
-                    : Colors.black.withValues(alpha: 0.04),
+                    ? Colors.black.withOpacity(0.2)
+                    : Colors.black.withOpacity(0.04),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -222,8 +214,6 @@ class ServiceManageView extends GetView<ServiceController> {
             ],
           ),
           const SizedBox(height: 16),
-
-          // Category filter dropdown
           Obx(() {
             return controller.isLoadingCategories.value
                 ? Container(
@@ -253,8 +243,7 @@ class ServiceManageView extends GetView<ServiceController> {
                   decoration: BoxDecoration(
                     color:
                         themeController.isDarkMode
-                            ? ColorTheme
-                                .backgroundDark // Darker background for dropdown
+                            ? ColorTheme.backgroundDark
                             : Colors.grey[50],
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
@@ -269,7 +258,7 @@ class ServiceManageView extends GetView<ServiceController> {
                     dropdownColor:
                         themeController.isDarkMode
                             ? ColorTheme.surfaceDark
-                            : Colors.white, // Set dropdown menu color
+                            : Colors.white,
                     decoration: InputDecoration(
                       labelText: 'Filter by Category',
                       labelStyle: TextStyle(
@@ -293,10 +282,8 @@ class ServiceManageView extends GetView<ServiceController> {
                         size: 20,
                       ),
                     ),
-                    value:
-                        null, // Consider controller.selectedCategoryId.value if you have one
+                    value: null,
                     style: TextStyle(
-                      // Style for selected item and items in dropdown
                       color:
                           themeController.isDarkMode
                               ? ColorTheme.textPrimaryDark
@@ -319,8 +306,7 @@ class ServiceManageView extends GetView<ServiceController> {
                             fontFamily: 'JosefinSans',
                             color:
                                 themeController.isDarkMode
-                                    ? ColorTheme
-                                        .textSecondaryDark // Lighter for placeholder
+                                    ? ColorTheme.textSecondaryDark
                                     : ColorTheme.textSecondary,
                           ),
                         ),
@@ -344,10 +330,7 @@ class ServiceManageView extends GetView<ServiceController> {
                   ),
                 );
           }),
-
           const SizedBox(height: 16),
-
-          // Status filter buttons
           Text(
             'Filter by Status',
             style: TextStyle(
@@ -415,23 +398,15 @@ class ServiceManageView extends GetView<ServiceController> {
     required VoidCallback onPressed,
     required ThemeController themeController,
   }) {
-    bool isPrimaryButton = label == 'All';
     Color foregroundColor = color;
     Color backgroundColor =
         themeController.isDarkMode
-            ? color.withValues(
-              alpha: 0.15,
-            ) // Slightly more opaque for dark theme
-            : color.withValues(alpha: 0.05);
+            ? color.withOpacity(0.15)
+            : color.withOpacity(0.05);
     Color borderColor =
         themeController.isDarkMode
-            ? color.withValues(alpha: 0.5) // Brighter border for dark theme
-            : color.withValues(alpha: 0.3);
-
-    if (themeController.isDarkMode && isPrimaryButton) {
-      // Special handling for "All" button in dark mode if needed, e.g. to use textPrimaryDark
-      // foregroundColor = ColorTheme.textPrimaryDark; // If you want black text on primaryLightDark
-    }
+            ? color.withOpacity(0.5)
+            : color.withOpacity(0.3);
 
     return Container(
       decoration: BoxDecoration(
@@ -440,10 +415,8 @@ class ServiceManageView extends GetView<ServiceController> {
           BoxShadow(
             color:
                 themeController.isDarkMode
-                    ? color.withValues(
-                      alpha: 0.25,
-                    ) // Darker shadow for contrast
-                    : color.withValues(alpha: 0.1),
+                    ? color.withOpacity(0.25)
+                    : color.withOpacity(0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -537,8 +510,8 @@ class ServiceManageView extends GetView<ServiceController> {
           BoxShadow(
             color:
                 themeController.isDarkMode
-                    ? Colors.black.withValues(alpha: 0.3)
-                    : Colors.black.withValues(alpha: 0.06),
+                    ? Colors.black.withOpacity(0.3)
+                    : Colors.black.withOpacity(0.06),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -549,41 +522,31 @@ class ServiceManageView extends GetView<ServiceController> {
         borderRadius: BorderRadius.circular(16),
         splashColor:
             themeController.isDarkMode
-                ? ColorTheme.primaryLightDark.withValues(alpha: 0.1)
-                : ColorTheme.primary.withValues(alpha: 0.1),
+                ? ColorTheme.primaryLightDark.withOpacity(0.1)
+                : ColorTheme.primary.withOpacity(0.1),
         highlightColor:
             themeController.isDarkMode
-                ? ColorTheme.primaryLightDark.withValues(alpha: 0.2)
-                : ColorTheme.primary.withValues(alpha: 0.2),
+                ? ColorTheme.primaryLightDark.withOpacity(0.2)
+                : ColorTheme.primary.withOpacity(0.2),
         child: Padding(
           padding: const EdgeInsets.all(20.0),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Service Image Section
               _buildServiceImage(service, themeController),
               const SizedBox(width: 16),
-
-              // Main Content Section
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Header: Title + Status
                     _buildServiceHeader(service, themeController),
                     const SizedBox(height: 12),
-
-                    // Category Badge
                     _buildCategoryBadge(categoryName, themeController),
                     const SizedBox(height: 12),
-
-                    // Service Details (Duration, Price, Age Range)
                     _buildServiceDetails(service, themeController),
                   ],
                 ),
               ),
-
-              // Action Buttons Section
               const SizedBox(width: 12),
               _buildActionButtons(service, themeController),
             ],
@@ -593,7 +556,6 @@ class ServiceManageView extends GetView<ServiceController> {
     );
   }
 
-  // Separate widget for service image
   Widget _buildServiceImage(Service service, ThemeController themeController) {
     return Container(
       width: 80,
@@ -605,20 +567,20 @@ class ServiceManageView extends GetView<ServiceController> {
           colors:
               themeController.isDarkMode
                   ? [
-                    ColorTheme.infoDark.withValues(alpha: 0.2),
-                    ColorTheme.primaryLightDark.withValues(alpha: 0.1),
+                    ColorTheme.infoDark.withOpacity(0.2),
+                    ColorTheme.primaryLightDark.withOpacity(0.1),
                   ]
                   : [
-                    ColorTheme.info.withValues(alpha: 0.1),
-                    ColorTheme.primary.withValues(alpha: 0.05),
+                    ColorTheme.info.withOpacity(0.1),
+                    ColorTheme.primary.withOpacity(0.05),
                   ],
         ),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color:
               themeController.isDarkMode
-                  ? ColorTheme.infoDark.withValues(alpha: 0.3)
-                  : ColorTheme.info.withValues(alpha: 0.2),
+                  ? ColorTheme.infoDark.withOpacity(0.3)
+                  : ColorTheme.info.withOpacity(0.2),
           width: 1,
         ),
       ),
@@ -654,7 +616,6 @@ class ServiceManageView extends GetView<ServiceController> {
     );
   }
 
-  // Separate widget for service header (title + status)
   Widget _buildServiceHeader(Service service, ThemeController themeController) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -683,7 +644,6 @@ class ServiceManageView extends GetView<ServiceController> {
     );
   }
 
-  // Separate widget for status badge
   Widget _buildStatusBadge(Service service, ThemeController themeController) {
     final isActive = service.isActive;
     return Container(
@@ -692,21 +652,21 @@ class ServiceManageView extends GetView<ServiceController> {
         color:
             isActive
                 ? themeController.isDarkMode
-                    ? ColorTheme.successDark.withValues(alpha: 0.15)
-                    : ColorTheme.success.withValues(alpha: 0.1)
+                    ? ColorTheme.successDark.withOpacity(0.15)
+                    : ColorTheme.success.withOpacity(0.1)
                 : themeController.isDarkMode
-                ? ColorTheme.errorDark.withValues(alpha: 0.15)
-                : ColorTheme.error.withValues(alpha: 0.1),
+                ? ColorTheme.errorDark.withOpacity(0.15)
+                : ColorTheme.error.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color:
               isActive
                   ? themeController.isDarkMode
-                      ? ColorTheme.successDark.withValues(alpha: 0.4)
-                      : ColorTheme.success.withValues(alpha: 0.3)
+                      ? ColorTheme.successDark.withOpacity(0.4)
+                      : ColorTheme.success.withOpacity(0.3)
                   : themeController.isDarkMode
-                  ? ColorTheme.errorDark.withValues(alpha: 0.4)
-                  : ColorTheme.error.withValues(alpha: 0.3),
+                  ? ColorTheme.errorDark.withOpacity(0.4)
+                  : ColorTheme.error.withOpacity(0.3),
           width: 1,
         ),
       ),
@@ -729,7 +689,6 @@ class ServiceManageView extends GetView<ServiceController> {
     );
   }
 
-  // Separate widget for category badge
   Widget _buildCategoryBadge(
     String categoryName,
     ThemeController themeController,
@@ -739,14 +698,14 @@ class ServiceManageView extends GetView<ServiceController> {
       decoration: BoxDecoration(
         color:
             themeController.isDarkMode
-                ? ColorTheme.infoDark.withValues(alpha: 0.15)
-                : ColorTheme.info.withValues(alpha: 0.1),
+                ? ColorTheme.infoDark.withOpacity(0.15)
+                : ColorTheme.info.withOpacity(0.1),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color:
               themeController.isDarkMode
-                  ? ColorTheme.infoDark.withValues(alpha: 0.3)
-                  : ColorTheme.info.withValues(alpha: 0.2),
+                  ? ColorTheme.infoDark.withOpacity(0.3)
+                  : ColorTheme.info.withOpacity(0.2),
           width: 1,
         ),
       ),
@@ -779,44 +738,33 @@ class ServiceManageView extends GetView<ServiceController> {
     );
   }
 
-  // Separate widget for service details
   Widget _buildServiceDetails(
     Service service,
     ThemeController themeController,
   ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Wrap(
+      spacing: 16.0,
+      runSpacing: 8.0,
       children: [
-        // Duration and Price Row
-        Row(
-          children: [
-            _buildDetailItem(
-              icon: Icons.access_time_rounded,
-              text: '${service.duration} min',
-              themeController: themeController,
-            ),
-            const SizedBox(width: 16),
-            if (service.hasPriceTiers)
-              _buildPriceTierBadge(themeController)
-            else if (service.price != null)
-              _buildPriceBadge(service.price!, themeController),
-          ],
+        _buildDetailItem(
+          icon: Icons.access_time_rounded,
+          text: '${service.duration} min',
+          themeController: themeController,
         ),
-
-        // Age Range (if available)
-        if (service.minBabyAge != null && service.maxBabyAge != null) ...[
-          const SizedBox(height: 8),
+        if (service.hasPriceTiers)
+          _buildPriceTierBadge(themeController)
+        else if (service.price != null)
+          _buildPriceBadge(service.price!, themeController),
+        if (service.minBabyAge != null && service.maxBabyAge != null)
           _buildDetailItem(
             icon: Icons.child_care_rounded,
             text: '${service.minBabyAge} - ${service.maxBabyAge} months old',
             themeController: themeController,
           ),
-        ],
       ],
     );
   }
 
-  // Helper widget for detail items
   Widget _buildDetailItem({
     required IconData icon,
     required String text,
@@ -830,8 +778,8 @@ class ServiceManageView extends GetView<ServiceController> {
           decoration: BoxDecoration(
             color:
                 themeController.isDarkMode
-                    ? ColorTheme.textSecondaryDark.withValues(alpha: 0.15)
-                    : ColorTheme.textSecondary.withValues(alpha: 0.1),
+                    ? ColorTheme.textSecondaryDark.withOpacity(0.15)
+                    : ColorTheme.textSecondary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(6),
           ),
           child: Icon(
@@ -844,31 +792,32 @@ class ServiceManageView extends GetView<ServiceController> {
           ),
         ),
         const SizedBox(width: 6),
-        Text(
-          text,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color:
-                themeController.isDarkMode
-                    ? ColorTheme.textSecondaryDark
-                    : ColorTheme.textSecondary,
-            fontFamily: 'JosefinSans',
+        Flexible(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color:
+                  themeController.isDarkMode
+                      ? ColorTheme.textSecondaryDark
+                      : ColorTheme.textSecondary,
+              fontFamily: 'JosefinSans',
+            ),
           ),
         ),
       ],
     );
   }
 
-  // Helper widget for price badge
   Widget _buildPriceBadge(double price, ThemeController themeController) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color:
             themeController.isDarkMode
-                ? ColorTheme.successDark.withValues(alpha: 0.15)
-                : ColorTheme.success.withValues(alpha: 0.1),
+                ? ColorTheme.successDark.withOpacity(0.15)
+                : ColorTheme.success.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
@@ -886,15 +835,14 @@ class ServiceManageView extends GetView<ServiceController> {
     );
   }
 
-  // Helper widget for price tier badge
   Widget _buildPriceTierBadge(ThemeController themeController) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color:
             themeController.isDarkMode
-                ? ColorTheme.warningDark.withValues(alpha: 0.15)
-                : ColorTheme.warning.withValues(alpha: 0.1),
+                ? ColorTheme.warningDark.withOpacity(0.15)
+                : ColorTheme.warning.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -905,7 +853,7 @@ class ServiceManageView extends GetView<ServiceController> {
             size: 12,
             color:
                 themeController.isDarkMode
-                    ? ColorTheme.warningDark.withValues(alpha: 0.9)
+                    ? ColorTheme.warningDark.withOpacity(0.9)
                     : const Color(0xFFc77700),
           ),
           const SizedBox(width: 4),
@@ -915,7 +863,7 @@ class ServiceManageView extends GetView<ServiceController> {
               fontSize: 11,
               color:
                   themeController.isDarkMode
-                      ? ColorTheme.warningDark.withValues(alpha: 0.9)
+                      ? ColorTheme.warningDark.withOpacity(0.9)
                       : const Color(0xFFc77700),
               fontWeight: FontWeight.w600,
               fontFamily: 'JosefinSans',
@@ -926,22 +874,20 @@ class ServiceManageView extends GetView<ServiceController> {
     );
   }
 
-  // Separate widget for action buttons
   Widget _buildActionButtons(Service service, ThemeController themeController) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Toggle Status Button
         Container(
           decoration: BoxDecoration(
             color:
                 service.isActive
                     ? themeController.isDarkMode
-                        ? ColorTheme.successDark.withValues(alpha: 0.15)
-                        : ColorTheme.success.withValues(alpha: 0.1)
+                        ? ColorTheme.successDark.withOpacity(0.15)
+                        : ColorTheme.success.withOpacity(0.1)
                     : themeController.isDarkMode
-                    ? Colors.grey[700]!.withValues(alpha: 0.3)
-                    : Colors.grey.withValues(alpha: 0.1),
+                    ? Colors.grey[700]!.withOpacity(0.3)
+                    : Colors.grey.withOpacity(0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: IconButton(
@@ -970,14 +916,12 @@ class ServiceManageView extends GetView<ServiceController> {
           ),
         ),
         const SizedBox(height: 8),
-
-        // Delete Button
         Container(
           decoration: BoxDecoration(
             color:
                 themeController.isDarkMode
-                    ? ColorTheme.errorDark.withValues(alpha: 0.15)
-                    : ColorTheme.error.withValues(alpha: 0.1),
+                    ? ColorTheme.errorDark.withOpacity(0.15)
+                    : ColorTheme.error.withOpacity(0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: IconButton(
@@ -999,7 +943,6 @@ class ServiceManageView extends GetView<ServiceController> {
     );
   }
 
-  // Enhanced delete confirmation dialog
   void _showDeleteConfirmation(
     Service service,
     ThemeController themeController,
@@ -1016,8 +959,8 @@ class ServiceManageView extends GetView<ServiceController> {
               decoration: BoxDecoration(
                 color:
                     themeController.isDarkMode
-                        ? ColorTheme.errorDark.withValues(alpha: 0.15)
-                        : ColorTheme.error.withValues(alpha: 0.1),
+                        ? ColorTheme.errorDark.withOpacity(0.15)
+                        : ColorTheme.error.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
@@ -1074,7 +1017,7 @@ class ServiceManageView extends GetView<ServiceController> {
                 fontWeight: FontWeight.w600,
                 color:
                     themeController.isDarkMode
-                        ? ColorTheme.textSecondaryDark.withValues(alpha: 0.8)
+                        ? ColorTheme.textSecondaryDark.withOpacity(0.8)
                         : ColorTheme.textSecondary,
               ),
             ),

@@ -1,4 +1,5 @@
 // lib/features/staff/views/staff_edit_view.dart
+import 'package:emababyspa/utils/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'dart:io';
@@ -6,7 +7,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:emababyspa/common/theme/color_theme.dart';
-import 'package:emababyspa/common/widgets/custom_appbar.dart';
 import 'package:emababyspa/common/widgets/app_button.dart';
 import 'package:emababyspa/common/widgets/app_text_field.dart';
 import 'package:emababyspa/common/layouts/main_layout.dart';
@@ -14,44 +14,52 @@ import 'package:emababyspa/features/staff/controllers/staff_controller.dart';
 import 'package:emababyspa/data/models/staff.dart';
 import 'package:emababyspa/utils/permission_utils.dart';
 import 'package:emababyspa/utils/file_utils.dart';
-import 'package:emababyspa/features/theme/controllers/theme_controller.dart'; // Import ThemeController
+import 'package:emababyspa/features/theme/controllers/theme_controller.dart';
 
 class StaffEditView extends GetView<StaffController> {
   const StaffEditView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Create instance of utility classes
-    final permissionUtils = PermissionUtils();
-    final ThemeController themeController =
-        Get.find(); // Access ThemeController
+    // ✨ --- PERBAIKAN --- ✨
+    // Gunakan MainLayout.subPage untuk struktur halaman yang benar.
+    // Ini akan secara otomatis menampilkan AppBar dengan tombol kembali dan
+    // mengatur bottom navigation bar dengan benar.
+    return MainLayout.subPage(
+      title: 'Edit Staff',
+      parentRoute:
+          AppRoutes
+              .services, // Memberitahu MainLayout ini bagian dari tab 'Layanan'
+      child: _buildFormContent(context),
+    );
+  }
 
+  // ✨ --- PERBAIKAN --- ✨
+  // Konten form dipindahkan ke method terpisah.
+  // Method ini tidak lagi mengembalikan Scaffold atau AppBar.
+  Widget _buildFormContent(BuildContext context) {
+    final permissionUtils = PermissionUtils();
+    final ThemeController themeController = Get.find();
     final String staffId = Get.parameters['id'] ?? '';
 
-    // Staff data observable - defined at class level and properly initialized
     final currentStaff = Rx<Staff?>(null);
-
-    // Initialize form controllers
     final nameController = TextEditingController();
     final emailController = TextEditingController();
     final phoneController = TextEditingController();
     final addressController = TextEditingController();
 
-    // Observable for active status and profile picture
     final isActiveRx = true.obs;
     final Rx<File?> profilePicture = Rx<File?>(null);
 
-    // Form validation
     final formKey = GlobalKey<FormState>();
     final nameError = RxString('');
     final emailError = RxString('');
     final phoneError = RxString('');
 
-    // Data loaded flag
     final isDataLoaded = false.obs;
 
-    // Fetch staff data when view is loaded
     void loadStaffData() async {
+      // (Implementasi loadStaffData tetap sama)
       try {
         controller.isLoading.value = true;
 
@@ -130,7 +138,6 @@ class StaffEditView extends GetView<StaffController> {
       }
     }
 
-    // Using GetX's onReady for a more stable data loading trigger
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (staffId.isNotEmpty) {
         loadStaffData();
@@ -138,6 +145,7 @@ class StaffEditView extends GetView<StaffController> {
     });
 
     bool validateForm() {
+      // (Implementasi validateForm tetap sama)
       bool isValid = true;
 
       if (nameController.text.trim().isEmpty) {
@@ -206,508 +214,466 @@ class StaffEditView extends GetView<StaffController> {
       return isValid;
     }
 
-    return MainLayout(
-      child: Obx(
-        () => Scaffold(
-          // We wrap with Obx to react to theme changes
-          // *** ✨ UI/UX Improvement ✨ ***
-          // Use the same background logic as StaffView for consistency.
-          // This now listens to themeController.isDarkMode.
-          backgroundColor:
+    return Obx(() {
+      if (controller.isLoading.value && !isDataLoaded.value) {
+        return Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(
               themeController.isDarkMode
-                  ? ColorTheme.backgroundDark
-                  : ColorTheme.background,
-          appBar: const CustomAppBar(title: 'Edit Staff', showBackButton: true),
-          body: Obx(() {
-            if (controller.isLoading.value && !isDataLoaded.value) {
-              // Show loader only if data isn't loaded yet
-              return Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    themeController.isDarkMode
-                        ? ColorTheme.primaryLightDark
-                        : ColorTheme.primary,
+                  ? ColorTheme.primaryLightDark
+                  : ColorTheme.primary,
+            ),
+          ),
+        );
+      }
+
+      return SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Form(
+            key: formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Edit Staff Information',
+                  style: TextStyle(
+                    fontSize: 22, // Slightly larger for modern feel
+                    fontWeight: FontWeight.bold,
+                    color:
+                        themeController.isDarkMode
+                            ? ColorTheme.textPrimaryDark
+                            : ColorTheme.textPrimary,
+                    fontFamily: 'JosefinSans',
                   ),
                 ),
-              );
-            }
-
-            return SafeArea(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Form(
-                    key: formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Edit Staff Information',
-                          style: TextStyle(
-                            fontSize: 22, // Slightly larger for modern feel
-                            fontWeight: FontWeight.bold,
-                            color:
-                                themeController.isDarkMode
-                                    ? ColorTheme.textPrimaryDark
-                                    : ColorTheme.textPrimary,
-                            fontFamily: 'JosefinSans',
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Obx(
-                          () => Text(
-                            'Update the details for ${currentStaff.value?.name ?? "this staff member"}',
-                            style: TextStyle(
-                              fontSize: 15, // Slightly larger
+                const SizedBox(height: 8),
+                Obx(
+                  () => Text(
+                    'Update the details for ${currentStaff.value?.name ?? "this staff member"}',
+                    style: TextStyle(
+                      fontSize: 15, // Slightly larger
+                      color:
+                          themeController.isDarkMode
+                              ? ColorTheme.textSecondaryDark
+                              : ColorTheme.textSecondary,
+                      fontFamily: 'JosefinSans',
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Center(
+                  child: Column(
+                    children: [
+                      Obx(
+                        () => GestureDetector(
+                          onTap:
+                              () => _selectImage(
+                                profilePicture,
+                                permissionUtils,
+                                themeController,
+                              ),
+                          child: Container(
+                            width: 120, // Increased size
+                            height: 120, // Increased size
+                            decoration: BoxDecoration(
                               color:
                                   themeController.isDarkMode
-                                      ? ColorTheme.textSecondaryDark
-                                      : ColorTheme.textSecondary,
-                              fontFamily: 'JosefinSans',
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        Center(
-                          child: Column(
-                            children: [
-                              Obx(
-                                () => GestureDetector(
-                                  onTap:
-                                      () => _selectImage(
-                                        profilePicture,
-                                        permissionUtils,
-                                        themeController,
-                                      ),
-                                  child: Container(
-                                    width: 120, // Increased size
-                                    height: 120, // Increased size
-                                    decoration: BoxDecoration(
-                                      color:
-                                          themeController.isDarkMode
-                                              ? ColorTheme.surfaceDark
-                                              : ColorTheme.surface,
-                                      borderRadius: BorderRadius.circular(
-                                        60,
-                                      ), // Perfectly circular
-                                      border: Border.all(
-                                        color:
-                                            themeController.isDarkMode
-                                                ? ColorTheme.primaryLightDark
-                                                    .withOpacity(0.7)
-                                                : ColorTheme.primary
-                                                    .withOpacity(0.5),
-                                        width: 2.5, // Slightly thicker border
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color:
-                                              themeController.isDarkMode
-                                                  ? Colors.black.withOpacity(
-                                                    0.3,
-                                                  )
-                                                  : Colors.grey.withOpacity(
-                                                    0.3,
-                                                  ),
-                                          spreadRadius: 1,
-                                          blurRadius: 5,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
-                                    ),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(60),
-                                      child:
-                                          profilePicture.value != null
-                                              ? Image.file(
-                                                profilePicture.value!,
-                                                width: 120,
-                                                height: 120,
-                                                fit: BoxFit.cover,
-                                              )
-                                              : (currentStaff
-                                                              .value
-                                                              ?.profilePicture !=
-                                                          null &&
-                                                      currentStaff
-                                                          .value!
-                                                          .profilePicture!
-                                                          .isNotEmpty
-                                                  ? Image.network(
-                                                    currentStaff
-                                                        .value!
-                                                        .profilePicture!,
-                                                    width: 120,
-                                                    height: 120,
-                                                    fit: BoxFit.cover,
-                                                    loadingBuilder: (
-                                                      context,
-                                                      child,
-                                                      loadingProgress,
-                                                    ) {
-                                                      if (loadingProgress ==
-                                                          null) {
-                                                        return child;
-                                                      }
-                                                      return Center(
-                                                        child: CircularProgressIndicator(
-                                                          valueColor: AlwaysStoppedAnimation<
-                                                            Color
-                                                          >(
-                                                            themeController
-                                                                    .isDarkMode
-                                                                ? ColorTheme
-                                                                    .primaryLightDark
-                                                                : ColorTheme
-                                                                    .primary,
-                                                          ),
-                                                          value:
-                                                              loadingProgress
-                                                                          .expectedTotalBytes !=
-                                                                      null
-                                                                  ? loadingProgress
-                                                                          .cumulativeBytesLoaded /
-                                                                      loadingProgress
-                                                                          .expectedTotalBytes!
-                                                                  : null,
-                                                        ),
-                                                      );
-                                                    },
-                                                    errorBuilder:
-                                                        (
-                                                          context,
-                                                          error,
-                                                          stackTrace,
-                                                        ) => Icon(
-                                                          Icons
-                                                              .person_outline, // Changed icon
-                                                          size:
-                                                              60, // Adjusted size
-                                                          color:
-                                                              themeController
-                                                                      .isDarkMode
-                                                                  ? ColorTheme
-                                                                      .textTertiaryDark
-                                                                  : ColorTheme
-                                                                      .textTertiary,
-                                                        ),
-                                                  )
-                                                  : Icon(
-                                                    Icons
-                                                        .person_add_alt_1_outlined, // Changed icon for adding
-                                                    size: 50, // Adjusted size
-                                                    color:
-                                                        themeController
-                                                                .isDarkMode
-                                                            ? ColorTheme
-                                                                .textTertiaryDark
-                                                            : ColorTheme
-                                                                .textTertiary,
-                                                  )),
-                                    ),
-                                  ),
-                                ),
+                                      ? ColorTheme.surfaceDark
+                                      : ColorTheme.surface,
+                              borderRadius: BorderRadius.circular(
+                                60,
+                              ), // Perfectly circular
+                              border: Border.all(
+                                color: (themeController.isDarkMode
+                                        ? ColorTheme.primaryLightDark
+                                        : ColorTheme.primary)
+                                    .withOpacity(0.5),
+                                width: 2.5, // Slightly thicker border
                               ),
-                              const SizedBox(height: 12),
-                              TextButton.icon(
-                                onPressed:
-                                    () => _selectImage(
-                                      profilePicture,
-                                      permissionUtils,
-                                      themeController,
-                                    ),
-                                icon: Icon(
-                                  Icons.edit_outlined, // Changed icon
+                              boxShadow: [
+                                BoxShadow(
                                   color:
                                       themeController.isDarkMode
-                                          ? ColorTheme.primaryLightDark
-                                          : ColorTheme.primary,
-                                  size: 20,
+                                          ? Colors.black.withOpacity(0.3)
+                                          : Colors.grey.withOpacity(0.3),
+                                  spreadRadius: 1,
+                                  blurRadius: 5,
+                                  offset: const Offset(0, 2),
                                 ),
-                                label: Text(
-                                  profilePicture.value != null ||
-                                          (currentStaff.value?.profilePicture !=
+                              ],
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(60),
+                              child:
+                                  profilePicture.value != null
+                                      ? Image.file(
+                                        profilePicture.value!,
+                                        width: 120,
+                                        height: 120,
+                                        fit: BoxFit.cover,
+                                      )
+                                      : (currentStaff.value?.profilePicture !=
                                                   null &&
                                               currentStaff
                                                   .value!
                                                   .profilePicture!
-                                                  .isNotEmpty)
-                                      ? 'Change Picture'
-                                      : 'Add Profile Picture',
-                                  style: TextStyle(
-                                    color:
-                                        themeController.isDarkMode
-                                            ? ColorTheme.primaryLightDark
-                                            : ColorTheme.primary,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w600, // Bolder
-                                    fontFamily: 'JosefinSans',
-                                  ),
-                                ),
-                                style: TextButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 8,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    side: BorderSide(
-                                      color: (themeController.isDarkMode
-                                              ? ColorTheme.primaryLightDark
-                                              : ColorTheme.primary)
-                                          .withOpacity(0.5),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
+                                                  .isNotEmpty
+                                          ? Image.network(
+                                            currentStaff.value!.profilePicture!,
+                                            width: 120,
+                                            height: 120,
+                                            fit: BoxFit.cover,
+                                            loadingBuilder: (
+                                              context,
+                                              child,
+                                              loadingProgress,
+                                            ) {
+                                              if (loadingProgress == null) {
+                                                return child;
+                                              }
+                                              return Center(
+                                                child: CircularProgressIndicator(
+                                                  valueColor:
+                                                      AlwaysStoppedAnimation<
+                                                        Color
+                                                      >(
+                                                        themeController
+                                                                .isDarkMode
+                                                            ? ColorTheme
+                                                                .primaryLightDark
+                                                            : ColorTheme
+                                                                .primary,
+                                                      ),
+                                                  value:
+                                                      loadingProgress
+                                                                  .expectedTotalBytes !=
+                                                              null
+                                                          ? loadingProgress
+                                                                  .cumulativeBytesLoaded /
+                                                              loadingProgress
+                                                                  .expectedTotalBytes!
+                                                          : null,
+                                                ),
+                                              );
+                                            },
+                                            errorBuilder:
+                                                (
+                                                  context,
+                                                  error,
+                                                  stackTrace,
+                                                ) => Icon(
+                                                  Icons
+                                                      .person_outline, // Changed icon
+                                                  size: 60, // Adjusted size
+                                                  color:
+                                                      themeController.isDarkMode
+                                                          ? ColorTheme
+                                                              .textTertiaryDark
+                                                          : ColorTheme
+                                                              .textTertiary,
+                                                ),
+                                          )
+                                          : Icon(
+                                            Icons
+                                                .person_add_alt_1_outlined, // Changed icon for adding
+                                            size: 50, // Adjusted size
+                                            color:
+                                                themeController.isDarkMode
+                                                    ? ColorTheme
+                                                        .textTertiaryDark
+                                                    : ColorTheme.textTertiary,
+                                          )),
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 24),
-                        AppTextField(
-                          controller: nameController,
-                          label: 'Name',
-                          placeholder: 'Enter staff name',
-                          prefix: const Icon(Icons.person_outline_rounded),
-                          isRequired: true,
-                          onChanged: (value) {
-                            if (nameError.value.isNotEmpty) {
-                              if (value.trim().isNotEmpty) {
-                                nameError.value = '';
-                              }
-                            }
-                          },
-                        ),
-                        Obx(
-                          () =>
-                              nameError.value.isNotEmpty
-                                  ? Padding(
-                                    padding: const EdgeInsets.only(
-                                      top: 4.0,
-                                      left: 12.0,
-                                      bottom: 8.0,
-                                    ),
-                                    child: Text(
-                                      nameError.value,
-                                      style: TextStyle(
-                                        color:
-                                            themeController.isDarkMode
-                                                ? ColorTheme.errorDark
-                                                : ColorTheme.error,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  )
-                                  : const SizedBox(
-                                    height: 16,
-                                  ), // Keep consistent spacing
-                        ),
-
-                        // const SizedBox(height: 16), // Removed, handled by Obx above
-                        AppTextField(
-                          controller: emailController,
-                          label: 'Email',
-                          placeholder: 'Enter staff email',
-                          prefix: const Icon(Icons.email_outlined),
-                          keyboardType: TextInputType.emailAddress,
-                          isRequired: true,
-                          onChanged: (value) {
-                            if (emailError.value.isNotEmpty) {
-                              if (value.trim().isNotEmpty &&
-                                  GetUtils.isEmail(value.trim())) {
-                                emailError.value = '';
-                              }
-                            }
-                          },
-                        ),
-                        Obx(
-                          () =>
-                              emailError.value.isNotEmpty
-                                  ? Padding(
-                                    padding: const EdgeInsets.only(
-                                      top: 4.0,
-                                      left: 12.0,
-                                      bottom: 8.0,
-                                    ),
-                                    child: Text(
-                                      emailError.value,
-                                      style: TextStyle(
-                                        color:
-                                            themeController.isDarkMode
-                                                ? ColorTheme.errorDark
-                                                : ColorTheme.error,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  )
-                                  : const SizedBox(height: 16),
-                        ),
-
-                        // const SizedBox(height: 16),
-                        AppTextField(
-                          controller: phoneController,
-                          label: 'Phone Number',
-                          placeholder: 'Enter staff phone number',
-                          prefix: const Icon(Icons.phone_outlined),
-                          keyboardType: TextInputType.phone,
-                          isRequired: true,
-                          onChanged: (value) {
-                            if (phoneError.value.isNotEmpty) {
-                              if (value.trim().isNotEmpty) {
-                                phoneError.value = '';
-                              }
-                            }
-                          },
-                        ),
-                        Obx(
-                          () =>
-                              phoneError.value.isNotEmpty
-                                  ? Padding(
-                                    padding: const EdgeInsets.only(
-                                      top: 4.0,
-                                      left: 12.0,
-                                      bottom: 8.0,
-                                    ),
-                                    child: Text(
-                                      phoneError.value,
-                                      style: TextStyle(
-                                        color:
-                                            themeController.isDarkMode
-                                                ? ColorTheme.errorDark
-                                                : ColorTheme.error,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  )
-                                  : const SizedBox(height: 16),
-                        ),
-
-                        // const SizedBox(height: 16),
-                        AppTextField(
-                          controller: addressController,
-                          label: 'Address (Optional)',
-                          placeholder: 'Enter staff address',
-                          prefix: const Icon(Icons.location_on_outlined),
-                          maxLines: 3,
-                        ),
-                        const SizedBox(
-                          height: 24,
-                        ), // Increased spacing before switch
-                        Obx(
-                          () => Container(
-                            // Wrap SwitchListTile for better background/border
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 4,
+                      ),
+                      const SizedBox(height: 12),
+                      TextButton.icon(
+                        onPressed:
+                            () => _selectImage(
+                              profilePicture,
+                              permissionUtils,
+                              themeController,
                             ),
-                            decoration: BoxDecoration(
-                              color:
-                                  themeController.isDarkMode
-                                      ? ColorTheme.surfaceDark.withOpacity(0.5)
-                                      : ColorTheme.surface,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
+                        icon: Icon(
+                          Icons.edit_outlined, // Changed icon
+                          color:
+                              themeController.isDarkMode
+                                  ? ColorTheme.primaryLightDark
+                                  : ColorTheme.primary,
+                          size: 20,
+                        ),
+                        label: Text(
+                          profilePicture.value != null ||
+                                  (currentStaff.value?.profilePicture != null &&
+                                      currentStaff
+                                          .value!
+                                          .profilePicture!
+                                          .isNotEmpty)
+                              ? 'Change Picture'
+                              : 'Add Profile Picture',
+                          style: TextStyle(
+                            color:
+                                themeController.isDarkMode
+                                    ? ColorTheme.primaryLightDark
+                                    : ColorTheme.primary,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600, // Bolder
+                            fontFamily: 'JosefinSans',
+                          ),
+                        ),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            side: BorderSide(
+                              color: (themeController.isDarkMode
+                                      ? ColorTheme.primaryLightDark
+                                      : ColorTheme.primary)
+                                  .withOpacity(0.5),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                AppTextField(
+                  controller: nameController,
+                  label: 'Name',
+                  placeholder: 'Enter staff name',
+                  prefix: const Icon(Icons.person_outline_rounded),
+                  isRequired: true,
+                  onChanged: (value) {
+                    if (nameError.value.isNotEmpty) {
+                      if (value.trim().isNotEmpty) {
+                        nameError.value = '';
+                      }
+                    }
+                  },
+                ),
+                Obx(
+                  () =>
+                      nameError.value.isNotEmpty
+                          ? Padding(
+                            padding: const EdgeInsets.only(
+                              top: 4.0,
+                              left: 12.0,
+                              bottom: 8.0,
+                            ),
+                            child: Text(
+                              nameError.value,
+                              style: TextStyle(
                                 color:
                                     themeController.isDarkMode
-                                        ? ColorTheme.borderDark
-                                        : ColorTheme.border,
-                                width: 1,
+                                        ? ColorTheme.errorDark
+                                        : ColorTheme.error,
+                                fontSize: 12,
                               ),
                             ),
-                            child: SwitchListTile(
-                              title: Text(
-                                'Active Status',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600, // Bolder
-                                  color:
-                                      themeController.isDarkMode
-                                          ? ColorTheme.textPrimaryDark
-                                          : ColorTheme.textPrimary,
-                                  fontFamily: 'JosefinSans',
-                                ),
-                              ),
-                              subtitle: Text(
-                                isActiveRx.value
-                                    ? 'Staff member is active'
-                                    : 'Staff member is inactive',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color:
-                                      themeController.isDarkMode
-                                          ? ColorTheme.textSecondaryDark
-                                          : ColorTheme.textSecondary,
-                                  fontFamily: 'JosefinSans',
-                                ),
-                              ),
-                              value: isActiveRx.value,
-                              onChanged: (value) {
-                                isActiveRx.value = value;
-                              },
-                              activeColor:
-                                  themeController.isDarkMode
-                                      ? ColorTheme.primaryLightDark
-                                      : ColorTheme.primary,
-                              // thumbColor & trackColor are typically handled by SwitchTheme in AppTheme
-                              contentPadding: EdgeInsets.zero,
+                          )
+                          : const SizedBox(
+                            height: 16,
+                          ), // Keep consistent spacing
+                ),
+                AppTextField(
+                  controller: emailController,
+                  label: 'Email',
+                  placeholder: 'Enter staff email',
+                  prefix: const Icon(Icons.email_outlined),
+                  keyboardType: TextInputType.emailAddress,
+                  isRequired: true,
+                  onChanged: (value) {
+                    if (emailError.value.isNotEmpty) {
+                      if (value.trim().isNotEmpty &&
+                          GetUtils.isEmail(value.trim())) {
+                        emailError.value = '';
+                      }
+                    }
+                  },
+                ),
+                Obx(
+                  () =>
+                      emailError.value.isNotEmpty
+                          ? Padding(
+                            padding: const EdgeInsets.only(
+                              top: 4.0,
+                              left: 12.0,
+                              bottom: 8.0,
                             ),
-                          ),
+                            child: Text(
+                              emailError.value,
+                              style: TextStyle(
+                                color:
+                                    themeController.isDarkMode
+                                        ? ColorTheme.errorDark
+                                        : ColorTheme.error,
+                                fontSize: 12,
+                              ),
+                            ),
+                          )
+                          : const SizedBox(height: 16),
+                ),
+                AppTextField(
+                  controller: phoneController,
+                  label: 'Phone Number',
+                  placeholder: 'Enter staff phone number',
+                  prefix: const Icon(Icons.phone_outlined),
+                  keyboardType: TextInputType.phone,
+                  isRequired: true,
+                  onChanged: (value) {
+                    if (phoneError.value.isNotEmpty) {
+                      if (value.trim().isNotEmpty) {
+                        phoneError.value = '';
+                      }
+                    }
+                  },
+                ),
+                Obx(
+                  () =>
+                      phoneError.value.isNotEmpty
+                          ? Padding(
+                            padding: const EdgeInsets.only(
+                              top: 4.0,
+                              left: 12.0,
+                              bottom: 8.0,
+                            ),
+                            child: Text(
+                              phoneError.value,
+                              style: TextStyle(
+                                color:
+                                    themeController.isDarkMode
+                                        ? ColorTheme.errorDark
+                                        : ColorTheme.error,
+                                fontSize: 12,
+                              ),
+                            ),
+                          )
+                          : const SizedBox(height: 16),
+                ),
+                AppTextField(
+                  controller: addressController,
+                  label: 'Address (Optional)',
+                  placeholder: 'Enter staff address',
+                  prefix: const Icon(Icons.location_on_outlined),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 24), // Increased spacing before switch
+                Obx(
+                  () => Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color:
+                          themeController.isDarkMode
+                              ? ColorTheme.surfaceDark.withOpacity(0.5)
+                              : ColorTheme.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color:
+                            themeController.isDarkMode
+                                ? ColorTheme.borderDark
+                                : ColorTheme.border,
+                        width: 1,
+                      ),
+                    ),
+                    child: SwitchListTile(
+                      title: Text(
+                        'Active Status',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600, // Bolder
+                          color:
+                              themeController.isDarkMode
+                                  ? ColorTheme.textPrimaryDark
+                                  : ColorTheme.textPrimary,
+                          fontFamily: 'JosefinSans',
                         ),
-                        const SizedBox(height: 32),
-                        Obx(
-                          () => AppButton(
-                            text: 'Update Staff',
-                            isLoading: controller.isFormSubmitting.value,
-                            type: AppButtonType.primary,
-                            size: AppButtonSize.large, // Larger button
-                            isFullWidth: true,
-                            icon: Icons.save_alt_outlined, // Changed icon
-                            onPressed: () async {
-                              if (validateForm()) {
-                                await controller.updateStaff(
-                                  id: staffId,
-                                  name: nameController.text.trim(),
-                                  email: emailController.text.trim(),
-                                  phoneNumber: phoneController.text.trim(),
-                                  address:
-                                      addressController.text.trim().isNotEmpty
-                                          ? addressController.text.trim()
-                                          : null,
-                                  isActive: isActiveRx.value,
-                                  profilePicture: profilePicture.value,
-                                );
-                              } else {
-                                Get.snackbar(
-                                  'Validation Error',
-                                  'Please check the form fields',
-                                  backgroundColor: (themeController.isDarkMode
-                                          ? ColorTheme.errorDark
-                                          : ColorTheme.error)
-                                      .withOpacity(0.8),
-                                  colorText:
-                                      themeController.isDarkMode
-                                          ? ColorTheme.textPrimaryDark
-                                          : ColorTheme.textInverse,
-                                  snackPosition: SnackPosition.BOTTOM,
-                                  margin: const EdgeInsets.all(16),
-                                  borderRadius: 12,
-                                );
-                              }
-                            },
-                          ),
+                      ),
+                      subtitle: Text(
+                        isActiveRx.value
+                            ? 'Staff member is active'
+                            : 'Staff member is inactive',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color:
+                              themeController.isDarkMode
+                                  ? ColorTheme.textSecondaryDark
+                                  : ColorTheme.textSecondary,
+                          fontFamily: 'JosefinSans',
                         ),
-                      ],
+                      ),
+                      value: isActiveRx.value,
+                      onChanged: (value) {
+                        isActiveRx.value = value;
+                      },
+                      activeColor:
+                          themeController.isDarkMode
+                              ? ColorTheme.primaryLightDark
+                              : ColorTheme.primary,
+                      contentPadding: EdgeInsets.zero,
                     ),
                   ),
                 ),
-              ),
-            );
-          }),
+                const SizedBox(height: 32),
+                Obx(
+                  () => AppButton(
+                    text: 'Update Staff',
+                    isLoading: controller.isFormSubmitting.value,
+                    type: AppButtonType.primary,
+                    size: AppButtonSize.large, // Larger button
+                    isFullWidth: true,
+                    icon: Icons.save_alt_outlined, // Changed icon
+                    onPressed: () async {
+                      if (validateForm()) {
+                        await controller.updateStaff(
+                          id: staffId,
+                          name: nameController.text.trim(),
+                          email: emailController.text.trim(),
+                          phoneNumber: phoneController.text.trim(),
+                          address:
+                              addressController.text.trim().isNotEmpty
+                                  ? addressController.text.trim()
+                                  : null,
+                          isActive: isActiveRx.value,
+                          profilePicture: profilePicture.value,
+                        );
+                      } else {
+                        Get.snackbar(
+                          'Validation Error',
+                          'Please check the form fields',
+                          backgroundColor: (themeController.isDarkMode
+                                  ? ColorTheme.errorDark
+                                  : ColorTheme.error)
+                              .withOpacity(0.8),
+                          colorText:
+                              themeController.isDarkMode
+                                  ? ColorTheme.textPrimaryDark
+                                  : ColorTheme.textInverse,
+                          snackPosition: SnackPosition.BOTTOM,
+                          margin: const EdgeInsets.all(16),
+                          borderRadius: 12,
+                        );
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 
+  // Sisa method (_isAndroid13OrAbove, _selectImage, dll) tetap sama
   Future<bool> _isAndroid13OrAbove() async {
     if (Platform.isAndroid) {
       final deviceInfo = DeviceInfoPlugin();
@@ -889,7 +855,6 @@ class StaffEditView extends GetView<StaffController> {
     Rx<File?> profilePicture,
     PermissionUtils permissionUtils,
   ) async {
-    // ... (implementation remains the same)
     try {
       final ImagePicker picker = ImagePicker();
       final XFile? photo = await picker.pickImage(
@@ -901,7 +866,6 @@ class StaffEditView extends GetView<StaffController> {
 
       if (photo != null) {
         profilePicture.value = File(photo.path);
-        // No toast here, handled by form validation or success message after update
       }
     } catch (e) {
       permissionUtils.showToast('Failed to capture image: $e');
@@ -912,7 +876,6 @@ class StaffEditView extends GetView<StaffController> {
     Rx<File?> profilePicture,
     PermissionUtils permissionUtils,
   ) async {
-    // ... (implementation remains the same)
     try {
       final ImagePicker picker = ImagePicker();
       final XFile? image = await picker.pickImage(
@@ -924,7 +887,6 @@ class StaffEditView extends GetView<StaffController> {
 
       if (image != null) {
         profilePicture.value = File(image.path);
-        // No toast here
       }
     } catch (e) {
       permissionUtils.showToast('Failed to select image: $e');

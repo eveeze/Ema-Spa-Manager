@@ -2,7 +2,11 @@
 
 class ApiEndpoints {
   // Base URL
-  static const String baseUrl = 'http://10.0.2.2:3000/api';
+  // base url andorid studio
+  //static const String baseUrl = 'http://10.0.2.2:3000/api';
+  // base url real device
+  static const String baseUrl =
+      'https://8b11-110-136-170-98.ngrok-free.app/api';
 
   // Auth
   static const String login = '/owner/login';

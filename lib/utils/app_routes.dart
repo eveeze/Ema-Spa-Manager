@@ -1,5 +1,6 @@
 //utils/app_routes.dart
 
+import 'package:emababyspa/features/account/views/account_view.dart';
 import 'package:emababyspa/features/reservation/bindings/reservation_bindings.dart';
 import 'package:emababyspa/features/reservation/views/reservation_detail_view.dart';
 import 'package:emababyspa/features/reservation/views/reservation_form_view.dart';
@@ -32,11 +33,13 @@ import 'package:emababyspa/features/service_category/views/service_category_edit
 import 'package:emababyspa/features/schedule/views/schedule_view.dart';
 import 'package:emababyspa/features/schedule/bindings/schedule_bindings.dart';
 import 'package:emababyspa/features/reservation/views/reservation_edit_view.dart';
+import 'package:emababyspa/features/analytics/views/analytics_view.dart';
 
 class AppRoutes {
   static const String splash = '/splash';
   static const String login = '/login';
   static const String forgotPassword = '/forgotPassword';
+  static const String profile = '/account';
   static const String dashboard = '/dashboard';
   static const String services = '/services';
   static const String staffList = '/staffs';
@@ -69,7 +72,7 @@ class AppRoutes {
   static const String sessionForm = '/sessions/form';
   static const String timeSlotEdit = '/time-slots/edit/:id';
   static const String timeSlotDetail = '/time-slots/:id';
-  static const String analytics = '/analytics';
+  static const String analyticsView = '/analytics';
 
   static final List<GetPage> pages = [
     GetPage(
@@ -78,6 +81,11 @@ class AppRoutes {
       binding: SplashBindings(),
     ),
     GetPage(name: login, page: () => LoginView(), binding: AuthBindings()),
+    GetPage(
+      name: profile,
+      page: () => const AccountView(),
+      binding: AuthBindings(),
+    ),
     GetPage(
       name: dashboard,
       page: () => DashboardView(),
@@ -182,6 +190,7 @@ class AppRoutes {
       page: () => const ReservationEditView(),
       binding: ReservationBindings(),
     ),
+    GetPage(name: analyticsView, page: () => const AnalyticsView()),
     // Rute detail dan form akan ditambahkan disini
   ];
 }

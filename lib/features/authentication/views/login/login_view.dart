@@ -75,14 +75,16 @@ class _LoginViewState extends State<LoginView> {
         child: SafeArea(
           child: SingleChildScrollView(
             child: SizedBox(
-              height: size.height - MediaQuery.of(context).padding.top,
+              height:
+                  MediaQuery.of(context).size.height -
+                  MediaQuery.of(context).padding.top,
               child: Column(
                 children: [
                   // Top section with illustration
-                  Expanded(
-                    flex: 2,
-                    child: Container(
-                      width: double.infinity,
+                  SizedBox(
+                    height: size.height * 0.35, // Fixed height for top section
+                    width: double.infinity,
+                    child: Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 40,
                         vertical: 20,
@@ -118,7 +120,6 @@ class _LoginViewState extends State<LoginView> {
 
                   // Bottom section with form
                   Expanded(
-                    flex: 3,
                     child: Container(
                       width: double.infinity,
                       decoration: BoxDecoration(
@@ -148,7 +149,7 @@ class _LoginViewState extends State<LoginView> {
                           ),
                         ],
                       ),
-                      child: Padding(
+                      child: SingleChildScrollView(
                         padding: const EdgeInsets.all(32.0),
                         child: Form(
                           key: _formKey,
@@ -241,6 +242,9 @@ class _LoginViewState extends State<LoginView> {
                                 if (_authController.errorMessage.isNotEmpty) {
                                   return Container(
                                     width: double.infinity,
+                                    margin: const EdgeInsets.only(
+                                      bottom: 20,
+                                    ), // Add margin for spacing
                                     padding: const EdgeInsets.all(16),
                                     decoration: BoxDecoration(
                                       color: (isDark

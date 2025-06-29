@@ -3,13 +3,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:emababyspa/common/theme/color_theme.dart'; // Asumsi path ini benar
-import 'package:emababyspa/common/widgets/custom_appbar.dart'; // Asumsi path ini benar
-import 'package:emababyspa/common/layouts/main_layout.dart'; // Asumsi path ini benar
-import 'package:emababyspa/features/service/controllers/service_controller.dart'; // Asumsi path ini benar
-import 'package:emababyspa/common/widgets/app_button.dart'; // Asumsi path ini benar
-import 'package:emababyspa/common/widgets/app_text_field.dart'; // Asumsi path ini benar
-import 'package:emababyspa/features/theme/controllers/theme_controller.dart'; // Import ThemeController
+import 'package:emababyspa/common/theme/color_theme.dart';
+import 'package:emababyspa/common/widgets/custom_appbar.dart';
+import 'package:emababyspa/common/layouts/main_layout.dart';
+import 'package:emababyspa/features/service/controllers/service_controller.dart';
+import 'package:emababyspa/common/widgets/app_button.dart';
+import 'package:emababyspa/common/widgets/app_text_field.dart';
+import 'package:emababyspa/features/theme/controllers/theme_controller.dart';
 
 class ServiceFormView extends GetView<ServiceController> {
   ServiceFormView({super.key});
@@ -31,7 +31,6 @@ class ServiceFormView extends GetView<ServiceController> {
   final RxMap<int, Map<String, TextEditingController>> priceTierControllers =
       <int, Map<String, TextEditingController>>{}.obs;
 
-  // Akses ThemeController
   final ThemeController themeController = Get.find<ThemeController>();
 
   @override
@@ -41,7 +40,6 @@ class ServiceFormView extends GetView<ServiceController> {
       _initializePriceTierControllers(0);
     }
 
-    // Warna dinamis berdasarkan tema
     final bool isDark = themeController.isDarkMode;
     final Color scaffoldBackgroundColor =
         isDark ? const Color(0xFF121212) : Colors.grey[50]!;
@@ -49,19 +47,14 @@ class ServiceFormView extends GetView<ServiceController> {
         isDark ? const Color(0xFF1E1E1E) : Colors.white;
     final Color defaultTextColor =
         isDark
-            ? Colors.white.withValues(alpha: 0.87) // Menggunakan withValues
-            : Colors.black.withValues(alpha: 0.87); // Menggunakan withValues
+            ? Colors.white.withOpacity(0.87)
+            : Colors.black.withOpacity(0.87);
     final Color secondaryTextColor =
-        isDark
-            ? Colors.white.withValues(alpha: 0.60)
-            : Colors.grey[600]!; // Menggunakan withValues
+        isDark ? Colors.white.withOpacity(0.60) : Colors.grey[600]!;
     final Color shadowColor =
-        isDark
-            ? Colors.black.withValues(alpha: 0.5)
-            : Colors.black.withValues(alpha: 0.05); // Menggunakan withValues
-    final Color primaryColorWithOpacityLow = ColorTheme.primary.withValues(
-      // Menggunakan withValues
-      alpha: isDark ? 0.2 : 0.1,
+        isDark ? Colors.black.withOpacity(0.5) : Colors.black.withOpacity(0.05);
+    final Color primaryColorWithOpacityLow = ColorTheme.primary.withOpacity(
+      isDark ? 0.2 : 0.1,
     );
 
     return MainLayout(
@@ -131,9 +124,7 @@ class ServiceFormView extends GetView<ServiceController> {
                         decoration: BoxDecoration(
                           color:
                               isDark
-                                  ? Colors.red.withValues(
-                                    alpha: 0.2,
-                                  ) // Menggunakan withValues
+                                  ? Colors.red.withOpacity(0.2)
                                   : Colors.red[50],
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -248,18 +239,13 @@ class ServiceFormView extends GetView<ServiceController> {
 
   Widget _buildForm(BuildContext context) {
     final bool isDark = themeController.isDarkMode;
-    // final Color defaultTextColor = isDark ? Colors.white.withValues(alpha: 0.87) : Colors.black.withValues(alpha: 0.87); // Dihapus karena tidak digunakan secara langsung di sini
     final Color secondaryTextColor =
-        isDark
-            ? Colors.white.withValues(alpha: 0.60)
-            : Colors.grey[600]!; // Menggunakan withValues
-    final Color primaryColorWithOpacityLow = ColorTheme.primary.withValues(
-      // Menggunakan withValues
-      alpha: isDark ? 0.2 : 0.1,
+        isDark ? Colors.white.withOpacity(0.60) : Colors.grey[600]!;
+    final Color primaryColorWithOpacityLow = ColorTheme.primary.withOpacity(
+      isDark ? 0.2 : 0.1,
     );
-    final Color primaryColorWithOpacityMedium = ColorTheme.primary.withValues(
-      // Menggunakan withValues
-      alpha: isDark ? 0.3 : 0.2,
+    final Color primaryColorWithOpacityMedium = ColorTheme.primary.withOpacity(
+      isDark ? 0.3 : 0.2,
     );
 
     return Form(
@@ -278,9 +264,7 @@ class ServiceFormView extends GetView<ServiceController> {
                   end: Alignment.bottomRight,
                   colors: [
                     primaryColorWithOpacityLow,
-                    ColorTheme.primary.withValues(
-                      alpha: isDark ? 0.1 : 0.05,
-                    ), // Menggunakan withValues
+                    ColorTheme.primary.withOpacity(isDark ? 0.1 : 0.05),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(16),
@@ -386,17 +370,13 @@ class ServiceFormView extends GetView<ServiceController> {
                   gradient: LinearGradient(
                     colors: [
                       ColorTheme.primary,
-                      ColorTheme.primary.withValues(
-                        alpha: 0.8,
-                      ), // Menggunakan withValues
+                      ColorTheme.primary.withOpacity(0.8),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: ColorTheme.primary.withValues(
-                        alpha: 0.3,
-                      ), // Menggunakan withValues
+                      color: ColorTheme.primary.withOpacity(0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
@@ -428,16 +408,11 @@ class ServiceFormView extends GetView<ServiceController> {
     final Color cardBackgroundColor =
         isDark ? const Color(0xFF1E1E1E) : Colors.white;
     final Color defaultTextColor =
-        isDark
-            ? Colors.white.withValues(alpha: 0.87) // Menggunakan withValues
-            : ColorTheme.textPrimary;
+        isDark ? Colors.white.withOpacity(0.87) : ColorTheme.textPrimary;
     final Color shadowColor =
-        isDark
-            ? Colors.black.withValues(alpha: 0.5)
-            : Colors.black.withValues(alpha: 0.05); // Menggunakan withValues
-    final Color primaryColorWithOpacityLow = ColorTheme.primary.withValues(
-      // Menggunakan withValues
-      alpha: isDark ? 0.25 : 0.1,
+        isDark ? Colors.black.withOpacity(0.5) : Colors.black.withOpacity(0.05);
+    final Color primaryColorWithOpacityLow = ColorTheme.primary.withOpacity(
+      isDark ? 0.25 : 0.1,
     );
 
     return Container(
@@ -491,16 +466,12 @@ class ServiceFormView extends GetView<ServiceController> {
     final Color cardBackgroundColor =
         isDark ? const Color(0xFF1E1E1E) : Colors.white;
     final Color defaultTextColor =
-        isDark
-            ? Colors.white.withValues(alpha: 0.87)
-            : ColorTheme.textPrimary; // Menggunakan withValues
+        isDark ? Colors.white.withOpacity(0.87) : ColorTheme.textPrimary;
     final Color shadowColor =
-        isDark
-            ? Colors.black.withValues(alpha: 0.5)
-            : Colors.black.withValues(alpha: 0.05); // Menggunakan withValues
-    final Color primaryColorWithOpacityLow = ColorTheme.primary.withValues(
-      alpha: isDark ? 0.25 : 0.1,
-    ); // Menggunakan withValues
+        isDark ? Colors.black.withOpacity(0.5) : Colors.black.withOpacity(0.05);
+    final Color primaryColorWithOpacityLow = ColorTheme.primary.withOpacity(
+      isDark ? 0.25 : 0.1,
+    );
 
     return Container(
       width: double.infinity,
@@ -551,25 +522,16 @@ class ServiceFormView extends GetView<ServiceController> {
     final bool isDark = themeController.isDarkMode;
     final Color imagePickerBackgroundColor =
         isDark ? Colors.grey[800]! : Colors.grey[50]!;
-    final Color imagePickerBorderColor = ColorTheme.primary.withValues(
-      alpha: isDark ? 0.6 : 0.3,
-    ); // Menggunakan withValues
+    final Color imagePickerBorderColor = ColorTheme.primary.withOpacity(
+      isDark ? 0.6 : 0.3,
+    );
     final Color shadowColor =
-        isDark
-            ? Colors.black.withValues(alpha: 0.4)
-            : Colors.black.withValues(alpha: 0.05); // Menggunakan withValues
-    final Color iconContainerBackgroundColor =
-        isDark
-            ? ColorTheme.primary.withValues(
-              alpha: 0.25,
-            ) // Menggunakan withValues
-            : ColorTheme.primary.withValues(
-              alpha: 0.1,
-            ); // Menggunakan withValues
+        isDark ? Colors.black.withOpacity(0.4) : Colors.black.withOpacity(0.05);
+    final Color iconContainerBackgroundColor = ColorTheme.primary.withOpacity(
+      isDark ? 0.25 : 0.1,
+    );
     final Color secondaryTextColor =
-        isDark
-            ? Colors.white.withValues(alpha: 0.60)
-            : Colors.grey[500]!; // Menggunakan withValues
+        isDark ? Colors.white.withOpacity(0.60) : Colors.grey[500]!;
     final Color editIconBackgroundColor =
         isDark ? Colors.grey[700]! : Colors.white;
 
@@ -621,10 +583,8 @@ class ServiceFormView extends GetView<ServiceController> {
                                 BoxShadow(
                                   color:
                                       isDark
-                                          ? Colors.black.withValues(alpha: 0.3)
-                                          : Colors.black.withValues(
-                                            alpha: 0.1,
-                                          ), // Menggunakan withValues
+                                          ? Colors.black.withOpacity(0.3)
+                                          : Colors.black.withOpacity(0.1),
                                   blurRadius: 4,
                                 ),
                               ],
@@ -683,16 +643,14 @@ class ServiceFormView extends GetView<ServiceController> {
   Widget _buildCategoryDropdown() {
     final bool isDark = themeController.isDarkMode;
     final Color labelTextColor =
-        isDark
-            ? Colors.white.withValues(alpha: 0.87)
-            : ColorTheme.textPrimary; // Menggunakan withValues
+        isDark ? Colors.white.withOpacity(0.87) : ColorTheme.textPrimary;
     final Color dropdownBackgroundColor =
         isDark ? Colors.grey[800]! : Colors.white;
     final Color dropdownBorderColor =
         isDark ? Colors.grey[700]! : ColorTheme.border;
-    final Color prefixIconColor = ColorTheme.primary.withValues(
-      alpha: isDark ? 0.9 : 0.7,
-    ); // Menggunakan withValues
+    final Color prefixIconColor = ColorTheme.primary.withOpacity(
+      isDark ? 0.9 : 0.7,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -729,10 +687,8 @@ class ServiceFormView extends GetView<ServiceController> {
               BoxShadow(
                 color:
                     isDark
-                        ? Colors.black.withValues(alpha: 0.2)
-                        : Colors.black.withValues(
-                          alpha: 0.02,
-                        ), // Menggunakan withValues
+                        ? Colors.black.withOpacity(0.2)
+                        : Colors.black.withOpacity(0.02),
                 blurRadius: 4,
                 offset: const Offset(0, 1),
               ),
@@ -740,11 +696,8 @@ class ServiceFormView extends GetView<ServiceController> {
           ),
           child: DropdownButtonFormField<String>(
             style: TextStyle(
-              color:
-                  isDark
-                      ? Colors.white.withValues(alpha: 0.87)
-                      : Colors.black87,
-            ), // Menggunakan withValues
+              color: isDark ? Colors.white.withOpacity(0.87) : Colors.black87,
+            ),
             dropdownColor: dropdownBackgroundColor,
             decoration: InputDecoration(
               contentPadding: const EdgeInsets.symmetric(
@@ -795,16 +748,12 @@ class ServiceFormView extends GetView<ServiceController> {
     final Color switchBorderColor =
         isDark ? Colors.grey[600]! : Colors.grey[200]!;
     final Color labelTextColor =
-        isDark
-            ? Colors.white.withValues(alpha: 0.87)
-            : ColorTheme.textPrimary; // Menggunakan withValues
+        isDark ? Colors.white.withOpacity(0.87) : ColorTheme.textPrimary;
     final Color secondaryTextColor =
-        isDark
-            ? Colors.white.withValues(alpha: 0.60)
-            : Colors.grey[600]!; // Menggunakan withValues
-    final Color iconContainerBackgroundColor = ColorTheme.primary.withValues(
-      alpha: isDark ? 0.25 : 0.1,
-    ); // Menggunakan withValues
+        isDark ? Colors.white.withOpacity(0.60) : Colors.grey[600]!;
+    final Color iconContainerBackgroundColor = ColorTheme.primary.withOpacity(
+      isDark ? 0.25 : 0.1,
+    );
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -866,17 +815,13 @@ class ServiceFormView extends GetView<ServiceController> {
   Widget _buildSimplePricing() {
     final bool isDark = themeController.isDarkMode;
     final Color infoBoxColor =
-        isDark
-            ? Colors.blue[900]!.withValues(alpha: 0.5)
-            : Colors.blue[50]!; // Menggunakan withValues
+        isDark ? Colors.blue[900]!.withOpacity(0.5) : Colors.blue[50]!;
     final Color infoBoxBorderColor =
         isDark ? Colors.blue[700]! : Colors.blue[200]!;
     final Color infoBoxTextColor =
         isDark ? Colors.blue[200]! : Colors.blue[700]!;
     final Color labelTextColor =
-        isDark
-            ? Colors.white.withValues(alpha: 0.87)
-            : ColorTheme.textPrimary; // Menggunakan withValues
+        isDark ? Colors.white.withOpacity(0.87) : ColorTheme.textPrimary;
 
     return Column(
       key: const ValueKey('simple'),
@@ -933,49 +878,47 @@ class ServiceFormView extends GetView<ServiceController> {
           ),
         ),
         const SizedBox(height: 12),
-        Row(
+        // ✨ --- PERBAIKAN DI SINI --- ✨
+        // Mengubah Row menjadi Column untuk mencegah overflow horizontal.
+        Column(
           children: [
-            Expanded(
-              child: AppTextField(
-                controller: minAgeController,
-                label: 'Min Age (months)',
-                placeholder: 'Min',
-                keyboardType: TextInputType.number,
-                isRequired: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Required';
-                  }
-                  if (int.tryParse(value) == null || int.parse(value) < 0) {
-                    return 'Invalid';
-                  }
-                  return null;
-                },
-              ),
+            AppTextField(
+              controller: minAgeController,
+              label: 'Min Age (months)',
+              placeholder: 'Min',
+              keyboardType: TextInputType.number,
+              isRequired: true,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Required';
+                }
+                if (int.tryParse(value) == null || int.parse(value) < 0) {
+                  return 'Invalid';
+                }
+                return null;
+              },
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: AppTextField(
-                controller: maxAgeController,
-                label: 'Max Age (months)',
-                placeholder: 'Max',
-                keyboardType: TextInputType.number,
-                isRequired: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Required';
-                  }
-                  final minAgeText = minAgeController.text;
-                  if (minAgeText.isEmpty || int.tryParse(minAgeText) == null) {
-                    return 'Enter min age first';
-                  }
-                  if (int.tryParse(value) == null ||
-                      int.parse(value) <= int.parse(minAgeText)) {
-                    return 'Invalid';
-                  }
-                  return null;
-                },
-              ),
+            const SizedBox(height: 20), // Jarak vertikal
+            AppTextField(
+              controller: maxAgeController,
+              label: 'Max Age (months)',
+              placeholder: 'Max',
+              keyboardType: TextInputType.number,
+              isRequired: true,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Required';
+                }
+                final minAgeText = minAgeController.text;
+                if (minAgeText.isEmpty || int.tryParse(minAgeText) == null) {
+                  return 'Enter min age first';
+                }
+                if (int.tryParse(value) == null ||
+                    int.parse(value) <= int.parse(minAgeText)) {
+                  return 'Invalid';
+                }
+                return null;
+              },
             ),
           ],
         ),
@@ -986,26 +929,20 @@ class ServiceFormView extends GetView<ServiceController> {
   Widget _buildPriceTiers() {
     final bool isDark = themeController.isDarkMode;
     final Color infoBoxColor =
-        isDark
-            ? Colors.orange[900]!.withValues(alpha: 0.5)
-            : Colors.orange[50]!; // Menggunakan withValues
+        isDark ? Colors.orange[900]!.withOpacity(0.5) : Colors.orange[50]!;
     final Color infoBoxBorderColor =
         isDark ? Colors.orange[700]! : Colors.orange[200]!;
     final Color infoBoxTextColor =
         isDark ? Colors.orange[200]! : Colors.orange[700]!;
     final Color tierCardBackgroundColor =
         isDark ? const Color(0xFF2A2A2A) : Colors.white;
-    final Color tierCardBorderColor = ColorTheme.primary.withValues(
-      alpha: isDark ? 0.4 : 0.2,
-    ); // Menggunakan withValues
+    final Color tierCardBorderColor = ColorTheme.primary.withOpacity(
+      isDark ? 0.4 : 0.2,
+    );
     final Color tierShadowColor =
-        isDark
-            ? Colors.black.withValues(alpha: 0.3)
-            : Colors.black.withValues(alpha: 0.03); // Menggunakan withValues
+        isDark ? Colors.black.withOpacity(0.3) : Colors.black.withOpacity(0.03);
     final Color deleteButtonBackgroundColor =
-        isDark
-            ? Colors.red.withValues(alpha: 0.2)
-            : Colors.red[50]!; // Menggunakan withValues
+        isDark ? Colors.red.withOpacity(0.2) : Colors.red[50]!;
     final Color deleteIconColor =
         isDark ? Colors.redAccent[100]! : Colors.red[400]!;
 
@@ -1045,8 +982,7 @@ class ServiceFormView extends GetView<ServiceController> {
                 if (!priceTierControllers.containsKey(index)) {
                   _initializePriceTierControllers(index);
                 }
-                final currentTierControllers =
-                    priceTierControllers[index]!; // Menggunakan variabel yang berbeda untuk kejelasan
+                final currentTierControllers = priceTierControllers[index]!;
                 return Container(
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
@@ -1074,9 +1010,9 @@ class ServiceFormView extends GetView<ServiceController> {
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: ColorTheme.primary.withValues(
-                                  alpha: isDark ? 0.3 : 0.1,
-                                ), // Menggunakan withValues
+                                color: ColorTheme.primary.withOpacity(
+                                  isDark ? 0.3 : 0.1,
+                                ),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
@@ -1103,102 +1039,85 @@ class ServiceFormView extends GetView<ServiceController> {
                                   ),
                                   onPressed: () {
                                     priceTiers.removeAt(index);
-                                    // Rebuild the controllers map to ensure keys are contiguous
                                     final tempControllers = Map<
                                       int,
                                       Map<String, TextEditingController>
                                     >.from(priceTierControllers);
                                     priceTierControllers.clear();
-                                    tempControllers.remove(
-                                      index,
-                                    ); // Remove the specific controller
-
+                                    tempControllers.remove(index);
                                     int newKey = 0;
                                     for (var oldKey
                                         in tempControllers.keys.toList()
                                           ..sort()) {
-                                      // Iterate over sorted old keys
-                                      if (oldKey != index) {
-                                        // Skip the removed one if it was somehow still there
-                                        final controllerSet =
-                                            tempControllers[oldKey];
-                                        if (controllerSet != null) {
-                                          priceTierControllers[newKey] =
-                                              controllerSet;
-                                          newKey++;
-                                        }
+                                      final controllerSet =
+                                          tempControllers[oldKey];
+                                      if (controllerSet != null) {
+                                        priceTierControllers[newKey] =
+                                            controllerSet;
+                                        newKey++;
                                       }
                                     }
-                                    // Ensure priceTiers list and priceTierControllers map are in sync
-                                    // If a tier was removed, its controller should also be gone.
-                                    // If priceTiers is shorter than controllers, adjust controllers.
-                                    // If priceTiers is longer (e.g. added but controller not made), this is an issue.
-                                    // The current logic re-indexes existing controllers.
                                   },
                                 ),
                               ),
                           ],
                         ),
                         const SizedBox(height: 16),
-                        Row(
+                        // ✨ --- PERBAIKAN DI SINI JUGA --- ✨
+                        Column(
                           children: [
-                            Expanded(
-                              child: AppTextField(
-                                placeholder: 'Min Age (months)',
-                                keyboardType: TextInputType.number,
-                                controller: currentTierControllers['minAge'],
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Required';
-                                  }
-                                  if (int.tryParse(value) == null ||
-                                      int.parse(value) < 0) {
-                                    return 'Invalid age';
-                                  }
-                                  return null;
-                                },
-                                onChanged: (value) {
-                                  if (value.isNotEmpty &&
-                                      int.tryParse(value) != null) {
-                                    priceTiers[index]['minAge'] = int.parse(
-                                      value,
-                                    );
-                                  }
-                                },
-                              ),
+                            AppTextField(
+                              placeholder: 'Min Age (months)',
+                              keyboardType: TextInputType.number,
+                              controller: currentTierControllers['minAge'],
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Required';
+                                }
+                                if (int.tryParse(value) == null ||
+                                    int.parse(value) < 0) {
+                                  return 'Invalid age';
+                                }
+                                return null;
+                              },
+                              onChanged: (value) {
+                                if (value.isNotEmpty &&
+                                    int.tryParse(value) != null) {
+                                  priceTiers[index]['minAge'] = int.parse(
+                                    value,
+                                  );
+                                }
+                              },
                             ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: AppTextField(
-                                placeholder: 'Max Age (months)',
-                                keyboardType: TextInputType.number,
-                                controller: currentTierControllers['maxAge'],
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Required';
-                                  }
-                                  final minAgeText =
-                                      currentTierControllers['minAge']!.text;
-                                  if (minAgeText.isEmpty ||
-                                      int.tryParse(minAgeText) == null) {
-                                    return 'Min age first';
-                                  }
-                                  if (int.tryParse(value) == null ||
-                                      int.parse(value) <=
-                                          int.parse(minAgeText)) {
-                                    return '> min age';
-                                  }
-                                  return null;
-                                },
-                                onChanged: (value) {
-                                  if (value.isNotEmpty &&
-                                      int.tryParse(value) != null) {
-                                    priceTiers[index]['maxAge'] = int.parse(
-                                      value,
-                                    );
-                                  }
-                                },
-                              ),
+                            const SizedBox(height: 16),
+                            AppTextField(
+                              placeholder: 'Max Age (months)',
+                              keyboardType: TextInputType.number,
+                              controller: currentTierControllers['maxAge'],
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Required';
+                                }
+                                final minAgeText =
+                                    currentTierControllers['minAge']!.text;
+                                if (minAgeText.isEmpty ||
+                                    int.tryParse(minAgeText) == null) {
+                                  return 'Min age first';
+                                }
+                                if (int.tryParse(value) == null ||
+                                    int.parse(value) <= int.parse(minAgeText)) {
+                                  return '> min age';
+                                }
+                                return null;
+                              },
+                              onChanged: (value) {
+                                if (value.isNotEmpty &&
+                                    int.tryParse(value) != null) {
+                                  priceTiers[index]['maxAge'] = int.parse(
+                                    value,
+                                  );
+                                }
+                              },
                             ),
                           ],
                         ),
@@ -1239,9 +1158,7 @@ class ServiceFormView extends GetView<ServiceController> {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: ColorTheme.primary.withValues(
-                    alpha: isDark ? 0.2 : 0.1,
-                  ), // Menggunakan withValues
+                  color: ColorTheme.primary.withOpacity(isDark ? 0.2 : 0.1),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -1279,7 +1196,6 @@ class ServiceFormView extends GetView<ServiceController> {
   }
 
   void _submitForm() {
-    // final bool isDark = themeController.isDarkMode; // Dihapus, tidak digunakan
     if (formKey.currentState!.validate()) {
       final name = nameController.text;
       final description = descriptionController.text;
@@ -1288,23 +1204,20 @@ class ServiceFormView extends GetView<ServiceController> {
 
       if (hasPriceTiers.value) {
         bool isValid = true;
-        // Validasi harusnya dari priceTiers list yang sudah diupdate oleh onChanged
         for (var i = 0; i < priceTiers.length; i++) {
           final tier = priceTiers[i];
-          final tierControllerSet =
-              priceTierControllers[i]; // Ambil controller yang sesuai
+          final tierControllerSet = priceTierControllers[i];
 
           if (tier['minAge'] == null ||
               tier['maxAge'] == null ||
               tier['price'] == null ||
-              tierControllerSet == null || // Pastikan controller ada
+              tierControllerSet == null ||
               tierControllerSet['minAge']!.text.isEmpty ||
               tierControllerSet['maxAge']!.text.isEmpty ||
               tierControllerSet['price']!.text.isEmpty) {
             isValid = false;
             break;
           }
-          // Pastikan juga nilai numerik valid jika diperlukan
           if (int.tryParse(tierControllerSet['minAge']!.text) == null ||
               int.tryParse(tierControllerSet['maxAge']!.text) == null ||
               double.tryParse(tierControllerSet['price']!.text) == null) {
@@ -1327,9 +1240,9 @@ class ServiceFormView extends GetView<ServiceController> {
         List<Map<String, dynamic>> formattedPriceTiers =
             priceTiers.map((tier) {
               return {
-                'minBabyAge': tier['minAge'], // Sudah diupdate oleh onChanged
-                'maxBabyAge': tier['maxAge'], // Sudah diupdate oleh onChanged
-                'price': tier['price'], // Sudah diupdate oleh onChanged
+                'minBabyAge': tier['minAge'],
+                'maxBabyAge': tier['maxAge'],
+                'price': tier['price'],
                 'tierName': 'Tier ${priceTiers.indexOf(tier) + 1}',
               };
             }).toList();

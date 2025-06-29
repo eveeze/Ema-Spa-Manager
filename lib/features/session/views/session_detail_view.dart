@@ -1,3 +1,5 @@
+// lib/features/session/views/session_detail_view.dart
+
 import 'package:emababyspa/common/layouts/main_layout.dart';
 import 'package:emababyspa/common/theme/text_theme.dart';
 import 'package:emababyspa/common/widgets/app_button.dart';
@@ -26,7 +28,15 @@ class _SessionDetailViewState extends State<SessionDetailView> {
     super.initState();
     final args = Get.arguments as Map<String, dynamic>;
     session = args['session'];
-    sessionController.getSessionById(session.id);
+
+    // --- PERBAIKAN DI SINI ---
+    // Kita panggil getSessionById setelah frame pertama selesai di-build.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        // Memastikan widget masih ada di tree
+        sessionController.getSessionById(session.id);
+      }
+    });
   }
 
   @override
@@ -86,6 +96,7 @@ class _SessionDetailViewState extends State<SessionDetailView> {
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: M3Spacing.md),
         child: Obx(() {
+          // Gunakan data dari controller jika sudah ada, jika tidak, gunakan data dari argumen
           final currentSession =
               sessionController.currentSession.value ?? session;
           return Column(
@@ -470,15 +481,12 @@ class _SessionDetailViewState extends State<SessionDetailView> {
                     child: AppButton(
                       text: 'Edit',
                       onPressed: () {
-                        // --- PERUBAHAN DI SINI ---
-                        // Ganti cara navigasi agar konsisten dengan tombol "View"
                         Get.toNamed(
                           AppRoutes.reservationEdit.replaceAll(
                             ':id',
                             currentSession.reservation!.id,
                           ),
                         );
-                        // --- BATAS PERUBAHAN ---
                       },
                       type: AppButtonType.primary,
                       icon: Icons.edit_outlined,

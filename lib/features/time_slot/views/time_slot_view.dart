@@ -9,7 +9,7 @@ import 'package:emababyspa/features/session/controllers/session_controller.dart'
 import 'package:emababyspa/utils/app_routes.dart';
 import 'package:emababyspa/utils/timezone_utils.dart';
 import 'package:emababyspa/common/theme/text_theme.dart';
-import 'package:emababyspa/common/widgets/custom_appbar.dart'; // Assuming this is the path to your CustomAppBar
+import 'package:emababyspa/common/widgets/custom_appbar.dart';
 
 class TimeSlotView extends StatefulWidget {
   const TimeSlotView({super.key});
@@ -30,7 +30,13 @@ class _TimeSlotViewState extends State<TimeSlotView> {
     if (controller.selectedTimeSlot.value == null) {
       controller.selectedTimeSlot.value = timeSlot;
     }
-    sessionController.fetchSessions(timeSlotId: timeSlot.id);
+
+    // --- PERBAIKAN #1: Mencegah error "setState called during build" ---
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        sessionController.fetchSessions(timeSlotId: timeSlot.id);
+      }
+    });
   }
 
   @override
@@ -57,7 +63,6 @@ class _TimeSlotViewState extends State<TimeSlotView> {
 
       return Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        // UPDATED: Replaced the old AppBar with your CustomAppBar for consistency.
         appBar: CustomAppBar(
           title: 'Time Slot Details',
           backgroundColor: Theme.of(context).colorScheme.surface,
@@ -123,8 +128,6 @@ class _TimeSlotViewState extends State<TimeSlotView> {
     });
   }
 
-  // REMOVED: The _buildAppBar method is no longer needed.
-
   void _onEditTimeSlot(dynamic timeSlot) async {
     final result = await Get.toNamed(
       AppRoutes.timeSlotEdit.replaceAll(':id', timeSlot.id.toString()),
@@ -148,7 +151,7 @@ class _TimeSlotViewState extends State<TimeSlotView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: M3Spacing.md), // Better top spacing
+            const SizedBox(height: M3Spacing.md),
             Obx(
               () => _buildTimeSlotHeader(
                 context,
@@ -194,9 +197,7 @@ class _TimeSlotViewState extends State<TimeSlotView> {
         side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(
-          M3Spacing.lg,
-        ), // Increased internal padding
+        padding: const EdgeInsets.all(M3Spacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -340,7 +341,7 @@ class _TimeSlotViewState extends State<TimeSlotView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionHeader(context, 'Sessions', timeSlot),
-        const SizedBox(height: M3Spacing.md), // Increased spacing
+        const SizedBox(height: M3Spacing.md),
         Obx(() {
           if (sessionController.isLoading.value) {
             return const Center(
@@ -360,9 +361,7 @@ class _TimeSlotViewState extends State<TimeSlotView> {
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: sessions.length,
                 separatorBuilder:
-                    (context, index) => const SizedBox(
-                      height: M3Spacing.md,
-                    ), // Increased spacing between items
+                    (context, index) => const SizedBox(height: M3Spacing.md),
                 itemBuilder: (context, index) {
                   final session = sessions[index];
                   return _buildSessionItem(context, session);
@@ -404,7 +403,7 @@ class _TimeSlotViewState extends State<TimeSlotView> {
       color: Theme.of(context).colorScheme.surfaceContainer,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
-        padding: const EdgeInsets.all(M3Spacing.xl), // Better internal padding
+        padding: const EdgeInsets.all(M3Spacing.xl),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -464,9 +463,9 @@ class _TimeSlotViewState extends State<TimeSlotView> {
     return Dismissible(
       key: Key(session.id.toString()),
       direction: DismissDirection.endToStart,
-      confirmDismiss:
-          (direction) => _showDeleteSessionConfirmation(context, session),
-      onDismissed: (direction) => sessionController.deleteSession(session.id),
+      confirmDismiss: (direction) async {
+        return await _showDeleteSessionConfirmation(context, session);
+      },
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: M3Spacing.lg),
@@ -500,7 +499,7 @@ class _TimeSlotViewState extends State<TimeSlotView> {
           contentPadding: const EdgeInsets.symmetric(
             horizontal: M3Spacing.lg,
             vertical: M3Spacing.sm,
-          ), // Better ListTile padding
+          ),
           onTap: () {
             Get.toNamed(
               AppRoutes.sessionDetail,
@@ -578,6 +577,7 @@ class _TimeSlotViewState extends State<TimeSlotView> {
     );
   }
 
+  // --- PERBAIKAN #2: Logika hapus yang benar ---
   Future<bool> _showDeleteSessionConfirmation(
     BuildContext context,
     dynamic session,
@@ -609,29 +609,17 @@ class _TimeSlotViewState extends State<TimeSlotView> {
       },
     );
 
+    // Hanya jika pengguna menekan "Delete"
     if (result == true) {
+      // Panggil controller untuk menghapus, dan tunggu hasilnya
       final success = await sessionController.deleteSession(session.id);
-      if (!mounted) return false;
-
-      if (success) {
-        await sessionController.fetchSessions(timeSlotId: session.timeSlotId);
-        if (Get.isRegistered<ScheduleController>()) {
-          Get.find<ScheduleController>().refreshData(
-            specificTimeSlotId: session.timeSlotId,
-          );
-        }
-        return true;
-      } else {
-        Get.snackbar(
-          'Error',
-          sessionController.errorMessage.value.isNotEmpty
-              ? sessionController.errorMessage.value
-              : 'Failed to delete session',
-          backgroundColor: Theme.of(context).colorScheme.error,
-          colorText: Theme.of(context).colorScheme.onError,
-        );
-      }
+      // Kembalikan status suksesnya ke widget Dismissible.
+      // Jika true, item akan hilang. Jika false, item akan kembali.
+      // Tidak perlu panggil fetch ulang di sini.
+      return success;
     }
+
+    // Jika pengguna menekan "Cancel"
     return false;
   }
 
