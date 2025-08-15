@@ -56,12 +56,6 @@ class ReservationDetailView extends GetView<ReservationController> {
       appBarTitle: 'Reservation Details',
       appBarActions: [
         IconButton(
-          icon: const Icon(Icons.edit),
-          onPressed:
-              () => Get.toNamed('${AppRoutes.reservationEdit}/$reservationId'),
-          tooltip: 'Edit Reservation',
-        ),
-        IconButton(
           icon: const Icon(Icons.refresh),
           onPressed: () {
             if (reservationId.isNotEmpty) {

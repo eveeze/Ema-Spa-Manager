@@ -93,7 +93,7 @@ class AppTheme {
       hintStyle: const TextStyle(color: ColorTheme.m3OnSurfaceVariant),
     ),
 
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: ColorTheme.m3Surface,
       elevation: 1,
       shape: RoundedRectangleBorder(
@@ -116,7 +116,7 @@ class AppTheme {
     ),
 
     // Other component themes updated for M3
-    dialogTheme: DialogTheme(
+    dialogTheme: DialogThemeData(
       backgroundColor: ColorTheme.m3Surface,
       titleTextStyle: TextStyle(
         color: ColorTheme.m3OnSurface,
@@ -228,7 +228,7 @@ class AppTheme {
       hintStyle: const TextStyle(color: ColorTheme.m3OnSurfaceVariantDark),
     ),
 
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: ColorTheme.m3SurfaceDark,
       elevation: 1,
       shape: RoundedRectangleBorder(
@@ -251,7 +251,7 @@ class AppTheme {
     ),
 
     // Other component themes updated for M3
-    dialogTheme: DialogTheme(
+    dialogTheme: DialogThemeData(
       backgroundColor: ColorTheme.m3SurfaceDark,
       titleTextStyle: TextStyle(
         color: ColorTheme.m3OnSurfaceDark,

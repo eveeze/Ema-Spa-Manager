@@ -1,4 +1,9 @@
 // lib/data/models/reservation.dart
+
+// ===== LANGKAH 1: Import TimeZoneUtil =====
+import 'package:emababyspa/utils/timezone_utils.dart'; // Pastikan path ini benar
+// ===========================================
+
 import 'package:emababyspa/data/models/payment.dart';
 import 'package:equatable/equatable.dart';
 
@@ -36,8 +41,6 @@ class Reservation extends Equatable {
   final String? staffName;
   final DateTime? sessionDate;
   final String? sessionTime;
-
-  // --- PASTIKAN FIELD INI ADA ---
   final Payment? payment;
 
   const Reservation({
@@ -62,7 +65,6 @@ class Reservation extends Equatable {
     this.staffName,
     this.sessionDate,
     this.sessionTime,
-    // --- PASTIKAN ADA DI CONSTRUCTOR ---
     this.payment,
   });
 
@@ -88,17 +90,27 @@ class Reservation extends Equatable {
     String? extractedSessionTime;
     if (timeSlotData?['startTime'] != null &&
         timeSlotData?['endTime'] != null) {
+      // ===== LANGKAH 2: GUNAKAN TimeZoneUtil UNTUK KONVERSI WAKTU =====
       try {
-        final startTime = DateTime.parse(timeSlotData['startTime']);
-        final endTime = DateTime.parse(timeSlotData['endTime']);
-        final sh = startTime.hour.toString().padLeft(2, '0');
-        final sm = startTime.minute.toString().padLeft(2, '0');
-        final eh = endTime.hour.toString().padLeft(2, '0');
-        final em = endTime.minute.toString().padLeft(2, '0');
+        // Parse string menjadi objek DateTime dalam UTC
+        final startTimeUTC = DateTime.parse(timeSlotData['startTime']);
+        final endTimeUTC = DateTime.parse(timeSlotData['endTime']);
+
+        // Konversi dari UTC ke Waktu Indonesia (WIB / UTC+7)
+        final startTimeWIB = TimeZoneUtil.toIndonesiaTime(startTimeUTC);
+        final endTimeWIB = TimeZoneUtil.toIndonesiaTime(endTimeUTC);
+
+        // Format string waktu menggunakan objek DateTime yang sudah dikonversi ke WIB
+        final sh = startTimeWIB.hour.toString().padLeft(2, '0');
+        final sm = startTimeWIB.minute.toString().padLeft(2, '0');
+        final eh = endTimeWIB.hour.toString().padLeft(2, '0');
+        final em = endTimeWIB.minute.toString().padLeft(2, '0');
         extractedSessionTime = '$sh:$sm - $eh:$em';
       } catch (e) {
+        // Jika terjadi error, biarkan kosong agar tidak crash
         /* ignore */
       }
+      // =================================================================
     }
 
     DateTime? parsedSessionDate;
@@ -136,9 +148,9 @@ class Reservation extends Equatable {
       serviceName: json['serviceName'] ?? serviceData?['name'],
       staffName: json['staffName'] ?? staffData?['name'],
       sessionDate: parsedSessionDate,
-      sessionTime: json['sessionTime'] ?? extractedSessionTime,
-
-      // --- PASTIKAN LOGIKA PARSING INI ADA ---
+      sessionTime:
+          json['sessionTime'] ??
+          extractedSessionTime, // Tetap gunakan hasil ekstraksi
       payment:
           json['payment'] != null && json['payment'] is Map<String, dynamic>
               ? Payment.fromJson(json['payment'])
@@ -148,14 +160,30 @@ class Reservation extends Equatable {
 
   @override
   List<Object?> get props => [
-    id, reservationType, customerId, serviceId, staffId, sessionId, notes,
-    parentNames, babyName, babyAge, priceTierId, totalPrice, status,
-    createdByOwner, createdAt, updatedAt, customerName, serviceName,
-    staffName, sessionDate, sessionTime,
-    // --- PASTIKAN ADA DI PROPS ---
+    id,
+    reservationType,
+    customerId,
+    serviceId,
+    staffId,
+    sessionId,
+    notes,
+    parentNames,
+    babyName,
+    babyAge,
+    priceTierId,
+    totalPrice,
+    status,
+    createdByOwner,
+    createdAt,
+    updatedAt,
+    customerName,
+    serviceName,
+    staffName,
+    sessionDate,
+    sessionTime,
     payment,
   ];
-  // Fungsi toJson() dan copyWith() tidak perlu diubah.
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,

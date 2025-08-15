@@ -4,7 +4,7 @@ class AppConstants {
   static const String appVersion = '1.0.0';
   static const String appBuildNumber = '1';
   static const String appPackageName = 'com.emababyspa.app';
-
+  static const String appOneSignalId = "adb63973-e191-4d84-8454-2f5e168ffad0";
   // Animation Durations
   static const int splashDuration = 2000; // milliseconds
   static const int shortAnimationDuration = 300; // milliseconds

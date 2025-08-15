@@ -1,4 +1,3 @@
-// lib/features/operating_schedule/widgets/operating_schedule_dialog.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -72,16 +71,19 @@ class _OperatingScheduleDialogState extends State<OperatingScheduleDialog> {
       child: Container(
         constraints: const BoxConstraints(maxWidth: 400),
         padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(context),
-            const SizedBox(height: 24),
-            _buildForm(context),
-            const SizedBox(height: 24),
-            _buildActionButtons(context),
-          ],
+        child: SingleChildScrollView(
+          // <--- Wrap with SingleChildScrollView
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(context),
+              const SizedBox(height: 24),
+              _buildForm(context),
+              const SizedBox(height: 24),
+              _buildActionButtons(context),
+            ],
+          ),
         ),
       ),
     );
@@ -265,7 +267,9 @@ class _OperatingScheduleDialogState extends State<OperatingScheduleDialog> {
                 decoration: BoxDecoration(
                   color:
                       isSelected
-                          ? color.withValues(alpha: 0.1)
+                          ? color.withOpacity(
+                            0.1,
+                          ) // Changed .withValues to .withOpacity
                           : unselectedIconBg,
                   borderRadius: BorderRadius.circular(8),
                 ),

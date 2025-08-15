@@ -5,12 +5,12 @@ class ApiEndpoints {
   // base url andorid studio
   //static const String baseUrl = 'http://10.0.2.2:3000/api';
   // base url real device
-  static const String baseUrl =
-      'https://8b11-110-136-170-98.ngrok-free.app/api';
+  static const String baseUrl = 'https://0f53d77f21e9.ngrok-free.app/api';
 
   // Auth
   static const String login = '/owner/login';
   static const String profile = '/owner/profile';
+  static const String updateOwnerPlayerId = '/owner/update-player-id';
 
   // Staff
   static const String staffs = '/staff';
@@ -79,4 +79,8 @@ class ApiEndpoints {
   static const String generateScheduleComponents =
       '/api/scheduler/generate/components';
   static const String cronScheduleGeneration = '/api/scheduler/cron';
+
+  // notifications
+  static const String notifications = '/notifications';
+  static const String notificationMarkRead = '/notifications/{id}/read';
 }

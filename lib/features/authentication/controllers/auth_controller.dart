@@ -1,11 +1,16 @@
+// lib/features/authentication/controllers/auth_controller.dart
 import 'package:get/get.dart';
 import 'package:emababyspa/data/repository/auth_repository.dart';
 import 'package:emababyspa/data/models/owner.dart';
 import 'package:emababyspa/utils/storage_utils.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
+import 'package:emababyspa/features/authentication/controllers/notification_controller.dart';
 
 class AuthController extends GetxController {
   final AuthRepository _repository;
   final StorageUtils _storage = StorageUtils();
+  final NotificationController _notificationController =
+      Get.find<NotificationController>();
 
   final Rx<Owner?> owner = Rx<Owner?>(null);
   final RxBool isLoading = false.obs;
@@ -25,24 +30,27 @@ class AuthController extends GetxController {
     final hasToken = await _storage.hasToken();
 
     if (hasToken) {
-      // Check if token is expired
       final isExpired = await _storage.isTokenExpired();
-
       if (isExpired) {
-        // Token expired, logout user
         await logout();
         return;
       }
 
       isAuthenticated.value = true;
 
-      // Try to load owner from storage first
+      // HAPUS LOGIKA NOTIFIKASI DARI SINI
+      // final hasPermission = OneSignal.Notifications.permission;
+      // if (!hasPermission) {
+      //   await OneSignal.Notifications.requestPermission(true);
+      // }
+      // _notificationController.onLoginSuccess();
+
       final storedOwner = _storage.getOwner();
       if (storedOwner != null) {
         owner.value = storedOwner;
       }
 
-      // Refresh owner profile from server
+      // Fungsi ini akan mengambil data profil owner dan sudah benar
       getOwnerProfile();
     }
   }
@@ -55,11 +63,19 @@ class AuthController extends GetxController {
     try {
       final result = await _repository.login(email: email, password: password);
 
-      // Save token and owner data
       await _storage.setToken(result['token']);
       owner.value = result['owner'];
       await _storage.setOwner(result['owner']);
       isAuthenticated.value = true;
+
+      // --- PINDAHKAN LOGIKA NOTIFIKASI KE SINI ---
+      // Ini adalah tempat yang paling tepat
+      final hasPermission = await OneSignal.Notifications.permission;
+      if (!hasPermission) {
+        await OneSignal.Notifications.requestPermission(true);
+      }
+      _notificationController.onLoginSuccess();
+      // --- AKHIR LOGIKA BARU ---
 
       isLoading.value = false;
       return true;

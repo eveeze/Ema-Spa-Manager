@@ -90,7 +90,7 @@ class _ReservationFormViewState extends State<ReservationFormView> {
   Widget build(BuildContext context) {
     return MainLayout(
       child: Scaffold(
-        backgroundColor: Theme.of(context).colorScheme.background,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         appBar: _buildAppBar(context),
         body: _buildBody(context),
         bottomNavigationBar: _buildBottomActions(context),
@@ -120,8 +120,8 @@ class _ReservationFormViewState extends State<ReservationFormView> {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            colorScheme.background,
-            colorScheme.primary.withOpacity(0.05),
+            colorScheme.surface,
+            colorScheme.primary.withValues(alpha: 0.05),
           ],
         ),
       ),
@@ -335,13 +335,13 @@ class _ReservationFormViewState extends State<ReservationFormView> {
                 Icon(
                   Icons.spa_outlined,
                   size: 48,
-                  color: colorScheme.onSurface.withOpacity(0.4),
+                  color: colorScheme.onSurface.withValues(alpha: 0.4),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   'No Services Available',
                   style: textTheme.titleMedium?.copyWith(
-                    color: colorScheme.onSurface.withOpacity(0.8),
+                    color: colorScheme.onSurface.withValues(alpha: 0.8),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -547,7 +547,7 @@ class _ReservationFormViewState extends State<ReservationFormView> {
               });
             },
             activeColor: colorScheme.primary,
-            tileColor: colorScheme.surfaceVariant.withOpacity(0.3),
+            tileColor: colorScheme.surfaceVariant.withValues(alpha: 0.3),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
@@ -584,7 +584,9 @@ class _ReservationFormViewState extends State<ReservationFormView> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color:
-                  isDark ? Colors.green.withOpacity(0.2) : Colors.green.shade50,
+                  isDark
+                      ? Colors.green.withValues(alpha: 0.2)
+                      : Colors.green.shade50,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isDark ? Colors.green.shade700 : Colors.green.shade200,
@@ -662,7 +664,7 @@ class _ReservationFormViewState extends State<ReservationFormView> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).shadowColor.withOpacity(0.05),
+            color: Theme.of(context).shadowColor.withValues(alpha: 0.05),
             spreadRadius: 1,
             blurRadius: 5,
             offset: const Offset(0, 2),
@@ -773,7 +775,7 @@ class _ReservationFormViewState extends State<ReservationFormView> {
         color: colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).shadowColor.withOpacity(0.1),
+            color: Theme.of(context).shadowColor.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 5,
             offset: const Offset(0, -2),
