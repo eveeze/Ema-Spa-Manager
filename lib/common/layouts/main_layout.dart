@@ -349,12 +349,12 @@ class _MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
       shadowColor:
           _themeController.isDarkMode
               ? Colors.transparent
-              : Colors.black.withOpacity(0.1),
+              : Colors.black.withValues(alpha: 0.1),
       shape:
           _themeController.isDarkMode
               ? Border(
                 bottom: BorderSide(
-                  color: ColorTheme.borderDark.withOpacity(0.3),
+                  color: ColorTheme.borderDark.withValues(alpha: 0.3),
                   width: 0.5,
                 ),
               )

@@ -1,4 +1,4 @@
-// lib/data/api/api_client.dart - Fixed path parameter handling
+// lib/data/api/api_client.dart
 import 'package:dio/dio.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:emababyspa/data/api/api_endpoints.dart';
