@@ -181,7 +181,7 @@ class _SessionDetailViewState extends State<SessionDetailView> {
 
     return Card(
       elevation: 0,
-      color: colorScheme.surfaceVariant.withOpacity(0.5),
+      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: colorScheme.outlineVariant),
@@ -348,7 +348,7 @@ class _SessionDetailViewState extends State<SessionDetailView> {
     return Container(
       padding: const EdgeInsets.all(M3Spacing.lg),
       decoration: BoxDecoration(
-        color: colorScheme.secondaryContainer.withOpacity(0.3),
+        color: colorScheme.secondaryContainer.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: colorScheme.outlineVariant),
       ),
@@ -371,7 +371,7 @@ class _SessionDetailViewState extends State<SessionDetailView> {
           Text(
             'This session is not yet reserved by any customer.',
             style: textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSecondaryContainer.withOpacity(0.8),
+              color: colorScheme.onSecondaryContainer.withValues(alpha: 0.8),
             ),
             textAlign: TextAlign.center,
           ),

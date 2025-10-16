@@ -1,91 +1,41 @@
 // lib/data/models/rating.dart
 import 'package:equatable/equatable.dart';
-import 'service.dart';
-import 'customer.dart';
 
 class Rating extends Equatable {
   final String id;
   final double rating;
   final String? comment;
-  final String serviceId;
-  final Service? service;
-  final String customerId;
-  final Customer? customer;
   final DateTime createdAt;
+  final String reservationId; // Belongs to a reservation
 
   const Rating({
     required this.id,
     required this.rating,
     this.comment,
-    required this.serviceId,
-    this.service,
-    required this.customerId,
-    this.customer,
     required this.createdAt,
+    required this.reservationId,
   });
 
   factory Rating.fromJson(Map<String, dynamic> json) {
     return Rating(
-      id: json['id'],
-      rating: json['rating'].toDouble(),
+      id: json['id'] ?? '',
+      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
       comment: json['comment'],
-      serviceId: json['serviceId'],
-      service:
-          json['service'] != null ? Service.fromJson(json['service']) : null,
-      customerId: json['customerId'],
-      customer:
-          json['customer'] != null ? Customer.fromJson(json['customer']) : null,
       createdAt: DateTime.parse(json['createdAt']),
+      reservationId: json['reservationId'] ?? '',
     );
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = {
+    return {
       'id': id,
       'rating': rating,
-      'serviceId': serviceId,
-      'customerId': customerId,
+      'comment': comment,
       'createdAt': createdAt.toIso8601String(),
+      'reservationId': reservationId,
     };
-
-    if (comment != null) data['comment'] = comment;
-    if (service != null) data['service'] = service!.toJson();
-    if (customer != null) data['customer'] = customer!.toJson();
-
-    return data;
-  }
-
-  Rating copyWith({
-    String? id,
-    double? rating,
-    String? comment,
-    String? serviceId,
-    Service? service,
-    String? customerId,
-    Customer? customer,
-    DateTime? createdAt,
-  }) {
-    return Rating(
-      id: id ?? this.id,
-      rating: rating ?? this.rating,
-      comment: comment ?? this.comment,
-      serviceId: serviceId ?? this.serviceId,
-      service: service ?? this.service,
-      customerId: customerId ?? this.customerId,
-      customer: customer ?? this.customer,
-      createdAt: createdAt ?? this.createdAt,
-    );
   }
 
   @override
-  List<Object?> get props => [
-    id,
-    rating,
-    comment,
-    serviceId,
-    service,
-    customerId,
-    customer,
-    createdAt,
-  ];
+  List<Object?> get props => [id, rating, comment, createdAt, reservationId];
 }

@@ -1,3 +1,6 @@
+// lib/features/dashboard/views/dashboard_view.dart
+import 'package:emababyspa/features/notification/controllers/notification_controller.dart';
+import 'package:emababyspa/utils/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:emababyspa/common/layouts/main_layout.dart';
@@ -10,40 +13,22 @@ import 'package:emababyspa/utils/timezone_utils.dart';
 class DashboardView extends GetView<DashboardController> {
   const DashboardView({super.key});
 
-  // ===========================================================================
-  // PERUBAHAN: Fungsi Helper yang Diperbaiki untuk Memformat Waktu
-  // ===========================================================================
-  /// Fungsi ini secara andal memformat waktu tampilan ke zona waktu Indonesia.
-  /// Prioritasnya adalah menggunakan `sessionDate` sebagai dasar tanggal (diasumsikan UTC)
-  /// dan kemudian mencoba mengganti jam/menit dari string `sessionTime` jika ada.
-  /// Ini mengatasi masalah di mana `sessionTime` mungkin hanya berisi "HH:mm"
-  /// dan tidak dapat di-parse sendiri sebagai tanggal ISO.
   String _getFormattedDisplayTime(Reservation? reservation) {
     if (reservation == null) return 'N/A';
-
     try {
-      // Prioritas 1: Gunakan sessionDate sebagai dasar. Ini adalah DateTime yang andal (diasumsikan UTC).
       if (reservation.sessionDate != null) {
         DateTime baseUtcTime = reservation.sessionDate!;
-
-        // Jika sessionTime ada, coba gunakan untuk mendapatkan jam & menit yang lebih spesifik.
         if (reservation.sessionTime != null &&
             reservation.sessionTime!.isNotEmpty) {
           String timeStr = reservation.sessionTime!;
-
-          // Bersihkan string, ambil bagian awal jika ini adalah rentang waktu.
           if (timeStr.contains(' - ')) {
             timeStr = timeStr.split(' - ')[0].trim();
           }
-
-          // Coba parse jam dan menit dari string (misal: "07:00").
           final timeParts = timeStr.split(':');
           if (timeParts.length >= 2) {
             final hour = int.tryParse(timeParts[0]);
             final minute = int.tryParse(timeParts[1]);
-
             if (hour != null && minute != null) {
-              // Buat ulang DateTime dalam UTC dengan tanggal dari sessionDate dan waktu dari sessionTime.
               baseUtcTime = DateTime.utc(
                 baseUtcTime.year,
                 baseUtcTime.month,
@@ -54,12 +39,8 @@ class DashboardView extends GetView<DashboardController> {
             }
           }
         }
-
-        // Sekarang format DateTime UTC yang sudah benar ke waktu Indonesia.
         return TimeZoneUtil.formatIndonesiaTime(baseUtcTime, format: 'HH:mm');
       }
-
-      // Prioritas 2: Fallback jika sessionDate null tapi sessionTime ada (mungkin format ISO lengkap).
       if (reservation.sessionTime != null &&
           reservation.sessionTime!.isNotEmpty) {
         String rawTime = reservation.sessionTime!;
@@ -72,17 +53,14 @@ class DashboardView extends GetView<DashboardController> {
       debugPrint(
         'Error parsing time for reservation ${reservation.id}: $e. Fallback to raw value.',
       );
-      // Fallback terakhir jika semua gagal.
       return reservation.sessionTime ?? 'Waktu Error';
     }
-
-    return 'N/A'; // Default jika tidak ada informasi waktu sama sekali.
+    return 'N/A';
   }
 
   @override
   Widget build(BuildContext context) {
     final themeController = Get.find<ThemeController>();
-
     return MainLayout(
       showBottomNavigation: true,
       enablePullToRefresh: true,
@@ -91,7 +69,6 @@ class DashboardView extends GetView<DashboardController> {
         if (controller.isLoading && controller.owner.value == null) {
           return const Center(child: CircularProgressIndicator());
         }
-
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -115,6 +92,7 @@ class DashboardView extends GetView<DashboardController> {
   }
 
   Widget _buildWelcomeSection(ThemeController themeController) {
+    final notificationController = Get.find<NotificationController>();
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -146,26 +124,83 @@ class DashboardView extends GetView<DashboardController> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Selamat Datang',
-            style: TextStyle(
-              fontFamily: 'JosefinSans',
-              fontSize: 16,
-              color: Colors.white.withAlpha((255 * 0.9).round()),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Obx(
-            () => Text(
-              controller.owner.value?.name ?? 'Owner',
-              style: const TextStyle(
-                fontFamily: 'JosefinSans',
-                fontSize: 24,
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Selamat Datang',
+                      style: TextStyle(
+                        fontFamily: 'JosefinSans',
+                        fontSize: 16,
+                        color: Colors.white.withAlpha((255 * 0.9).round()),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Obx(
+                      () => Text(
+                        controller.owner.value?.name ?? 'Owner',
+                        style: const TextStyle(
+                          fontFamily: 'JosefinSans',
+                          fontSize: 24,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
+              Obx(() {
+                return Stack(
+                  children: [
+                    IconButton(
+                      icon: const Icon(
+                        Icons.notifications_outlined,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                      onPressed: () {
+                        Get.toNamed(AppRoutes.notification);
+                      },
+                    ),
+                    if (notificationController.unreadCount.value > 0)
+                      Positioned(
+                        right: 8,
+                        top: 8,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.white, width: 1.5),
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 18,
+                            minHeight: 18,
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${notificationController.unreadCount.value}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              }),
+            ],
           ),
           const SizedBox(height: 8),
           Text(
@@ -202,7 +237,7 @@ class DashboardView extends GetView<DashboardController> {
         Obx(
           () => _buildLargeStatCard(
             title: 'Total Penghasilan Hari Ini',
-            value: controller.totalRevenueToday.value,
+            value: controller.totalRevenueTodayFormatted,
             icon: Icons.monetization_on,
             color: Colors.teal,
             themeController: themeController,
@@ -215,7 +250,7 @@ class DashboardView extends GetView<DashboardController> {
               child: Obx(
                 () => _buildStatCard(
                   title: 'Total Reservasi',
-                  value: controller.todayAppointments.value,
+                  value: controller.totalAppointmentsToday,
                   icon: Icons.calendar_today_outlined,
                   color: Colors.blue,
                   themeController: themeController,
@@ -321,9 +356,7 @@ class DashboardView extends GetView<DashboardController> {
             return const Center(child: Text("Error memuat jadwal."));
           }
 
-          // Panggil fungsi helper yang sudah diperbaiki
           final String startTimeDisplay = _getFormattedDisplayTime(currentRes);
-
           final String customerName = currentRes.customerName ?? 'N/A';
           final String serviceName = currentRes.serviceName ?? 'N/A';
           final String staffName = currentRes.staffName ?? 'N/A';
@@ -526,7 +559,7 @@ class DashboardView extends GetView<DashboardController> {
         const SizedBox(height: 16),
         Obx(() {
           if (controller.isLoadingAnalytics.value &&
-              controller.totalReservationsThisMonth.value == '0') {
+              controller.detailsDataThisMonth.value == null) {
             return const Center(
               child: Padding(
                 padding: EdgeInsets.all(32.0),
@@ -544,28 +577,28 @@ class DashboardView extends GetView<DashboardController> {
             children: [
               _buildStatCard(
                 title: 'Total Penghasilan',
-                value: controller.totalRevenueThisMonth.value,
+                value: controller.totalRevenueThisMonthFormatted,
                 icon: Icons.monetization_on_outlined,
                 color: Colors.green,
                 themeController: themeController,
               ),
               _buildStatCard(
                 title: 'Total Reservasi',
-                value: controller.totalReservationsThisMonth.value,
+                value: controller.totalReservationsThisMonth,
                 icon: Icons.event_available_outlined,
                 color: Colors.purple,
                 themeController: themeController,
               ),
               _buildStatCard(
                 title: 'Sesi Selesai',
-                value: controller.completedReservationsThisMonth.value,
+                value: controller.completedReservationsThisMonth,
                 icon: Icons.check_circle_outline,
                 color: Colors.cyan,
                 themeController: themeController,
               ),
               _buildStatCard(
                 title: 'Sesi Dibatalkan',
-                value: controller.cancelledReservationsThisMonth.value,
+                value: controller.cancelledReservationsThisMonth,
                 icon: Icons.cancel_outlined,
                 color: Colors.redAccent,
                 themeController: themeController,

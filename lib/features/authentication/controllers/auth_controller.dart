@@ -4,7 +4,7 @@ import 'package:emababyspa/data/repository/auth_repository.dart';
 import 'package:emababyspa/data/models/owner.dart';
 import 'package:emababyspa/utils/storage_utils.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
-import 'package:emababyspa/features/authentication/controllers/notification_controller.dart';
+import 'package:emababyspa/features/notification/controllers/notification_controller.dart';
 
 class AuthController extends GetxController {
   final AuthRepository _repository;
@@ -68,14 +68,11 @@ class AuthController extends GetxController {
       await _storage.setOwner(result['owner']);
       isAuthenticated.value = true;
 
-      // --- PINDAHKAN LOGIKA NOTIFIKASI KE SINI ---
-      // Ini adalah tempat yang paling tepat
-      final hasPermission = await OneSignal.Notifications.permission;
+      final hasPermission = OneSignal.Notifications.permission;
       if (!hasPermission) {
         await OneSignal.Notifications.requestPermission(true);
       }
       _notificationController.onLoginSuccess();
-      // --- AKHIR LOGIKA BARU ---
 
       isLoading.value = false;
       return true;

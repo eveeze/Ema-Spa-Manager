@@ -172,7 +172,7 @@ class ReservationProvider {
 
       return await _apiClient.putMultipartValidated(
         ApiEndpoints.reservationsOwnerUpdatePaymentProofById, // Endpoint baru
-        pathParams: {'id': reservationId},
+        pathParams: {'reservationId': reservationId}, // <-- BENAR
         data: formData,
       );
     } catch (e) {
@@ -202,7 +202,7 @@ class ReservationProvider {
 
       return await _apiClient.postMultipartValidated(
         ApiEndpoints.reservationsOwnerConfirmWithProof, // Endpoint baru
-        pathParams: {'id': reservationId},
+        pathParams: {'reservationId': reservationId},
         data: formData,
       );
     } catch (e) {
@@ -317,7 +317,7 @@ class ReservationProvider {
       return await _apiClient.postMultipartValidated(
         ApiEndpoints
             .manualReservationsPaymentProofById, // Ganti dengan endpoint yang sesuai
-        pathParams: {'id': reservationId},
+        pathParams: {'reservationId': reservationId}, // <-- BENAR
         data: formData,
       );
     } catch (e) {
@@ -341,36 +341,11 @@ class ReservationProvider {
       return await _apiClient.putValidated(
         ApiEndpoints
             .ownerPaymentVerifyById, // Ganti dengan endpoint yang sesuai
-        pathParams: {'id': paymentId},
+        pathParams: {'paymentId': paymentId}, // <-- BENAR
         data: {'isVerified': isVerified},
       );
     } catch (e) {
       _logger.error('Error verifying manual payment $paymentId (Owner): $e');
-      rethrow;
-    }
-  }
-
-  // Get reservation analytics for Owner
-  Future<Map<String, dynamic>> getReservationAnalytics(
-    DateTime startDate,
-    DateTime endDate,
-  ) async {
-    try {
-      final String formattedStartDate =
-          startDate.toIso8601String().split('T')[0];
-      final String formattedEndDate = endDate.toIso8601String().split('T')[0];
-      _logger.info(
-        'Getting reservation analytics from $formattedStartDate to $formattedEndDate (Owner)',
-      );
-      return await _apiClient.getValidated(
-        ApiEndpoints.reservationsAnalytics,
-        queryParameters: {
-          'startDate': formattedStartDate,
-          'endDate': formattedEndDate,
-        },
-      );
-    } catch (e) {
-      _logger.error('Error getting reservation analytics (Owner): $e');
       rethrow;
     }
   }
@@ -405,6 +380,27 @@ class ReservationProvider {
     } catch (e) {
       _logger.error(
         'Error getting payment details for $reservationId (Owner): $e',
+      );
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> rescheduleReservation(
+    String reservationId,
+    String newSessionId,
+  ) async {
+    try {
+      _logger.info(
+        'Provider: Rescheduling reservation $reservationId to new session $newSessionId',
+      );
+      return await _apiClient.putValidated(
+        ApiEndpoints.reservationsOwnerRescheduleById,
+        pathParams: {'id': reservationId},
+        data: {'newSessionId': newSessionId},
+      );
+    } catch (e) {
+      _logger.error(
+        'Provider: Error rescheduling reservation $reservationId: $e',
       );
       rethrow;
     }

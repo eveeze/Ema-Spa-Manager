@@ -349,30 +349,6 @@ class ReservationRepository {
     }
   }
 
-  Future<Map<String, dynamic>> getReservationAnalytics(
-    DateTime startDate,
-    DateTime endDate,
-  ) async {
-    try {
-      _logger.info('Repository: Getting reservation analytics (Owner).');
-      // Provider mengembalikan objek yang sudah berisi data analitiknya
-      final responseData = await _reservationProvider.getReservationAnalytics(
-        startDate,
-        endDate,
-      );
-
-      // --- ✨ PERBAIKAN SEBENARNYA DI SINI ✨ ---
-      // Karena `_apiClient.getValidated` sudah mengekstrak isi dari `data`,
-      // `responseData` adalah objek yang kita butuhkan. Kita tidak perlu lagi
-      // mengakses `responseData['data']`.
-
-      return responseData;
-    } catch (e) {
-      _logger.error('Repository error getting analytics: $e (Owner)');
-      rethrow;
-    }
-  }
-
   // ADDED: Get Payment Methods for Owner
   Future<List<PaymentMethodModel>> getOwnerPaymentMethods() async {
     try {
@@ -432,6 +408,25 @@ class ReservationRepository {
     } catch (e) {
       _logger.error(
         'Repository: Error getting payment details for $reservationId (Owner): $e',
+      );
+      rethrow;
+    }
+  }
+
+  Future<Reservation> rescheduleReservation(
+    String reservationId,
+    String newSessionId,
+  ) async {
+    try {
+      _logger.info('Repository: Rescheduling reservation $reservationId.');
+      final responseMap = await _reservationProvider.rescheduleReservation(
+        reservationId,
+        newSessionId,
+      );
+      return Reservation.fromJson(responseMap);
+    } catch (e) {
+      _logger.error(
+        'Repository: Error rescheduling reservation $reservationId: $e',
       );
       rethrow;
     }

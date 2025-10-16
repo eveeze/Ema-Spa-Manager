@@ -267,8 +267,8 @@ class _OperatingScheduleDialogState extends State<OperatingScheduleDialog> {
                 decoration: BoxDecoration(
                   color:
                       isSelected
-                          ? color.withOpacity(
-                            0.1,
+                          ? color.withValues(
+                            alpha: 0.1,
                           ) // Changed .withValues to .withOpacity
                           : unselectedIconBg,
                   borderRadius: BorderRadius.circular(8),

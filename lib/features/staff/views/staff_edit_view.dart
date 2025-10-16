@@ -70,7 +70,9 @@ class StaffEditView extends GetView<StaffController> {
             backgroundColor: (themeController.isDarkMode
                     ? ColorTheme.errorDark
                     : ColorTheme.error)
-                .withOpacity(0.8), // Using withOpacity for cleaner look
+                .withValues(
+                  alpha: 0.8,
+                ), // Using withValues alpha:for cleaner look
             colorText:
                 themeController.isDarkMode
                     ? ColorTheme.textPrimaryDark
@@ -105,7 +107,7 @@ class StaffEditView extends GetView<StaffController> {
             backgroundColor: (themeController.isDarkMode
                     ? ColorTheme.errorDark
                     : ColorTheme.error)
-                .withOpacity(0.8),
+                .withValues(alpha: 0.8),
             colorText:
                 themeController.isDarkMode
                     ? ColorTheme.textPrimaryDark
@@ -123,7 +125,7 @@ class StaffEditView extends GetView<StaffController> {
           backgroundColor: (themeController.isDarkMode
                   ? ColorTheme.errorDark
                   : ColorTheme.error)
-              .withOpacity(0.8),
+              .withValues(alpha: 0.8),
           colorText:
               themeController.isDarkMode
                   ? ColorTheme.textPrimaryDark
@@ -180,7 +182,7 @@ class StaffEditView extends GetView<StaffController> {
             backgroundColor: (themeController.isDarkMode
                     ? ColorTheme.errorDark
                     : ColorTheme.error)
-                .withOpacity(0.8),
+                .withValues(alpha: 0.8),
             colorText:
                 themeController.isDarkMode
                     ? ColorTheme.textPrimaryDark
@@ -199,7 +201,7 @@ class StaffEditView extends GetView<StaffController> {
             backgroundColor: (themeController.isDarkMode
                     ? ColorTheme.errorDark
                     : ColorTheme.error)
-                .withOpacity(0.8),
+                .withValues(alpha: 0.8),
             colorText:
                 themeController.isDarkMode
                     ? ColorTheme.textPrimaryDark
@@ -288,15 +290,15 @@ class StaffEditView extends GetView<StaffController> {
                                 color: (themeController.isDarkMode
                                         ? ColorTheme.primaryLightDark
                                         : ColorTheme.primary)
-                                    .withOpacity(0.5),
+                                    .withValues(alpha: 0.5),
                                 width: 2.5, // Slightly thicker border
                               ),
                               boxShadow: [
                                 BoxShadow(
                                   color:
                                       themeController.isDarkMode
-                                          ? Colors.black.withOpacity(0.3)
-                                          : Colors.grey.withOpacity(0.3),
+                                          ? Colors.black.withValues(alpha: 0.3)
+                                          : Colors.grey.withValues(alpha: 0.3),
                                   spreadRadius: 1,
                                   blurRadius: 5,
                                   offset: const Offset(0, 2),
@@ -434,7 +436,7 @@ class StaffEditView extends GetView<StaffController> {
                               color: (themeController.isDarkMode
                                       ? ColorTheme.primaryLightDark
                                       : ColorTheme.primary)
-                                  .withOpacity(0.5),
+                                  .withValues(alpha: 0.5),
                             ),
                           ),
                         ),
@@ -573,7 +575,7 @@ class StaffEditView extends GetView<StaffController> {
                     decoration: BoxDecoration(
                       color:
                           themeController.isDarkMode
-                              ? ColorTheme.surfaceDark.withOpacity(0.5)
+                              ? ColorTheme.surfaceDark.withValues(alpha: 0.5)
                               : ColorTheme.surface,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
@@ -652,7 +654,7 @@ class StaffEditView extends GetView<StaffController> {
                           backgroundColor: (themeController.isDarkMode
                                   ? ColorTheme.errorDark
                                   : ColorTheme.error)
-                              .withOpacity(0.8),
+                              .withValues(alpha: 0.8),
                           colorText:
                               themeController.isDarkMode
                                   ? ColorTheme.textPrimaryDark
@@ -703,7 +705,10 @@ class StaffEditView extends GetView<StaffController> {
             ),
             boxShadow: [
               // Add a subtle shadow
-              BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 10,
+              ),
             ],
           ),
           child: Column(
@@ -826,9 +831,9 @@ class StaffEditView extends GetView<StaffController> {
             Container(
               padding: const EdgeInsets.all(16), // Increased padding
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1), // Use passed color
+                color: color.withValues(alpha: 0.1), // Use passed color
                 borderRadius: BorderRadius.circular(100), // Fully circular
-                border: Border.all(color: color.withOpacity(0.3)),
+                border: Border.all(color: color.withValues(alpha: 0.3)),
               ),
               child: Icon(icon, color: color, size: 32), // Use passed color
             ),

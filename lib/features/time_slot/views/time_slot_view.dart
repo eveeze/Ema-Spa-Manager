@@ -507,7 +507,7 @@ class _TimeSlotViewState extends State<TimeSlotView> {
             );
           },
           leading: CircleAvatar(
-            backgroundColor: statusColor.withOpacity(0.15),
+            backgroundColor: statusColor.withValues(alpha: 0.15),
             child: Icon(
               isBooked ? Icons.person_rounded : Icons.person_add_alt_1_rounded,
               color: statusColor,

@@ -141,7 +141,7 @@ class ServiceEditView extends GetView<ServiceController> {
                     color: (themeController.isDarkMode
                             ? ColorTheme.primaryDark
                             : ColorTheme.primary)
-                        .withOpacity(0.08),
+                        .withValues(alpha: 0.08),
                     blurRadius: 20,
                     offset: const Offset(0, 8),
                     spreadRadius: 0,
@@ -150,7 +150,7 @@ class ServiceEditView extends GetView<ServiceController> {
                     color: (themeController.isDarkMode
                             ? ColorTheme.textPrimaryDark
                             : ColorTheme.textPrimary)
-                        .withOpacity(0.02),
+                        .withValues(alpha: 0.02),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                     spreadRadius: 0,
@@ -168,11 +168,11 @@ class ServiceEditView extends GetView<ServiceController> {
                           (themeController.isDarkMode
                                   ? ColorTheme.primaryDark
                                   : ColorTheme.primary)
-                              .withOpacity(0.1),
+                              .withValues(alpha: 0.1),
                           (themeController.isDarkMode
                                   ? ColorTheme.primaryDark
                                   : ColorTheme.primary)
-                              .withOpacity(0.05),
+                              .withValues(alpha: 0.05),
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
@@ -256,7 +256,7 @@ class ServiceEditView extends GetView<ServiceController> {
                 color: (themeController.isDarkMode
                         ? ColorTheme.primaryDark
                         : ColorTheme.primary)
-                    .withOpacity(0.08),
+                    .withValues(alpha: 0.08),
                 blurRadius: 24,
                 offset: const Offset(0, 12),
                 spreadRadius: 0,
@@ -265,7 +265,7 @@ class ServiceEditView extends GetView<ServiceController> {
                 color: (themeController.isDarkMode
                         ? ColorTheme.textPrimaryDark
                         : ColorTheme.textPrimary)
-                    .withOpacity(0.04),
+                    .withValues(alpha: 0.04),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
                 spreadRadius: 0,
@@ -283,11 +283,11 @@ class ServiceEditView extends GetView<ServiceController> {
                       (themeController.isDarkMode
                               ? ColorTheme.primaryDark
                               : ColorTheme.primary)
-                          .withOpacity(0.1),
+                          .withValues(alpha: 0.1),
                       (themeController.isDarkMode
                               ? ColorTheme.primaryDark
                               : ColorTheme.primary)
-                          .withOpacity(0.05),
+                          .withValues(alpha: 0.05),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -543,12 +543,12 @@ class ServiceEditView extends GetView<ServiceController> {
           colors:
               themeController.isDarkMode
                   ? [
-                    (ColorTheme.primaryDark).withOpacity(0.1),
-                    (ColorTheme.primaryDark).withOpacity(0.05),
+                    (ColorTheme.primaryDark).withValues(alpha: 0.1),
+                    (ColorTheme.primaryDark).withValues(alpha: 0.05),
                   ]
                   : [
-                    ColorTheme.primary.withOpacity(0.05),
-                    ColorTheme.primary.withOpacity(0.02),
+                    ColorTheme.primary.withValues(alpha: 0.05),
+                    ColorTheme.primary.withValues(alpha: 0.02),
                   ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -558,7 +558,7 @@ class ServiceEditView extends GetView<ServiceController> {
           color: (themeController.isDarkMode
                   ? ColorTheme.primaryDark
                   : ColorTheme.primary)
-              .withOpacity(0.1),
+              .withValues(alpha: 0.1),
         ),
       ),
       child: Row(
@@ -569,7 +569,7 @@ class ServiceEditView extends GetView<ServiceController> {
               color: (themeController.isDarkMode
                       ? ColorTheme.primaryDark
                       : ColorTheme.primary)
-                  .withOpacity(0.1),
+                  .withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
@@ -637,8 +637,8 @@ class ServiceEditView extends GetView<ServiceController> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  primaryCurrent.withOpacity(0.15),
-                  primaryCurrent.withOpacity(0.08),
+                  primaryCurrent.withValues(alpha: 0.15),
+                  primaryCurrent.withValues(alpha: 0.08),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -698,7 +698,7 @@ class ServiceEditView extends GetView<ServiceController> {
             color: (themeController.isDarkMode
                     ? ColorTheme.primaryDark
                     : ColorTheme.primary)
-                .withOpacity(0.06),
+                .withValues(alpha: 0.06),
             blurRadius: 20,
             offset: const Offset(0, 8),
             spreadRadius: 0,
@@ -707,7 +707,7 @@ class ServiceEditView extends GetView<ServiceController> {
             color: (themeController.isDarkMode
                     ? ColorTheme.textPrimaryDark
                     : ColorTheme.textPrimary)
-                .withOpacity(0.03),
+                .withValues(alpha: 0.03),
             blurRadius: 6,
             offset: const Offset(0, 2),
             spreadRadius: 0,
@@ -787,12 +787,12 @@ class ServiceEditView extends GetView<ServiceController> {
                   ),
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: primaryCurrent.withOpacity(0.2),
+                    color: primaryCurrent.withValues(alpha: 0.2),
                     width: 2,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: primaryCurrent.withOpacity(0.08),
+                      color: primaryCurrent.withValues(alpha: 0.08),
                       blurRadius: 16,
                       offset: const Offset(0, 8),
                     ),
@@ -800,7 +800,7 @@ class ServiceEditView extends GetView<ServiceController> {
                       color: (themeController.isDarkMode
                               ? ColorTheme.textPrimaryDark
                               : ColorTheme.textPrimary)
-                          .withOpacity(0.04),
+                          .withValues(alpha: 0.04),
                       blurRadius: 6,
                       offset: const Offset(0, 2),
                     ),
@@ -827,8 +827,8 @@ class ServiceEditView extends GetView<ServiceController> {
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
-                                  Colors.black.withOpacity(0.7),
-                                  Colors.black.withOpacity(0.5),
+                                  Colors.black.withValues(alpha: 0.7),
+                                  Colors.black.withValues(alpha: 0.5),
                                 ],
                               ),
                               shape: BoxShape.circle,
@@ -868,8 +868,8 @@ class ServiceEditView extends GetView<ServiceController> {
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
-                                  Colors.black.withOpacity(0.7),
-                                  Colors.black.withOpacity(0.5),
+                                  Colors.black.withValues(alpha: 0.7),
+                                  Colors.black.withValues(alpha: 0.5),
                                 ],
                               ),
                               shape: BoxShape.circle,
@@ -927,13 +927,17 @@ class ServiceEditView extends GetView<ServiceController> {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                primaryCurrent.withOpacity(0.1),
-                primaryCurrent.withOpacity(0.05),
+                primaryCurrent.withValues(alpha: 0.1),
+                primaryCurrent.withValues(alpha: 0.05),
               ],
             ),
             shape: BoxShape.circle,
           ),
-          child: Icon(icon, size: 48, color: primaryCurrent.withOpacity(0.8)),
+          child: Icon(
+            icon,
+            size: 48,
+            color: primaryCurrent.withValues(alpha: 0.8),
+          ),
         ),
         const SizedBox(height: 16),
         Text(
@@ -987,18 +991,18 @@ class ServiceEditView extends GetView<ServiceController> {
               color:
                   themeController.isDarkMode
                       ? ColorTheme.borderDark
-                      : ColorTheme.border.withOpacity(0.3),
+                      : ColorTheme.border.withValues(alpha: 0.3),
             ),
             gradient: LinearGradient(
               colors:
                   themeController.isDarkMode
                       ? [
                         ColorTheme.borderDark,
-                        ColorTheme.surfaceDark.withOpacity(0.8),
+                        ColorTheme.surfaceDark.withValues(alpha: 0.8),
                       ]
                       : [
                         ColorTheme.surface,
-                        ColorTheme.background.withOpacity(0.3),
+                        ColorTheme.background.withValues(alpha: 0.3),
                       ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -1008,7 +1012,7 @@ class ServiceEditView extends GetView<ServiceController> {
                 color: (themeController.isDarkMode
                         ? ColorTheme.textPrimaryDark
                         : ColorTheme.textPrimary)
-                    .withOpacity(0.02),
+                    .withValues(alpha: 0.02),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -1080,14 +1084,14 @@ class ServiceEditView extends GetView<ServiceController> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            primaryCurrent.withOpacity(0.06),
-            primaryCurrent.withOpacity(0.03),
+            primaryCurrent.withValues(alpha: 0.06),
+            primaryCurrent.withValues(alpha: 0.03),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: primaryCurrent.withOpacity(0.1)),
+        border: Border.all(color: primaryCurrent.withValues(alpha: 0.1)),
       ),
       child: Row(
         children: [
@@ -1096,8 +1100,8 @@ class ServiceEditView extends GetView<ServiceController> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  primaryCurrent.withOpacity(0.15),
-                  primaryCurrent.withOpacity(0.08),
+                  primaryCurrent.withValues(alpha: 0.15),
+                  primaryCurrent.withValues(alpha: 0.08),
                 ],
               ),
               borderRadius: BorderRadius.circular(12),
@@ -1143,7 +1147,7 @@ class ServiceEditView extends GetView<ServiceController> {
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: primaryCurrent.withOpacity(0.1),
+                  color: primaryCurrent.withValues(alpha: 0.1),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -1158,10 +1162,10 @@ class ServiceEditView extends GetView<ServiceController> {
                 }
               },
               activeColor: primaryCurrent,
-              activeTrackColor: primaryCurrent.withOpacity(0.3),
+              activeTrackColor: primaryCurrent.withValues(alpha: 0.3),
               inactiveThumbColor:
                   themeController.isDarkMode
-                      ? ColorTheme.textTertiaryDark.withOpacity(0.6)
+                      ? ColorTheme.textTertiaryDark.withValues(alpha: 0.6)
                       : Colors.grey.shade400,
               inactiveTrackColor:
                   themeController.isDarkMode
@@ -1186,14 +1190,14 @@ class ServiceEditView extends GetView<ServiceController> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            simplePricingAccent.withOpacity(0.03),
-            simplePricingAccent.withOpacity(0.01),
+            simplePricingAccent.withValues(alpha: 0.03),
+            simplePricingAccent.withValues(alpha: 0.01),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: simplePricingAccent.withOpacity(0.1)),
+        border: Border.all(color: simplePricingAccent.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1205,8 +1209,8 @@ class ServiceEditView extends GetView<ServiceController> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      simplePricingAccent.withOpacity(0.15),
-                      simplePricingAccent.withOpacity(0.08),
+                      simplePricingAccent.withValues(alpha: 0.15),
+                      simplePricingAccent.withValues(alpha: 0.08),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(10),
@@ -1258,11 +1262,11 @@ class ServiceEditView extends GetView<ServiceController> {
                       (themeController.isDarkMode
                               ? ColorTheme.primaryDark
                               : ColorTheme.primary)
-                          .withOpacity(0.15),
+                          .withValues(alpha: 0.15),
                       (themeController.isDarkMode
                               ? ColorTheme.primaryDark
                               : ColorTheme.primary)
-                          .withOpacity(0.08),
+                          .withValues(alpha: 0.08),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(10),
@@ -1355,14 +1359,14 @@ class ServiceEditView extends GetView<ServiceController> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  priceTierAccent.withOpacity(0.03),
-                  priceTierAccent.withOpacity(0.01),
+                  priceTierAccent.withValues(alpha: 0.03),
+                  priceTierAccent.withValues(alpha: 0.01),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: priceTierAccent.withOpacity(0.1)),
+              border: Border.all(color: priceTierAccent.withValues(alpha: 0.1)),
             ),
             child: Row(
               children: [
@@ -1371,8 +1375,8 @@ class ServiceEditView extends GetView<ServiceController> {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        priceTierAccent.withOpacity(0.15),
-                        priceTierAccent.withOpacity(0.08),
+                        priceTierAccent.withValues(alpha: 0.15),
+                        priceTierAccent.withValues(alpha: 0.08),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(10),
@@ -1421,12 +1425,12 @@ class ServiceEditView extends GetView<ServiceController> {
                                 : ColorTheme.surface,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: primaryCurrent.withOpacity(0.15),
+                          color: primaryCurrent.withValues(alpha: 0.15),
                           width: 1.5,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: primaryCurrent.withOpacity(0.08),
+                            color: primaryCurrent.withValues(alpha: 0.08),
                             blurRadius: 16,
                             offset: const Offset(0, 6),
                           ),
@@ -1434,7 +1438,7 @@ class ServiceEditView extends GetView<ServiceController> {
                             color: (themeController.isDarkMode
                                     ? ColorTheme.textPrimaryDark
                                     : ColorTheme.textPrimary)
-                                .withOpacity(0.02),
+                                .withValues(alpha: 0.02),
                             blurRadius: 4,
                             offset: const Offset(0, 2),
                           ),
@@ -1453,8 +1457,8 @@ class ServiceEditView extends GetView<ServiceController> {
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
                                     colors: [
-                                      primaryCurrent.withOpacity(0.15),
-                                      primaryCurrent.withOpacity(0.08),
+                                      primaryCurrent.withValues(alpha: 0.15),
+                                      primaryCurrent.withValues(alpha: 0.08),
                                     ],
                                   ),
                                   borderRadius: BorderRadius.circular(12),
@@ -1475,8 +1479,10 @@ class ServiceEditView extends GetView<ServiceController> {
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
                                       colors: [
-                                        ColorTheme.error.withOpacity(0.1),
-                                        ColorTheme.error.withOpacity(0.05),
+                                        ColorTheme.error.withValues(alpha: 0.1),
+                                        ColorTheme.error.withValues(
+                                          alpha: 0.05,
+                                        ),
                                       ],
                                     ),
                                     shape: BoxShape.circle,
@@ -1522,8 +1528,12 @@ class ServiceEditView extends GetView<ServiceController> {
                             decoration: BoxDecoration(
                               color:
                                   themeController.isDarkMode
-                                      ? ColorTheme.surfaceDark.withOpacity(0.5)
-                                      : ColorTheme.background.withOpacity(0.6),
+                                      ? ColorTheme.surfaceDark.withValues(
+                                        alpha: 0.5,
+                                      )
+                                      : ColorTheme.background.withValues(
+                                        alpha: 0.6,
+                                      ),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Column(
@@ -1602,11 +1612,11 @@ class ServiceEditView extends GetView<ServiceController> {
                                   (themeController.isDarkMode
                                           ? ColorTheme.successDark
                                           : ColorTheme.success)
-                                      .withOpacity(0.05),
+                                      .withValues(alpha: 0.05),
                                   (themeController.isDarkMode
                                           ? ColorTheme.successDark
                                           : ColorTheme.success)
-                                      .withOpacity(0.02),
+                                      .withValues(alpha: 0.02),
                                 ],
                               ),
                               borderRadius: BorderRadius.circular(12),
@@ -1692,8 +1702,8 @@ class ServiceEditView extends GetView<ServiceController> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            primaryCurrent.withOpacity(0.1),
-            primaryCurrent.withOpacity(0.05),
+            primaryCurrent.withValues(alpha: 0.1),
+            primaryCurrent.withValues(alpha: 0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(20),

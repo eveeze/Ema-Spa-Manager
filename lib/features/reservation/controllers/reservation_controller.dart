@@ -56,6 +56,7 @@ class ReservationController extends GetxController {
   final RxInt upcomingDayTotalPages = 1.obs;
   final RxInt upcomingDayTotalItems = 0.obs;
   final RxBool upcomingDayHasMoreData = true.obs;
+  final RxBool isRescheduling = false.obs;
 
   // --- NEW: State for Owner Payment Methods ---
   final RxList<PaymentMethodModel> ownerPaymentMethods =
@@ -156,18 +157,17 @@ class ReservationController extends GetxController {
     try {
       isLoading.value = true;
       errorMessage.value = '';
-
       selectedReservation.value = null;
-      selectedPaymentDetails.value = null;
+      selectedPaymentDetails.value = null; // Also clear payment details
 
       if (id.isEmpty) {
         throw Exception("Reservation ID is required");
       }
 
-      // 1. CUKUP SATU PANGGILAN API INI SAJA
+      // --- 1. SINGLE API CALL ---
       final reservation = await _reservationRepository.getReservationById(id);
 
-      // 2. ATUR KEDUA STATE DARI SATU SUMBER
+      // --- 2. SET BOTH STATES FROM ONE SOURCE ---
       selectedReservation.value = reservation;
       selectedPaymentDetails.value = reservation.payment;
     } catch (e) {
@@ -178,6 +178,43 @@ class ReservationController extends GetxController {
       selectedPaymentDetails.value = null;
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  Future<void> rescheduleReservation(
+    String reservationId,
+    String newSessionId,
+  ) async {
+    try {
+      isRescheduling.value = true;
+      final updatedReservation = await _reservationRepository
+          .rescheduleReservation(reservationId, newSessionId);
+
+      // Update the selected reservation if it's the one being viewed
+      if (selectedReservation.value?.id == reservationId) {
+        selectedReservation.value = updatedReservation;
+      }
+
+      await refreshData();
+      await refreshUpcomingReservations();
+
+      Get.back(); // Close the reschedule modal/page
+      Get.snackbar(
+        'Success',
+        'Reservation has been successfully rescheduled.',
+        backgroundColor: ColorTheme.success.withValues(alpha: 0.1),
+        colorText: ColorTheme.success,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to reschedule reservation: ${e.toString().replaceFirst("Exception: ", "")}',
+        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
+        colorText: ColorTheme.error,
+      );
+      _logger.error('Error rescheduling reservation: $e');
+    } finally {
+      isRescheduling.value = false;
     }
   }
 
@@ -425,27 +462,6 @@ class ReservationController extends GetxController {
       _logger.error('Error verifying payment: $e');
     } finally {
       isStatusUpdating.value = false;
-    }
-  }
-
-  Future<void> fetchReservationAnalytics(
-    DateTime startDate,
-    DateTime endDate,
-  ) async {
-    try {
-      isLoading.value = true;
-      errorMessage.value = '';
-      final analytics = await _reservationRepository.getReservationAnalytics(
-        startDate,
-        endDate,
-      );
-      reservationAnalytics.value = analytics;
-    } catch (e) {
-      errorMessage.value = 'Failed to load reservation analytics.';
-      _logger.error('Error fetching reservation analytics: $e');
-      reservationAnalytics.clear();
-    } finally {
-      isLoading.value = false;
     }
   }
 

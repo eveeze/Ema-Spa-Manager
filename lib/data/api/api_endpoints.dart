@@ -4,8 +4,8 @@ class ApiEndpoints {
   // Base URL
   // base url andorid studio
   //static const String baseUrl = 'http://10.0.2.2:3000/api';
-  // base url real device
-  static const String baseUrl = 'https://0f53d77f21e9.ngrok-free.app/api';
+  // base url backend
+  static const String baseUrl = 'https://spa-api-six.vercel.app//api';
 
   // Auth
   static const String login = '/owner/login';
@@ -36,7 +36,6 @@ class ApiEndpoints {
   static const String reservationsOwnerStatusById =
       '$reservationsOwner/{id}/status'; // Matches route: /owner/{id}/status
   static const String manualReservations = '$reservationsOwner/manual';
-  static const String reservationsAnalytics = '$reservations/analytics';
   static const String ownerPayment = '$reservationsOwner/payment';
   static const String reservationsOwnerUpcoming = '$reservationsOwner/upcoming';
   static const String reservationsOwnerDashboardUpcomingByDay =
@@ -48,7 +47,8 @@ class ApiEndpoints {
   static const String ownerPaymentVerifyById =
       '$reservationsOwner/payment/{id}/verify';
   static const String reservationsOwnerPaymentDetailsById =
-      '$reservationsOwner/payment/{id}';
+      '$reservations/payment/{id}';
+
   static const String manualReservationsPaymentUpdateById =
       '$manualReservations/{id}/payment'; // Matches route: /manual/{id}/payment
   static const String reservationsOwnerUpdateDetailsById =
@@ -58,6 +58,8 @@ class ApiEndpoints {
   static const String reservationsOwnerConfirmWithProof =
       '/reservations/owner/manual/{id}/confirm-with-proof';
 
+  static const String reservationsOwnerRescheduleById =
+      '$reservationsOwner/{id}/reschedule';
   // Payments
   static const String payments = '/payments';
   static const String paymentDetail = '/payments/{id}';
@@ -83,4 +85,8 @@ class ApiEndpoints {
   // notifications
   static const String notifications = '/notifications';
   static const String notificationMarkRead = '/notifications/{id}/read';
+  static const String notificationMarkAllRead = '/notifications/read-all';
+  // analytics
+  static const String analyticsOverview = '/analytics/overview';
+  static const String analyticsDetails = '/analytics/details';
 }

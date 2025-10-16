@@ -46,16 +46,37 @@ class NotificationProvider extends GetxService {
   // --- Tambahan: Logika untuk Notifikasi In-App ---
 
   // Fungsi untuk mengambil daftar notifikasi dari backend
-  Future<List<dynamic>> getNotifications() async {
+  Future<Map<String, dynamic>> getNotifications({
+    required int page,
+    int pageSize = 20,
+  }) async {
     try {
-      _logger.info('Provider: Fetching notifications for owner.');
-      final response = await _apiClient.getValidated(
+      _logger.info('Provider: Fetching notifications page: $page');
+      // Menggunakan .get() untuk mendapatkan seluruh body respons
+      final response = await _apiClient.get(
         ApiEndpoints.notifications,
+        queryParameters: {'page': page, 'pageSize': pageSize},
       );
-      // getValidated sudah mengekstrak field 'data' yang berisi List
-      return response as List<dynamic>;
+
+      // Pastikan respons adalah Map dan sukses
+      if (response.data is Map<String, dynamic> &&
+          response.data['success'] == true) {
+        return response.data; // Kembalikan seluruh Map { success, data, meta }
+      } else {
+        throw 'Invalid response format from server';
+      }
     } catch (e) {
       _logger.error('Provider: Error fetching notifications: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> markAllNotificationsAsRead() async {
+    try {
+      _logger.info('Provider: Marking all notifications as read.');
+      await _apiClient.patchValidated(ApiEndpoints.notificationMarkAllRead);
+    } catch (e) {
+      _logger.error('Provider: Error marking all notifications as read: $e');
       rethrow;
     }
   }

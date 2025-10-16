@@ -36,8 +36,8 @@ class ServiceManageView extends GetView<ServiceController> {
                 BoxShadow(
                   color:
                       themeController.isDarkMode
-                          ? ColorTheme.primaryLightDark.withOpacity(0.3)
-                          : ColorTheme.primary.withOpacity(0.3),
+                          ? ColorTheme.primaryLightDark.withValues(alpha: 0.3)
+                          : ColorTheme.primary.withValues(alpha: 0.3),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -178,8 +178,8 @@ class ServiceManageView extends GetView<ServiceController> {
           BoxShadow(
             color:
                 themeController.isDarkMode
-                    ? Colors.black.withOpacity(0.2)
-                    : Colors.black.withOpacity(0.04),
+                    ? Colors.black.withValues(alpha: 0.2)
+                    : Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -401,12 +401,12 @@ class ServiceManageView extends GetView<ServiceController> {
     Color foregroundColor = color;
     Color backgroundColor =
         themeController.isDarkMode
-            ? color.withOpacity(0.15)
-            : color.withOpacity(0.05);
+            ? color.withValues(alpha: 0.15)
+            : color.withValues(alpha: 0.05);
     Color borderColor =
         themeController.isDarkMode
-            ? color.withOpacity(0.5)
-            : color.withOpacity(0.3);
+            ? color.withValues(alpha: 0.5)
+            : color.withValues(alpha: 0.3);
 
     return Container(
       decoration: BoxDecoration(
@@ -415,8 +415,8 @@ class ServiceManageView extends GetView<ServiceController> {
           BoxShadow(
             color:
                 themeController.isDarkMode
-                    ? color.withOpacity(0.25)
-                    : color.withOpacity(0.1),
+                    ? color.withValues(alpha: 0.25)
+                    : color.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -510,8 +510,8 @@ class ServiceManageView extends GetView<ServiceController> {
           BoxShadow(
             color:
                 themeController.isDarkMode
-                    ? Colors.black.withOpacity(0.3)
-                    : Colors.black.withOpacity(0.06),
+                    ? Colors.black.withValues(alpha: 0.3)
+                    : Colors.black.withValues(alpha: 0.06),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -522,12 +522,12 @@ class ServiceManageView extends GetView<ServiceController> {
         borderRadius: BorderRadius.circular(16),
         splashColor:
             themeController.isDarkMode
-                ? ColorTheme.primaryLightDark.withOpacity(0.1)
-                : ColorTheme.primary.withOpacity(0.1),
+                ? ColorTheme.primaryLightDark.withValues(alpha: 0.1)
+                : ColorTheme.primary.withValues(alpha: 0.1),
         highlightColor:
             themeController.isDarkMode
-                ? ColorTheme.primaryLightDark.withOpacity(0.2)
-                : ColorTheme.primary.withOpacity(0.2),
+                ? ColorTheme.primaryLightDark.withValues(alpha: 0.2)
+                : ColorTheme.primary.withValues(alpha: 0.2),
         child: Padding(
           padding: const EdgeInsets.all(20.0),
           child: Row(
@@ -567,20 +567,20 @@ class ServiceManageView extends GetView<ServiceController> {
           colors:
               themeController.isDarkMode
                   ? [
-                    ColorTheme.infoDark.withOpacity(0.2),
-                    ColorTheme.primaryLightDark.withOpacity(0.1),
+                    ColorTheme.infoDark.withValues(alpha: 0.2),
+                    ColorTheme.primaryLightDark.withValues(alpha: 0.1),
                   ]
                   : [
-                    ColorTheme.info.withOpacity(0.1),
-                    ColorTheme.primary.withOpacity(0.05),
+                    ColorTheme.info.withValues(alpha: 0.1),
+                    ColorTheme.primary.withValues(alpha: 0.05),
                   ],
         ),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color:
               themeController.isDarkMode
-                  ? ColorTheme.infoDark.withOpacity(0.3)
-                  : ColorTheme.info.withOpacity(0.2),
+                  ? ColorTheme.infoDark.withValues(alpha: 0.3)
+                  : ColorTheme.info.withValues(alpha: 0.2),
           width: 1,
         ),
       ),
@@ -652,21 +652,21 @@ class ServiceManageView extends GetView<ServiceController> {
         color:
             isActive
                 ? themeController.isDarkMode
-                    ? ColorTheme.successDark.withOpacity(0.15)
-                    : ColorTheme.success.withOpacity(0.1)
+                    ? ColorTheme.successDark.withValues(alpha: 0.15)
+                    : ColorTheme.success.withValues(alpha: 0.1)
                 : themeController.isDarkMode
-                ? ColorTheme.errorDark.withOpacity(0.15)
-                : ColorTheme.error.withOpacity(0.1),
+                ? ColorTheme.errorDark.withValues(alpha: 0.15)
+                : ColorTheme.error.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color:
               isActive
                   ? themeController.isDarkMode
-                      ? ColorTheme.successDark.withOpacity(0.4)
-                      : ColorTheme.success.withOpacity(0.3)
+                      ? ColorTheme.successDark.withValues(alpha: 0.4)
+                      : ColorTheme.success.withValues(alpha: 0.3)
                   : themeController.isDarkMode
-                  ? ColorTheme.errorDark.withOpacity(0.4)
-                  : ColorTheme.error.withOpacity(0.3),
+                  ? ColorTheme.errorDark.withValues(alpha: 0.4)
+                  : ColorTheme.error.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -698,14 +698,14 @@ class ServiceManageView extends GetView<ServiceController> {
       decoration: BoxDecoration(
         color:
             themeController.isDarkMode
-                ? ColorTheme.infoDark.withOpacity(0.15)
-                : ColorTheme.info.withOpacity(0.1),
+                ? ColorTheme.infoDark.withValues(alpha: 0.15)
+                : ColorTheme.info.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color:
               themeController.isDarkMode
-                  ? ColorTheme.infoDark.withOpacity(0.3)
-                  : ColorTheme.info.withOpacity(0.2),
+                  ? ColorTheme.infoDark.withValues(alpha: 0.3)
+                  : ColorTheme.info.withValues(alpha: 0.2),
           width: 1,
         ),
       ),
@@ -778,8 +778,8 @@ class ServiceManageView extends GetView<ServiceController> {
           decoration: BoxDecoration(
             color:
                 themeController.isDarkMode
-                    ? ColorTheme.textSecondaryDark.withOpacity(0.15)
-                    : ColorTheme.textSecondary.withOpacity(0.1),
+                    ? ColorTheme.textSecondaryDark.withValues(alpha: 0.15)
+                    : ColorTheme.textSecondary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(6),
           ),
           child: Icon(
@@ -816,8 +816,8 @@ class ServiceManageView extends GetView<ServiceController> {
       decoration: BoxDecoration(
         color:
             themeController.isDarkMode
-                ? ColorTheme.successDark.withOpacity(0.15)
-                : ColorTheme.success.withOpacity(0.1),
+                ? ColorTheme.successDark.withValues(alpha: 0.15)
+                : ColorTheme.success.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
@@ -841,8 +841,8 @@ class ServiceManageView extends GetView<ServiceController> {
       decoration: BoxDecoration(
         color:
             themeController.isDarkMode
-                ? ColorTheme.warningDark.withOpacity(0.15)
-                : ColorTheme.warning.withOpacity(0.1),
+                ? ColorTheme.warningDark.withValues(alpha: 0.15)
+                : ColorTheme.warning.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -853,7 +853,7 @@ class ServiceManageView extends GetView<ServiceController> {
             size: 12,
             color:
                 themeController.isDarkMode
-                    ? ColorTheme.warningDark.withOpacity(0.9)
+                    ? ColorTheme.warningDark.withValues(alpha: 0.9)
                     : const Color(0xFFc77700),
           ),
           const SizedBox(width: 4),
@@ -863,7 +863,7 @@ class ServiceManageView extends GetView<ServiceController> {
               fontSize: 11,
               color:
                   themeController.isDarkMode
-                      ? ColorTheme.warningDark.withOpacity(0.9)
+                      ? ColorTheme.warningDark.withValues(alpha: 0.9)
                       : const Color(0xFFc77700),
               fontWeight: FontWeight.w600,
               fontFamily: 'JosefinSans',
@@ -883,11 +883,11 @@ class ServiceManageView extends GetView<ServiceController> {
             color:
                 service.isActive
                     ? themeController.isDarkMode
-                        ? ColorTheme.successDark.withOpacity(0.15)
-                        : ColorTheme.success.withOpacity(0.1)
+                        ? ColorTheme.successDark.withValues(alpha: 0.15)
+                        : ColorTheme.success.withValues(alpha: 0.1)
                     : themeController.isDarkMode
-                    ? Colors.grey[700]!.withOpacity(0.3)
-                    : Colors.grey.withOpacity(0.1),
+                    ? Colors.grey[700]!.withValues(alpha: 0.3)
+                    : Colors.grey.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: IconButton(
@@ -920,8 +920,8 @@ class ServiceManageView extends GetView<ServiceController> {
           decoration: BoxDecoration(
             color:
                 themeController.isDarkMode
-                    ? ColorTheme.errorDark.withOpacity(0.15)
-                    : ColorTheme.error.withOpacity(0.1),
+                    ? ColorTheme.errorDark.withValues(alpha: 0.15)
+                    : ColorTheme.error.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: IconButton(
@@ -959,8 +959,8 @@ class ServiceManageView extends GetView<ServiceController> {
               decoration: BoxDecoration(
                 color:
                     themeController.isDarkMode
-                        ? ColorTheme.errorDark.withOpacity(0.15)
-                        : ColorTheme.error.withOpacity(0.1),
+                        ? ColorTheme.errorDark.withValues(alpha: 0.15)
+                        : ColorTheme.error.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
@@ -1017,7 +1017,7 @@ class ServiceManageView extends GetView<ServiceController> {
                 fontWeight: FontWeight.w600,
                 color:
                     themeController.isDarkMode
-                        ? ColorTheme.textSecondaryDark.withOpacity(0.8)
+                        ? ColorTheme.textSecondaryDark.withValues(alpha: 0.8)
                         : ColorTheme.textSecondary,
               ),
             ),

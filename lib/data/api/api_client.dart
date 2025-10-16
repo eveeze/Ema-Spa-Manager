@@ -6,6 +6,7 @@ import 'package:emababyspa/data/api/interceptors/auth_interceptor.dart';
 import 'package:emababyspa/data/api/interceptors/error_interceptor.dart';
 import 'package:emababyspa/utils/network_utils.dart';
 import 'package:emababyspa/utils/logger_utils.dart';
+import 'package:flutter/foundation.dart';
 
 class ApiClient {
   late Dio _dio;
@@ -31,16 +32,18 @@ class ApiClient {
     _dio.interceptors.add(ErrorInterceptor());
 
     // Add pretty logger in debug mode
-    _dio.interceptors.add(
-      PrettyDioLogger(
-        requestHeader: true,
-        requestBody: true,
-        responseHeader: true,
-        responseBody: true,
-        error: true,
-        compact: true,
-      ),
-    );
+    if (kDebugMode) {
+      _dio.interceptors.add(
+        PrettyDioLogger(
+          requestHeader: true,
+          requestBody: true,
+          responseHeader: false,
+          responseBody: true,
+          error: true,
+          compact: true,
+        ),
+      );
+    }
   }
 
   dynamic validateResponse(

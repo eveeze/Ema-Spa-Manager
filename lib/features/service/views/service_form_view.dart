@@ -47,14 +47,16 @@ class ServiceFormView extends GetView<ServiceController> {
         isDark ? const Color(0xFF1E1E1E) : Colors.white;
     final Color defaultTextColor =
         isDark
-            ? Colors.white.withOpacity(0.87)
-            : Colors.black.withOpacity(0.87);
+            ? Colors.white.withValues(alpha: 0.87)
+            : Colors.black.withValues(alpha: 0.87);
     final Color secondaryTextColor =
-        isDark ? Colors.white.withOpacity(0.60) : Colors.grey[600]!;
+        isDark ? Colors.white.withValues(alpha: 0.60) : Colors.grey[600]!;
     final Color shadowColor =
-        isDark ? Colors.black.withOpacity(0.5) : Colors.black.withOpacity(0.05);
-    final Color primaryColorWithOpacityLow = ColorTheme.primary.withOpacity(
-      isDark ? 0.2 : 0.1,
+        isDark
+            ? Colors.black.withValues(alpha: 0.5)
+            : Colors.black.withValues(alpha: 0.05);
+    final Color primaryColorWithOpacityLow = ColorTheme.primary.withValues(
+      alpha: isDark ? 0.2 : 0.1,
     );
 
     return MainLayout(
@@ -124,7 +126,7 @@ class ServiceFormView extends GetView<ServiceController> {
                         decoration: BoxDecoration(
                           color:
                               isDark
-                                  ? Colors.red.withOpacity(0.2)
+                                  ? Colors.red.withValues(alpha: 0.2)
                                   : Colors.red[50],
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -240,12 +242,12 @@ class ServiceFormView extends GetView<ServiceController> {
   Widget _buildForm(BuildContext context) {
     final bool isDark = themeController.isDarkMode;
     final Color secondaryTextColor =
-        isDark ? Colors.white.withOpacity(0.60) : Colors.grey[600]!;
-    final Color primaryColorWithOpacityLow = ColorTheme.primary.withOpacity(
-      isDark ? 0.2 : 0.1,
+        isDark ? Colors.white.withValues(alpha: 0.60) : Colors.grey[600]!;
+    final Color primaryColorWithOpacityLow = ColorTheme.primary.withValues(
+      alpha: isDark ? 0.2 : 0.1,
     );
-    final Color primaryColorWithOpacityMedium = ColorTheme.primary.withOpacity(
-      isDark ? 0.3 : 0.2,
+    final Color primaryColorWithOpacityMedium = ColorTheme.primary.withValues(
+      alpha: isDark ? 0.3 : 0.2,
     );
 
     return Form(
@@ -264,7 +266,7 @@ class ServiceFormView extends GetView<ServiceController> {
                   end: Alignment.bottomRight,
                   colors: [
                     primaryColorWithOpacityLow,
-                    ColorTheme.primary.withOpacity(isDark ? 0.1 : 0.05),
+                    ColorTheme.primary.withValues(alpha: isDark ? 0.1 : 0.05),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(16),
@@ -370,13 +372,13 @@ class ServiceFormView extends GetView<ServiceController> {
                   gradient: LinearGradient(
                     colors: [
                       ColorTheme.primary,
-                      ColorTheme.primary.withOpacity(0.8),
+                      ColorTheme.primary.withValues(alpha: 0.8),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: ColorTheme.primary.withOpacity(0.3),
+                      color: ColorTheme.primary.withValues(alpha: 0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
@@ -408,11 +410,13 @@ class ServiceFormView extends GetView<ServiceController> {
     final Color cardBackgroundColor =
         isDark ? const Color(0xFF1E1E1E) : Colors.white;
     final Color defaultTextColor =
-        isDark ? Colors.white.withOpacity(0.87) : ColorTheme.textPrimary;
+        isDark ? Colors.white.withValues(alpha: 0.87) : ColorTheme.textPrimary;
     final Color shadowColor =
-        isDark ? Colors.black.withOpacity(0.5) : Colors.black.withOpacity(0.05);
-    final Color primaryColorWithOpacityLow = ColorTheme.primary.withOpacity(
-      isDark ? 0.25 : 0.1,
+        isDark
+            ? Colors.black.withValues(alpha: 0.5)
+            : Colors.black.withValues(alpha: 0.05);
+    final Color primaryColorWithOpacityLow = ColorTheme.primary.withValues(
+      alpha: isDark ? 0.25 : 0.1,
     );
 
     return Container(
@@ -466,11 +470,13 @@ class ServiceFormView extends GetView<ServiceController> {
     final Color cardBackgroundColor =
         isDark ? const Color(0xFF1E1E1E) : Colors.white;
     final Color defaultTextColor =
-        isDark ? Colors.white.withOpacity(0.87) : ColorTheme.textPrimary;
+        isDark ? Colors.white.withValues(alpha: 0.87) : ColorTheme.textPrimary;
     final Color shadowColor =
-        isDark ? Colors.black.withOpacity(0.5) : Colors.black.withOpacity(0.05);
-    final Color primaryColorWithOpacityLow = ColorTheme.primary.withOpacity(
-      isDark ? 0.25 : 0.1,
+        isDark
+            ? Colors.black.withValues(alpha: 0.5)
+            : Colors.black.withValues(alpha: 0.05);
+    final Color primaryColorWithOpacityLow = ColorTheme.primary.withValues(
+      alpha: isDark ? 0.25 : 0.1,
     );
 
     return Container(
@@ -1158,7 +1164,9 @@ class ServiceFormView extends GetView<ServiceController> {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: ColorTheme.primary.withOpacity(isDark ? 0.2 : 0.1),
+                  color: ColorTheme.primary.withValues(
+                    alpha: isDark ? 0.2 : 0.1,
+                  ),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),

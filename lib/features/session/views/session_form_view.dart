@@ -213,7 +213,7 @@ class _SessionFormViewState extends State<SessionFormView> {
         color:
             selectedCount > 0
                 ? colorScheme.primaryContainer
-                : colorScheme.errorContainer.withOpacity(0.5),
+                : colorScheme.errorContainer.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -363,7 +363,7 @@ class _SessionFormViewState extends State<SessionFormView> {
         color: colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: colorScheme.shadow.withOpacity(0.1),
+            color: colorScheme.shadow.withValues(alpha: 0.1),
             offset: const Offset(0, -2),
             blurRadius: 8,
           ),

@@ -1,11 +1,9 @@
 // lib/data/models/reservation.dart
 
-// ===== LANGKAH 1: Import TimeZoneUtil =====
-import 'package:emababyspa/utils/timezone_utils.dart'; // Pastikan path ini benar
-// ===========================================
-
+import 'package:emababyspa/utils/timezone_utils.dart';
 import 'package:emababyspa/data/models/payment.dart';
 import 'package:equatable/equatable.dart';
+import 'package:emababyspa/data/models/rating.dart';
 
 enum ReservationStatus {
   PENDING,
@@ -34,6 +32,7 @@ class Reservation extends Equatable {
   final double totalPrice;
   final ReservationStatus status;
   final bool createdByOwner;
+  final int rescheduleCount;
   final DateTime createdAt;
   final DateTime updatedAt;
   final String? customerName;
@@ -42,7 +41,7 @@ class Reservation extends Equatable {
   final DateTime? sessionDate;
   final String? sessionTime;
   final Payment? payment;
-
+  final Rating? rating;
   const Reservation({
     required this.id,
     required this.reservationType,
@@ -58,6 +57,7 @@ class Reservation extends Equatable {
     required this.totalPrice,
     required this.status,
     required this.createdByOwner,
+    required this.rescheduleCount, // ADD THIS
     required this.createdAt,
     required this.updatedAt,
     this.customerName,
@@ -66,6 +66,7 @@ class Reservation extends Equatable {
     this.sessionDate,
     this.sessionTime,
     this.payment,
+    this.rating,
   });
 
   factory Reservation.fromJson(Map<String, dynamic> json) {
@@ -90,9 +91,7 @@ class Reservation extends Equatable {
     String? extractedSessionTime;
     if (timeSlotData?['startTime'] != null &&
         timeSlotData?['endTime'] != null) {
-      // ===== LANGKAH 2: GUNAKAN TimeZoneUtil UNTUK KONVERSI WAKTU =====
       try {
-        // Parse string menjadi objek DateTime dalam UTC
         final startTimeUTC = DateTime.parse(timeSlotData['startTime']);
         final endTimeUTC = DateTime.parse(timeSlotData['endTime']);
 
@@ -136,6 +135,7 @@ class Reservation extends Equatable {
       totalPrice: (json['totalPrice'] as num?)?.toDouble() ?? 0.0,
       status: parseStatus(json['status']),
       createdByOwner: json['createdByOwner'] ?? false,
+      rescheduleCount: (json['rescheduleCount'] as num?)?.toInt() ?? 0,
       createdAt:
           json['createdAt'] != null
               ? DateTime.parse(json['createdAt'])
@@ -148,12 +148,14 @@ class Reservation extends Equatable {
       serviceName: json['serviceName'] ?? serviceData?['name'],
       staffName: json['staffName'] ?? staffData?['name'],
       sessionDate: parsedSessionDate,
-      sessionTime:
-          json['sessionTime'] ??
-          extractedSessionTime, // Tetap gunakan hasil ekstraksi
+      sessionTime: json['sessionTime'] ?? extractedSessionTime,
       payment:
           json['payment'] != null && json['payment'] is Map<String, dynamic>
               ? Payment.fromJson(json['payment'])
+              : null,
+      rating:
+          json['rating'] != null && json['rating'] is Map<String, dynamic>
+              ? Rating.fromJson(json['rating'])
               : null,
     );
   }
@@ -174,6 +176,7 @@ class Reservation extends Equatable {
     totalPrice,
     status,
     createdByOwner,
+    rescheduleCount,
     createdAt,
     updatedAt,
     customerName,
@@ -182,6 +185,7 @@ class Reservation extends Equatable {
     sessionDate,
     sessionTime,
     payment,
+    rating, // ADD THIS
   ];
 
   Map<String, dynamic> toJson() {
@@ -200,6 +204,7 @@ class Reservation extends Equatable {
       'totalPrice': totalPrice,
       'status': status.toString().split('.').last,
       'createdByOwner': createdByOwner,
+      'rescheduleCount': rescheduleCount,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       'customerName': customerName,

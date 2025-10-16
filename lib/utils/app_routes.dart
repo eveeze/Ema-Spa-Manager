@@ -1,6 +1,7 @@
 //utils/app_routes.dart
 
 import 'package:emababyspa/features/account/views/account_view.dart';
+import 'package:emababyspa/features/analytics/bindings/analytics_bindings.dart';
 import 'package:emababyspa/features/reservation/bindings/reservation_bindings.dart';
 import 'package:emababyspa/features/reservation/views/reservation_detail_view.dart';
 import 'package:emababyspa/features/reservation/views/reservation_form_view.dart';
@@ -34,6 +35,7 @@ import 'package:emababyspa/features/schedule/views/schedule_view.dart';
 import 'package:emababyspa/features/schedule/bindings/schedule_bindings.dart';
 import 'package:emababyspa/features/reservation/views/reservation_edit_view.dart';
 import 'package:emababyspa/features/analytics/views/analytics_view.dart';
+import 'package:emababyspa/features/notification/views/notification_view.dart';
 
 class AppRoutes {
   static const String splash = '/splash';
@@ -73,6 +75,7 @@ class AppRoutes {
   static const String timeSlotEdit = '/time-slots/edit/:id';
   static const String timeSlotDetail = '/time-slots/:id';
   static const String analyticsView = '/analytics';
+  static const String notification = '/notification';
 
   static final List<GetPage> pages = [
     GetPage(
@@ -190,7 +193,12 @@ class AppRoutes {
       page: () => const ReservationEditView(),
       binding: ReservationBindings(),
     ),
-    GetPage(name: analyticsView, page: () => const AnalyticsView()),
+    GetPage(
+      name: analyticsView,
+      page: () => const AnalyticsView(),
+      binding: AnalyticsBinding(),
+    ),
+    GetPage(name: notification, page: () => const NotificationScreen()),
     // Rute detail dan form akan ditambahkan disini
   ];
 }
