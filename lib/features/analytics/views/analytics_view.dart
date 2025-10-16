@@ -62,7 +62,7 @@ class AnalyticsView extends GetView<AnalyticsController> {
 
   /// Widget utama yang membangun seluruh konten halaman.
   Widget _buildAnalyticsContent(BuildContext context) {
-    final ratingStats = controller.detailsData.value!.ratingStats;
+    final details = controller.detailsData.value!;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       physics: const AlwaysScrollableScrollPhysics(),
@@ -75,22 +75,28 @@ class AnalyticsView extends GetView<AnalyticsController> {
           const SizedBox(height: 24),
           _buildRevenueChart(context),
           const SizedBox(height: 24),
-          _buildTopPerformingList(
+          // [DIUBAH] Menampilkan Pie Chart untuk status reservasi
+          _buildReservationStatusChart(context, details.reservationStats),
+          const SizedBox(height: 24),
+          // [DIUBAH] Menampilkan Bar Chart untuk layanan terlaris
+          _buildTopPerformingBarChart(
             context,
             'Layanan Terlaris',
-            controller.detailsData.value!.topPerformingServices,
+            details.topPerformingServices,
             Icons.spa_outlined,
+            (item) => '${item.count} Sesi',
           ),
           const SizedBox(height: 24),
-          _buildTopPerformingList(
+          // [DIUBAH] Menampilkan Bar Chart untuk terapis terbaik
+          _buildTopPerformingBarChart(
             context,
             'Terapis Terbaik',
-            controller.detailsData.value!.topPerformingStaff,
+            details.topPerformingStaff,
             Icons.support_agent_outlined,
+            (item) => '${item.count} Sesi',
           ),
           const SizedBox(height: 24),
-          // <-- WIDGET BARU UNTUK RATING -->
-          _buildRatingSection(context, ratingStats),
+          _buildRatingSection(context, details.ratingStats),
           const SizedBox(height: 16),
         ],
       ),
@@ -138,7 +144,6 @@ class AnalyticsView extends GetView<AnalyticsController> {
       0.0,
       (sum, item) => sum + item.revenue,
     );
-    // Data rating baru
     final overallRating =
         controller.detailsData.value!.ratingStats.overallAverageRating;
 
@@ -175,7 +180,6 @@ class AnalyticsView extends GetView<AnalyticsController> {
           icon: Icons.check_circle_outline,
           color: Colors.cyan,
         ),
-        // <-- KARTU BARU UNTUK RATA-RATA RATING -->
         _buildStatCard(
           context: context,
           title: 'Rata-Rata Rating',
@@ -187,35 +191,16 @@ class AnalyticsView extends GetView<AnalyticsController> {
     );
   }
 
-  /// Membangun grafik pendapatan menggunakan [LineChart] dari `fl_chart`.
+  /// Membangun grafik pendapatan menggunakan [LineChart].
   Widget _buildRevenueChart(BuildContext context) {
     final theme = Theme.of(context);
     final chartData = controller.detailsData.value!.revenueChartData;
 
     if (chartData.isEmpty) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Grafik Pendapatan',
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            height: 250,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: theme.colorScheme.outlineVariant),
-            ),
-            child: const Center(
-              child: Text('Tidak ada data pendapatan untuk ditampilkan.'),
-            ),
-          ),
-        ],
+      return _buildEmptyChartContainer(
+        context,
+        'Grafik Pendapatan',
+        'Tidak ada data pendapatan untuk ditampilkan.',
       );
     }
 
@@ -333,14 +318,138 @@ class AnalyticsView extends GetView<AnalyticsController> {
     );
   }
 
-  /// Membangun daftar performa terbaik (layanan atau terapis).
-  Widget _buildTopPerformingList(
+  /// [BARU] Membangun Pie Chart untuk status reservasi.
+  Widget _buildReservationStatusChart(
+    BuildContext context,
+    ReservationStats stats,
+  ) {
+    final theme = Theme.of(context);
+    final sections = <PieChartSectionData>[];
+    final legendItems = <Widget>[];
+
+    void addSection(String title, int value, Color color) {
+      if (value > 0) {
+        sections.add(
+          PieChartSectionData(
+            color: color,
+            value: value.toDouble(),
+            title: '$value',
+            radius: 50,
+            titleStyle: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onPrimary,
+            ),
+          ),
+        );
+        legendItems.add(_buildLegendItem(context, color, title));
+      }
+    }
+
+    addSection('Selesai', stats.completed, Colors.green);
+    addSection('Dibatalkan', stats.cancelled, theme.colorScheme.error);
+    addSection('Pending', stats.pending, Colors.orange);
+    addSection(
+      'Terkonfirmasi',
+      stats.total - stats.completed - stats.cancelled - stats.pending,
+      theme.colorScheme.primary,
+    );
+
+    if (sections.isEmpty) {
+      return _buildEmptyChartContainer(
+        context,
+        'Status Reservasi',
+        'Tidak ada data status reservasi untuk ditampilkan.',
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Status Reservasi',
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: AspectRatio(
+                  aspectRatio: 1,
+                  child: PieChart(
+                    PieChartData(
+                      sections: sections,
+                      sectionsSpace: 2,
+                      centerSpaceRadius: 40,
+                      pieTouchData: PieTouchData(
+                        touchCallback:
+                            (FlTouchEvent event, pieTouchResponse) {},
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                flex: 1,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: legendItems,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// [BARU] Helper untuk membuat item legenda Pie Chart.
+  Widget _buildLegendItem(BuildContext context, Color color, String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        children: [
+          Container(
+            width: 16,
+            height: 16,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+          ),
+          const SizedBox(width: 8),
+          Text(text, style: Theme.of(context).textTheme.bodyMedium),
+        ],
+      ),
+    );
+  }
+
+  /// [DIUBAH] Membangun Bar Chart horizontal untuk item terlaris.
+  Widget _buildTopPerformingBarChart(
     BuildContext context,
     String title,
     List<TopPerformingItem> items,
     IconData sectionIcon,
+    String Function(TopPerformingItem) valueFormatter,
   ) {
     final theme = Theme.of(context);
+
+    if (items.isEmpty) {
+      return _buildEmptyChartContainer(
+        context,
+        title,
+        'Tidak ada data untuk ditampilkan.',
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -351,81 +460,60 @@ class AnalyticsView extends GetView<AnalyticsController> {
           ),
         ),
         const SizedBox(height: 16),
-        if (items.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: theme.colorScheme.outlineVariant),
-            ),
-            child: const Center(
-              child: Text('Tidak ada data untuk ditampilkan.'),
-            ),
-          )
-        else
-          ListView.separated(
-            itemCount: items.length,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
-            itemBuilder: (context, index) {
-              final item = items[index];
-              return Container(
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: theme.colorScheme.outlineVariant),
-                ),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  leading: CircleAvatar(
-                    backgroundColor: theme.colorScheme.primaryContainer,
-                    foregroundColor: theme.colorScheme.onPrimaryContainer,
-                    backgroundImage:
-                        item.imageUrl != null && item.imageUrl!.isNotEmpty
-                            ? NetworkImage(item.imageUrl!)
-                            : null,
-                    child:
-                        item.imageUrl == null || item.imageUrl!.isEmpty
-                            ? Icon(sectionIcon, size: 20)
-                            : null,
-                  ),
-                  title: Text(
-                    item.name,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  trailing: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      '${item.count} Sesi',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onPrimaryContainer,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: theme.colorScheme.outlineVariant),
           ),
+          child: Column(
+            children:
+                items.map((item) {
+                  final maxValue = items.first.count.toDouble();
+                  final currentValue = item.count.toDouble();
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              item.name,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              valueFormatter(item),
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        LinearProgressIndicator(
+                          value: maxValue > 0 ? currentValue / maxValue : 0,
+                          backgroundColor: theme.colorScheme.surfaceVariant,
+                          color: theme.colorScheme.primary,
+                          minHeight: 8,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+          ),
+        ),
       ],
     );
   }
 
-  /// [BARU] Membangun section untuk menampilkan statistik rating.
+  /// [DIUBAH] Menggunakan bar indicator untuk rating.
   Widget _buildRatingSection(BuildContext context, RatingStats ratingStats) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -449,7 +537,7 @@ class AnalyticsView extends GetView<AnalyticsController> {
     );
   }
 
-  /// [BARU] Membangun daftar layanan berdasarkan rating (tertinggi/terendah).
+  /// [DIUBAH] Membangun daftar layanan dengan LinearProgressIndicator.
   Widget _buildRatedServiceList(
     BuildContext context,
     String title,
@@ -458,6 +546,13 @@ class AnalyticsView extends GetView<AnalyticsController> {
     Color iconColor,
   ) {
     final theme = Theme.of(context);
+    if (items.isEmpty) {
+      return _buildEmptyChartContainer(
+        context,
+        title,
+        'Belum ada layanan yang dirating.',
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -468,66 +563,63 @@ class AnalyticsView extends GetView<AnalyticsController> {
           ),
         ),
         const SizedBox(height: 16),
-        if (items.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: theme.colorScheme.outlineVariant),
-            ),
-            child: const Center(
-              child: Text('Belum ada layanan yang dirating.'),
-            ),
-          )
-        else
-          ListView.separated(
-            itemCount: items.length,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
-            itemBuilder: (context, index) {
-              final item = items[index];
-              return Container(
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: theme.colorScheme.outlineVariant),
-                ),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  leading: CircleAvatar(
-                    backgroundColor: iconColor.withOpacity(0.1),
-                    foregroundColor: iconColor,
-                    child: Icon(sectionIcon, size: 20),
-                  ),
-                  title: Text(
-                    item.name,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.star, color: Colors.amber[600], size: 18),
-                      const SizedBox(width: 4),
-                      Text(
-                        item.averageRating.toStringAsFixed(2),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: theme.colorScheme.outlineVariant),
           ),
+          child: Column(
+            children:
+                items.map((item) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              item.name,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.star,
+                                  color: Colors.amber[600],
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  item.averageRating.toStringAsFixed(2),
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: theme.colorScheme.onSurface,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        LinearProgressIndicator(
+                          value: item.averageRating / 5.0, // Rating dari 1-5
+                          backgroundColor: theme.colorScheme.surfaceVariant,
+                          color: iconColor,
+                          minHeight: 8,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+          ),
+        ),
       ],
     );
   }
@@ -580,6 +672,38 @@ class AnalyticsView extends GetView<AnalyticsController> {
           ),
         ],
       ),
+    );
+  }
+
+  /// [BARU] Helper widget untuk kontainer chart yang kosong.
+  Widget _buildEmptyChartContainer(
+    BuildContext context,
+    String title,
+    String message,
+  ) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          height: 200,
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+          ),
+          child: Center(child: Text(message)),
+        ),
+      ],
     );
   }
 }

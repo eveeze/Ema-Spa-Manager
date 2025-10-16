@@ -83,7 +83,7 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
         boxShadow: [
           BoxShadow(
             // A subtle shadow that works on both themes
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             spreadRadius: 2,
             blurRadius: 8,
             offset: const Offset(0, 4),
@@ -212,11 +212,11 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
           // Use a subtle color that works on both themes
           color:
               _themeController.isDarkMode
-                  ? colorScheme.surfaceVariant.withOpacity(0.3)
+                  ? colorScheme.surfaceVariant.withValues(alpha: 0.3)
                   : ColorTheme.surfaceAlt,
           borderRadius: BorderRadius.circular(12),
           // Use the theme's outline color for borders
-          border: Border.all(color: colorScheme.outline.withOpacity(0.5)),
+          border: Border.all(color: colorScheme.outline.withValues(alpha: 0.5)),
         ),
         child: Row(
           children: [
@@ -291,14 +291,14 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
     final Color backgroundColor =
         isValid
             ? (_themeController.isDarkMode
-                ? Colors.teal.withOpacity(0.15)
-                : ColorTheme.success.withOpacity(0.1))
+                ? Colors.teal.withValues(alpha: 0.15)
+                : ColorTheme.success.withValues(alpha: 0.1))
             : colorScheme.errorContainer;
     final Color borderColor =
         isValid
             ? (_themeController.isDarkMode
-                ? Colors.teal.withOpacity(0.4)
-                : ColorTheme.success.withOpacity(0.4))
+                ? Colors.teal.withValues(alpha: 0.4)
+                : ColorTheme.success.withValues(alpha: 0.4))
             : colorScheme.error;
     final Color contentColor =
         isValid
@@ -514,7 +514,7 @@ class _TimeSlotDialogState extends State<TimeSlotDialog> {
             ? 'Slot waktu berhasil diperbarui.'
             : 'Slot waktu berhasil dibuat.',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green.withOpacity(0.9),
+        backgroundColor: Colors.green.withValues(alpha: 0.9),
         colorText: Colors.white,
         margin: const EdgeInsets.all(12),
         borderRadius: 8,
