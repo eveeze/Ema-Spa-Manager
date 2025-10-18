@@ -5,7 +5,7 @@ class ApiEndpoints {
   // base url andorid studio
   //static const String baseUrl = 'http://10.0.2.2:3000/api';
   // base url backend
-  static const String baseUrl = 'https://spa-api-six.vercel.app//api';
+  static const String baseUrl = 'https://spa-api-six.vercel.app/api';
 
   // Auth
   static const String login = '/owner/login';
