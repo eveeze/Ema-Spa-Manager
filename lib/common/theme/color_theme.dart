@@ -14,10 +14,17 @@ class ColorTheme {
   static const Color success = Color(0xFF1E8449);
   static const Color warning = Color(0xFFFFC107);
   static const Color info = Color(0xFF2C7DA0);
+
+  // IMPROVED TEXT COLORS - Better visibility for light mode
   static const Color textPrimary = Color(0xFF1A1C1E);
-  static const Color textSecondary = Color(0xFF495057);
-  static const Color textTertiary = Color(0xFF6C757D);
+  static const Color textSecondary = Color(
+    0xFF1A1C1E,
+  ); // Sama seperti textPrimary, bedanya di weight
+  static const Color textTertiary = Color(
+    0xFF1A1C1E,
+  ); // Sama seperti textPrimary, bedanya di weight
   static const Color textInverse = Color(0xFFFFFFFF);
+
   static const Color border = Color(0xFFDEE2E6);
   static const Color borderFocus = Color(0xFF2C7DA0);
   static const Color divider = Color(0xFFEDF2F7);
@@ -69,7 +76,7 @@ class ColorTheme {
   static const Color surfaceBrightDark = Color(0xFF424242);
   static const Color surfaceDimDark = Color(0xFF121212);
 
-  // M3 Light Palette
+  // M3 Light Palette - IMPROVED VARIANTS
   static const Color m3Primary = Color(0xFF006782);
   static const Color m3OnPrimary = Color(0xFFFFFFFF);
   static const Color m3PrimaryContainer = Color(0xFFBDE9FF);
@@ -87,8 +94,14 @@ class ColorTheme {
   static const Color m3Surface = Color(0xFFFBFCFD);
   static const Color m3OnSurface = Color(0xFF191C1E);
   static const Color m3SurfaceVariant = Color(0xFFDCE4E8);
-  static const Color m3OnSurfaceVariant = Color(0xFF40484C);
-  static const Color m3Outline = Color(0xFF70787C);
+
+  // IMPROVED - onSurfaceVariant untuk text yang lebih gelap di light mode
+  static const Color m3OnSurfaceVariant = Color(
+    0xFF191C1E,
+  ); // Sama seperti onSurface untuk konsistensi
+  static const Color m3Outline = Color(
+    0xFF191C1E,
+  ); // Sama seperti onSurface untuk konsistensi
   static const Color m3OutlineVariant = Color(0xFFC0C8CC);
 
   // M3 Dark Palette

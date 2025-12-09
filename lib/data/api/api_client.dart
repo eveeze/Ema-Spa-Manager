@@ -1,5 +1,7 @@
 // lib/data/api/api_client.dart
+import 'dart:io'; // <-- TAMBAHAN 1
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart'; // <-- TAMBAHAN 2
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:emababyspa/data/api/api_endpoints.dart';
 import 'package:emababyspa/data/api/interceptors/auth_interceptor.dart';
@@ -26,6 +28,16 @@ class ApiClient {
         responseType: ResponseType.json,
       ),
     );
+
+    // --- TAMBAHAN 3: KODE DIAGNOSTIK SSL ---
+    // Memaksa Dio untuk mengabaikan semua error sertifikat
+    (_dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {
+      final client = HttpClient();
+      client.badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true;
+      return client;
+    };
+    // --- AKHIR KODE DIAGNOSTIK ---
 
     // Add interceptors
     _dio.interceptors.add(AuthInterceptor());
@@ -215,6 +227,7 @@ class ApiClient {
             : path;
 
     // Check internet connectivity if required
+    /* <-- DIHILANGKAN SEMENTARA
     if (checkInternet && !(await _networkUtils.checkInternetConnection())) {
       _networkUtils.showNoInternetError();
       throw DioException(
@@ -223,6 +236,7 @@ class ApiClient {
         type: DioExceptionType.connectionError,
       );
     }
+    */
 
     try {
       // Log the actual URL being called for debugging
@@ -284,6 +298,7 @@ class ApiClient {
             : path;
 
     // Check internet connectivity if required
+    /* <-- DIHILANGKAN SEMENTARA
     if (checkInternet && !(await _networkUtils.checkInternetConnection())) {
       _networkUtils.showNoInternetError();
       throw DioException(
@@ -292,6 +307,7 @@ class ApiClient {
         type: DioExceptionType.connectionError,
       );
     }
+    */
 
     try {
       return await _dio.post<T>(
@@ -359,6 +375,7 @@ class ApiClient {
             : path;
 
     // Check internet connectivity if required
+    /* <-- DIHILANGKAN SEMENTARA
     if (checkInternet && !(await _networkUtils.checkInternetConnection())) {
       _networkUtils.showNoInternetError();
       throw DioException(
@@ -367,6 +384,7 @@ class ApiClient {
         type: DioExceptionType.connectionError,
       );
     }
+    */
 
     try {
       return await _dio.put<T>(
@@ -432,6 +450,7 @@ class ApiClient {
             : path;
 
     // Check internet connectivity if required
+    /* <-- DIHILANGKAN SEMENTARA
     if (checkInternet && !(await _networkUtils.checkInternetConnection())) {
       _networkUtils.showNoInternetError();
       throw DioException(
@@ -440,6 +459,7 @@ class ApiClient {
         type: DioExceptionType.connectionError,
       );
     }
+    */
 
     try {
       return await _dio.delete<T>(
@@ -501,6 +521,7 @@ class ApiClient {
             : path;
 
     // Check internet connectivity if required
+    /* <-- DIHILANGKAN SEMENTARA
     if (checkInternet && !(await _networkUtils.checkInternetConnection())) {
       _networkUtils.showNoInternetError();
       throw DioException(
@@ -509,6 +530,7 @@ class ApiClient {
         type: DioExceptionType.connectionError,
       );
     }
+    */
 
     try {
       return await _dio.patch<T>(

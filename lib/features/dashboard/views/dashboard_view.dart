@@ -726,7 +726,7 @@ class DashboardView extends GetView<DashboardController> {
                   style: TextStyle(
                     fontFamily: 'JosefinSans',
                     fontSize: 28,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.bold,
                     color:
                         themeController.isDarkMode
                             ? ColorTheme.textPrimaryDark
@@ -796,7 +796,7 @@ class DashboardView extends GetView<DashboardController> {
             style: TextStyle(
               fontFamily: 'JosefinSans',
               fontSize: 18,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.bold,
               color:
                   themeController.isDarkMode
                       ? ColorTheme.textPrimaryDark
@@ -812,10 +812,11 @@ class DashboardView extends GetView<DashboardController> {
               fontFamily: 'JosefinSans',
               fontSize: 12,
               fontWeight: FontWeight.w500,
+              // 🔧 GANTI INI - dari textSecondary ke textPrimary
               color:
                   themeController.isDarkMode
-                      ? ColorTheme.textSecondaryDark
-                      : ColorTheme.textSecondary,
+                      ? ColorTheme.textPrimaryDark
+                      : ColorTheme.textPrimary, // ✅ Sekarang hitam!
             ),
           ),
         ],

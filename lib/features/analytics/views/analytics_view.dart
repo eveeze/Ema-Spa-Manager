@@ -1,6 +1,7 @@
 // lib/features/analytics/views/analytics_view.dart
 
 import 'package:emababyspa/common/layouts/main_layout.dart';
+import 'package:emababyspa/common/theme/text_theme.dart';
 import 'package:emababyspa/data/models/analytics.dart';
 import 'package:emababyspa/features/analytics/controllers/analytics_controller.dart';
 import 'package:emababyspa/utils/app_routes.dart';
@@ -33,13 +34,13 @@ class AnalyticsView extends GetView<AnalyticsController> {
                   size: 64,
                   color: Theme.of(context).colorScheme.error,
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: M3Spacing.md),
                 Text(
                   controller.errorMessage.value!,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyLarge,
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: M3Spacing.md),
                 ElevatedButton.icon(
                   onPressed: controller.refreshData,
                   icon: const Icon(Icons.refresh),
@@ -50,7 +51,12 @@ class AnalyticsView extends GetView<AnalyticsController> {
           );
         }
         if (controller.detailsData.value == null) {
-          return const Center(child: Text('Tidak ada data analitik tersedia.'));
+          return Center(
+            child: Text(
+              'Tidak ada data analitik tersedia.',
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+          );
         }
         return RefreshIndicator(
           onRefresh: controller.refreshData,
@@ -64,21 +70,19 @@ class AnalyticsView extends GetView<AnalyticsController> {
   Widget _buildAnalyticsContent(BuildContext context) {
     final details = controller.detailsData.value!;
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
+      padding: EdgeInsets.all(M3Spacing.md),
       physics: const AlwaysScrollableScrollPhysics(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildDateFilter(context),
-          const SizedBox(height: 24),
+          SizedBox(height: M3Spacing.lg),
           _buildStatsGrid(context),
-          const SizedBox(height: 24),
+          SizedBox(height: M3Spacing.lg),
           _buildRevenueChart(context),
-          const SizedBox(height: 24),
-          // [DIUBAH] Menampilkan Pie Chart untuk status reservasi
+          SizedBox(height: M3Spacing.lg),
           _buildReservationStatusChart(context, details.reservationStats),
-          const SizedBox(height: 24),
-          // [DIUBAH] Menampilkan Bar Chart untuk layanan terlaris
+          SizedBox(height: M3Spacing.lg),
           _buildTopPerformingBarChart(
             context,
             'Layanan Terlaris',
@@ -86,8 +90,7 @@ class AnalyticsView extends GetView<AnalyticsController> {
             Icons.spa_outlined,
             (item) => '${item.count} Sesi',
           ),
-          const SizedBox(height: 24),
-          // [DIUBAH] Menampilkan Bar Chart untuk terapis terbaik
+          SizedBox(height: M3Spacing.lg),
           _buildTopPerformingBarChart(
             context,
             'Terapis Terbaik',
@@ -95,9 +98,9 @@ class AnalyticsView extends GetView<AnalyticsController> {
             Icons.support_agent_outlined,
             (item) => '${item.count} Sesi',
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: M3Spacing.lg),
           _buildRatingSection(context, details.ratingStats),
-          const SizedBox(height: 16),
+          SizedBox(height: M3Spacing.md),
         ],
       ),
     );
@@ -147,13 +150,18 @@ class AnalyticsView extends GetView<AnalyticsController> {
     final overallRating =
         controller.detailsData.value!.ratingStats.overallAverageRating;
 
+    // Responsive grid: 2 columns on small screens, 4 on larger screens
+    final width = MediaQuery.of(context).size.width;
+    final crossAxisCount = width > 600 ? 4 : 2;
+    final childAspectRatio = width > 600 ? 1.4 : 1.3;
+
     return GridView.count(
-      crossAxisCount: 2,
+      crossAxisCount: crossAxisCount,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      childAspectRatio: 1.6,
+      crossAxisSpacing: M3Spacing.sm,
+      mainAxisSpacing: M3Spacing.sm,
+      childAspectRatio: childAspectRatio,
       children: [
         _buildStatCard(
           context: context,
@@ -213,10 +221,15 @@ class AnalyticsView extends GetView<AnalyticsController> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: M3Spacing.md),
         Container(
           height: 250,
-          padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+          padding: EdgeInsets.fromLTRB(
+            M3Spacing.md,
+            M3Spacing.lg,
+            M3Spacing.md,
+            M3Spacing.sm,
+          ),
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
@@ -245,13 +258,11 @@ class AnalyticsView extends GetView<AnalyticsController> {
                           chartData[value.toInt()].date,
                         );
                         return Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
+                          padding: EdgeInsets.only(top: M3Spacing.sm),
                           child: Text(
                             DateFormat('d/M').format(date),
-                            style: TextStyle(
+                            style: theme.textTheme.labelSmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         );
@@ -305,6 +316,7 @@ class AnalyticsView extends GetView<AnalyticsController> {
                         TextStyle(
                           color: theme.colorScheme.onPrimary,
                           fontWeight: FontWeight.bold,
+                          fontSize: 12,
                         ),
                       );
                     }).toList();
@@ -318,7 +330,7 @@ class AnalyticsView extends GetView<AnalyticsController> {
     );
   }
 
-  /// [BARU] Membangun Pie Chart untuk status reservasi.
+  /// Membangun Pie Chart untuk status reservasi.
   Widget _buildReservationStatusChart(
     BuildContext context,
     ReservationStats stats,
@@ -335,7 +347,7 @@ class AnalyticsView extends GetView<AnalyticsController> {
             value: value.toDouble(),
             title: '$value',
             radius: 50,
-            titleStyle: TextStyle(
+            titleStyle: theme.textTheme.labelLarge?.copyWith(
               fontWeight: FontWeight.bold,
               color: theme.colorScheme.onPrimary,
             ),
@@ -371,53 +383,73 @@ class AnalyticsView extends GetView<AnalyticsController> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: M3Spacing.md),
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(M3Spacing.md),
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: theme.colorScheme.outlineVariant),
           ),
-          child: Row(
-            children: [
-              Expanded(
-                flex: 2,
-                child: AspectRatio(
-                  aspectRatio: 1,
-                  child: PieChart(
-                    PieChartData(
-                      sections: sections,
-                      sectionsSpace: 2,
-                      centerSpaceRadius: 40,
-                      pieTouchData: PieTouchData(
-                        touchCallback:
-                            (FlTouchEvent event, pieTouchResponse) {},
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              // Responsive layout for pie chart
+              if (constraints.maxWidth > 400) {
+                return Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: AspectRatio(
+                        aspectRatio: 1,
+                        child: PieChart(
+                          PieChartData(
+                            sections: sections,
+                            sectionsSpace: 2,
+                            centerSpaceRadius: 40,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                flex: 1,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: legendItems,
-                ),
-              ),
-            ],
+                    SizedBox(width: M3Spacing.lg),
+                    Expanded(
+                      flex: 1,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: legendItems,
+                      ),
+                    ),
+                  ],
+                );
+              } else {
+                return Column(
+                  children: [
+                    AspectRatio(
+                      aspectRatio: 1,
+                      child: PieChart(
+                        PieChartData(
+                          sections: sections,
+                          sectionsSpace: 2,
+                          centerSpaceRadius: 40,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: M3Spacing.md),
+                    ...legendItems,
+                  ],
+                );
+              }
+            },
           ),
         ),
       ],
     );
   }
 
-  /// [BARU] Helper untuk membuat item legenda Pie Chart.
+  /// Helper untuk membuat item legenda Pie Chart.
   Widget _buildLegendItem(BuildContext context, Color color, String text) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      padding: EdgeInsets.symmetric(vertical: M3Spacing.xs),
       child: Row(
         children: [
           Container(
@@ -425,14 +457,14 @@ class AnalyticsView extends GetView<AnalyticsController> {
             height: 16,
             decoration: BoxDecoration(shape: BoxShape.circle, color: color),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: M3Spacing.sm),
           Text(text, style: Theme.of(context).textTheme.bodyMedium),
         ],
       ),
     );
   }
 
-  /// [DIUBAH] Membangun Bar Chart horizontal untuk item terlaris.
+  /// Membangun Bar Chart horizontal untuk item terlaris.
   Widget _buildTopPerformingBarChart(
     BuildContext context,
     String title,
@@ -459,9 +491,9 @@ class AnalyticsView extends GetView<AnalyticsController> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: M3Spacing.md),
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(M3Spacing.md),
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
@@ -473,19 +505,24 @@ class AnalyticsView extends GetView<AnalyticsController> {
                   final maxValue = items.first.count.toDouble();
                   final currentValue = item.count.toDouble();
                   return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    padding: EdgeInsets.symmetric(vertical: M3Spacing.sm),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              item.name,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
+                            Expanded(
+                              child: Text(
+                                item.name,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
+                            SizedBox(width: M3Spacing.sm),
                             Text(
                               valueFormatter(item),
                               style: theme.textTheme.bodyMedium?.copyWith(
@@ -495,7 +532,7 @@ class AnalyticsView extends GetView<AnalyticsController> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: M3Spacing.sm),
                         LinearProgressIndicator(
                           value: maxValue > 0 ? currentValue / maxValue : 0,
                           backgroundColor: theme.colorScheme.surfaceVariant,
@@ -513,7 +550,7 @@ class AnalyticsView extends GetView<AnalyticsController> {
     );
   }
 
-  /// [DIUBAH] Menggunakan bar indicator untuk rating.
+  /// Menggunakan bar indicator untuk rating.
   Widget _buildRatingSection(BuildContext context, RatingStats ratingStats) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -525,7 +562,7 @@ class AnalyticsView extends GetView<AnalyticsController> {
           Icons.thumb_up_alt_outlined,
           Colors.green,
         ),
-        const SizedBox(height: 24),
+        SizedBox(height: M3Spacing.lg),
         _buildRatedServiceList(
           context,
           'Layanan Rating Terendah',
@@ -537,7 +574,7 @@ class AnalyticsView extends GetView<AnalyticsController> {
     );
   }
 
-  /// [DIUBAH] Membangun daftar layanan dengan LinearProgressIndicator.
+  /// Membangun daftar layanan dengan LinearProgressIndicator.
   Widget _buildRatedServiceList(
     BuildContext context,
     String title,
@@ -562,9 +599,9 @@ class AnalyticsView extends GetView<AnalyticsController> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: M3Spacing.md),
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(M3Spacing.md),
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
@@ -574,19 +611,24 @@ class AnalyticsView extends GetView<AnalyticsController> {
             children:
                 items.map((item) {
                   return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    padding: EdgeInsets.symmetric(vertical: M3Spacing.sm),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              item.name,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
+                            Expanded(
+                              child: Text(
+                                item.name,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
+                            SizedBox(width: M3Spacing.sm),
                             Row(
                               children: [
                                 Icon(
@@ -594,7 +636,7 @@ class AnalyticsView extends GetView<AnalyticsController> {
                                   color: Colors.amber[600],
                                   size: 18,
                                 ),
-                                const SizedBox(width: 4),
+                                SizedBox(width: M3Spacing.xs),
                                 Text(
                                   item.averageRating.toStringAsFixed(2),
                                   style: theme.textTheme.bodyMedium?.copyWith(
@@ -606,9 +648,9 @@ class AnalyticsView extends GetView<AnalyticsController> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: M3Spacing.sm),
                         LinearProgressIndicator(
-                          value: item.averageRating / 5.0, // Rating dari 1-5
+                          value: item.averageRating / 5.0,
                           backgroundColor: theme.colorScheme.surfaceVariant,
                           color: iconColor,
                           minHeight: 8,
@@ -634,7 +676,7 @@ class AnalyticsView extends GetView<AnalyticsController> {
   }) {
     final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(M3Spacing.sm),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
@@ -646,25 +688,27 @@ class AnalyticsView extends GetView<AnalyticsController> {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: Text(
                   title,
-                  style: theme.textTheme.bodyMedium?.copyWith(
+                  style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const SizedBox(width: 8),
-              Icon(icon, color: color, size: 24),
+              SizedBox(width: M3Spacing.xs),
+              Icon(icon, color: color, size: 20),
             ],
           ),
-          const SizedBox(height: 8),
+          const Spacer(),
           Text(
             value,
-            style: theme.textTheme.headlineSmall?.copyWith(
+            style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
             ),
             overflow: TextOverflow.ellipsis,
@@ -675,7 +719,7 @@ class AnalyticsView extends GetView<AnalyticsController> {
     );
   }
 
-  /// [BARU] Helper widget untuk kontainer chart yang kosong.
+  /// Helper widget untuk kontainer chart yang kosong.
   Widget _buildEmptyChartContainer(
     BuildContext context,
     String title,
@@ -691,17 +735,23 @@ class AnalyticsView extends GetView<AnalyticsController> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: M3Spacing.md),
         Container(
           height: 200,
           width: double.infinity,
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(M3Spacing.md),
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: theme.colorScheme.outlineVariant),
           ),
-          child: Center(child: Text(message)),
+          child: Center(
+            child: Text(
+              message,
+              style: theme.textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+          ),
         ),
       ],
     );

@@ -14,7 +14,6 @@
     
     <!-- Internet permissions for URL launching -->
     <uses-permission android:name="android.permission.INTERNET" />
-
     <application
         android:label="emababyspa"
         android:name="${applicationName}"

@@ -85,12 +85,12 @@ class TextThemes {
   static const String _contentFontFamily = 'JosefinSans';
   static const String _displayFontFamily = 'DeliusSwashCaps';
 
-  // --- UPDATED: Main content text theme using constants ---
+  // --- UPDATED: Main content text theme with proper M3 colors ---
   static final TextTheme textTheme = TextTheme(
     displayLarge: TextStyle(
       fontSize: _M3TypographyMetrics.displayLargeSize,
       fontWeight: FontWeight.w400,
-      color: ColorTheme.textPrimary,
+      color: ColorTheme.m3OnSurface, // Use M3 OnSurface for visibility
       fontFamily: _displayFontFamily,
       height: _M3TypographyMetrics.displayLargeHeight,
       letterSpacing: _M3TypographyMetrics.displayLargeLetterSpacing,
@@ -98,7 +98,7 @@ class TextThemes {
     displayMedium: TextStyle(
       fontSize: _M3TypographyMetrics.displayMediumSize,
       fontWeight: FontWeight.w400,
-      color: ColorTheme.textPrimary,
+      color: ColorTheme.m3OnSurface,
       fontFamily: _displayFontFamily,
       height: _M3TypographyMetrics.displayMediumHeight,
       letterSpacing: _M3TypographyMetrics.displayMediumLetterSpacing,
@@ -106,7 +106,7 @@ class TextThemes {
     displaySmall: TextStyle(
       fontSize: _M3TypographyMetrics.displaySmallSize,
       fontWeight: FontWeight.w400,
-      color: ColorTheme.textPrimary,
+      color: ColorTheme.m3OnSurface,
       fontFamily: _displayFontFamily,
       height: _M3TypographyMetrics.displaySmallHeight,
       letterSpacing: _M3TypographyMetrics.displaySmallLetterSpacing,
@@ -114,7 +114,7 @@ class TextThemes {
     headlineLarge: TextStyle(
       fontSize: _M3TypographyMetrics.headlineLargeSize,
       fontWeight: FontWeight.w400,
-      color: ColorTheme.textPrimary,
+      color: ColorTheme.m3OnSurface,
       fontFamily: _contentFontFamily,
       height: _M3TypographyMetrics.headlineLargeHeight,
       letterSpacing: _M3TypographyMetrics.headlineLargeLetterSpacing,
@@ -122,7 +122,7 @@ class TextThemes {
     headlineMedium: TextStyle(
       fontSize: _M3TypographyMetrics.headlineMediumSize,
       fontWeight: FontWeight.w400,
-      color: ColorTheme.textPrimary,
+      color: ColorTheme.m3OnSurface,
       fontFamily: _contentFontFamily,
       height: _M3TypographyMetrics.headlineMediumHeight,
       letterSpacing: _M3TypographyMetrics.headlineMediumLetterSpacing,
@@ -130,7 +130,7 @@ class TextThemes {
     headlineSmall: TextStyle(
       fontSize: _M3TypographyMetrics.headlineSmallSize,
       fontWeight: FontWeight.w400,
-      color: ColorTheme.textPrimary,
+      color: ColorTheme.m3OnSurface,
       fontFamily: _contentFontFamily,
       height: _M3TypographyMetrics.headlineSmallHeight,
       letterSpacing: _M3TypographyMetrics.headlineSmallLetterSpacing,
@@ -138,7 +138,7 @@ class TextThemes {
     titleLarge: TextStyle(
       fontSize: _M3TypographyMetrics.titleLargeSize,
       fontWeight: FontWeight.w400,
-      color: ColorTheme.textPrimary,
+      color: ColorTheme.m3OnSurface,
       fontFamily: _contentFontFamily,
       height: _M3TypographyMetrics.titleLargeHeight,
       letterSpacing: _M3TypographyMetrics.titleLargeLetterSpacing,
@@ -146,7 +146,7 @@ class TextThemes {
     titleMedium: TextStyle(
       fontSize: _M3TypographyMetrics.titleMediumSize,
       fontWeight: FontWeight.w500,
-      color: ColorTheme.textPrimary,
+      color: ColorTheme.m3OnSurface,
       fontFamily: _contentFontFamily,
       height: _M3TypographyMetrics.titleMediumHeight,
       letterSpacing: _M3TypographyMetrics.titleMediumLetterSpacing,
@@ -154,7 +154,7 @@ class TextThemes {
     titleSmall: TextStyle(
       fontSize: _M3TypographyMetrics.titleSmallSize,
       fontWeight: FontWeight.w500,
-      color: ColorTheme.textPrimary,
+      color: ColorTheme.m3OnSurface,
       fontFamily: _contentFontFamily,
       height: _M3TypographyMetrics.titleSmallHeight,
       letterSpacing: _M3TypographyMetrics.titleSmallLetterSpacing,
@@ -162,7 +162,7 @@ class TextThemes {
     bodyLarge: TextStyle(
       fontSize: _M3TypographyMetrics.bodyLargeSize,
       fontWeight: FontWeight.w400,
-      color: ColorTheme.textPrimary,
+      color: ColorTheme.m3OnSurface,
       fontFamily: _contentFontFamily,
       height: _M3TypographyMetrics.bodyLargeHeight,
       letterSpacing: _M3TypographyMetrics.bodyLargeLetterSpacing,
@@ -170,7 +170,7 @@ class TextThemes {
     bodyMedium: TextStyle(
       fontSize: _M3TypographyMetrics.bodyMediumSize,
       fontWeight: FontWeight.w400,
-      color: ColorTheme.textPrimary,
+      color: ColorTheme.m3OnSurface,
       fontFamily: _contentFontFamily,
       height: _M3TypographyMetrics.bodyMediumHeight,
       letterSpacing: _M3TypographyMetrics.bodyMediumLetterSpacing,
@@ -178,7 +178,7 @@ class TextThemes {
     bodySmall: TextStyle(
       fontSize: _M3TypographyMetrics.bodySmallSize,
       fontWeight: FontWeight.w400,
-      color: ColorTheme.textSecondary,
+      color: ColorTheme.m3OnSurfaceVariant, // Slightly muted for secondary text
       fontFamily: _contentFontFamily,
       height: _M3TypographyMetrics.bodySmallHeight,
       letterSpacing: _M3TypographyMetrics.bodySmallLetterSpacing,
@@ -186,7 +186,7 @@ class TextThemes {
     labelLarge: TextStyle(
       fontSize: _M3TypographyMetrics.labelLargeSize,
       fontWeight: FontWeight.w500,
-      color: ColorTheme.textPrimary,
+      color: ColorTheme.m3OnSurface,
       fontFamily: _contentFontFamily,
       height: _M3TypographyMetrics.labelLargeHeight,
       letterSpacing: _M3TypographyMetrics.labelLargeLetterSpacing,
@@ -194,7 +194,7 @@ class TextThemes {
     labelMedium: TextStyle(
       fontSize: _M3TypographyMetrics.labelMediumSize,
       fontWeight: FontWeight.w500,
-      color: ColorTheme.textPrimary,
+      color: ColorTheme.m3OnSurface,
       fontFamily: _contentFontFamily,
       height: _M3TypographyMetrics.labelMediumHeight,
       letterSpacing: _M3TypographyMetrics.labelMediumLetterSpacing,
@@ -202,19 +202,19 @@ class TextThemes {
     labelSmall: TextStyle(
       fontSize: _M3TypographyMetrics.labelSmallSize,
       fontWeight: FontWeight.w500,
-      color: ColorTheme.textSecondary,
+      color: ColorTheme.m3OnSurfaceVariant,
       fontFamily: _contentFontFamily,
       height: _M3TypographyMetrics.labelSmallHeight,
       letterSpacing: _M3TypographyMetrics.labelSmallLetterSpacing,
     ),
   );
 
-  // --- UPDATED: Dark theme with M3 scale using constants ---
+  // --- UPDATED: Dark theme with proper M3 dark colors ---
   static final TextTheme darkTextTheme = TextTheme(
     displayLarge: TextStyle(
       fontSize: _M3TypographyMetrics.displayLargeSize,
       fontWeight: FontWeight.w400,
-      color: ColorTheme.textPrimaryDark,
+      color: ColorTheme.m3OnSurfaceDark,
       fontFamily: _displayFontFamily,
       height: _M3TypographyMetrics.displayLargeHeight,
       letterSpacing: _M3TypographyMetrics.displayLargeLetterSpacing,
@@ -222,7 +222,7 @@ class TextThemes {
     displayMedium: TextStyle(
       fontSize: _M3TypographyMetrics.displayMediumSize,
       fontWeight: FontWeight.w400,
-      color: ColorTheme.textPrimaryDark,
+      color: ColorTheme.m3OnSurfaceDark,
       fontFamily: _displayFontFamily,
       height: _M3TypographyMetrics.displayMediumHeight,
       letterSpacing: _M3TypographyMetrics.displayMediumLetterSpacing,
@@ -230,7 +230,7 @@ class TextThemes {
     displaySmall: TextStyle(
       fontSize: _M3TypographyMetrics.displaySmallSize,
       fontWeight: FontWeight.w400,
-      color: ColorTheme.textPrimaryDark,
+      color: ColorTheme.m3OnSurfaceDark,
       fontFamily: _displayFontFamily,
       height: _M3TypographyMetrics.displaySmallHeight,
       letterSpacing: _M3TypographyMetrics.displaySmallLetterSpacing,
@@ -238,7 +238,7 @@ class TextThemes {
     headlineLarge: TextStyle(
       fontSize: _M3TypographyMetrics.headlineLargeSize,
       fontWeight: FontWeight.w400,
-      color: ColorTheme.textPrimaryDark,
+      color: ColorTheme.m3OnSurfaceDark,
       fontFamily: _contentFontFamily,
       height: _M3TypographyMetrics.headlineLargeHeight,
       letterSpacing: _M3TypographyMetrics.headlineLargeLetterSpacing,
@@ -246,7 +246,7 @@ class TextThemes {
     headlineMedium: TextStyle(
       fontSize: _M3TypographyMetrics.headlineMediumSize,
       fontWeight: FontWeight.w400,
-      color: ColorTheme.textPrimaryDark,
+      color: ColorTheme.m3OnSurfaceDark,
       fontFamily: _contentFontFamily,
       height: _M3TypographyMetrics.headlineMediumHeight,
       letterSpacing: _M3TypographyMetrics.headlineMediumLetterSpacing,
@@ -254,7 +254,7 @@ class TextThemes {
     headlineSmall: TextStyle(
       fontSize: _M3TypographyMetrics.headlineSmallSize,
       fontWeight: FontWeight.w400,
-      color: ColorTheme.textPrimaryDark,
+      color: ColorTheme.m3OnSurfaceDark,
       fontFamily: _contentFontFamily,
       height: _M3TypographyMetrics.headlineSmallHeight,
       letterSpacing: _M3TypographyMetrics.headlineSmallLetterSpacing,
@@ -262,7 +262,7 @@ class TextThemes {
     titleLarge: TextStyle(
       fontSize: _M3TypographyMetrics.titleLargeSize,
       fontWeight: FontWeight.w400,
-      color: ColorTheme.textPrimaryDark,
+      color: ColorTheme.m3OnSurfaceDark,
       fontFamily: _contentFontFamily,
       height: _M3TypographyMetrics.titleLargeHeight,
       letterSpacing: _M3TypographyMetrics.titleLargeLetterSpacing,
@@ -270,7 +270,7 @@ class TextThemes {
     titleMedium: TextStyle(
       fontSize: _M3TypographyMetrics.titleMediumSize,
       fontWeight: FontWeight.w500,
-      color: ColorTheme.textPrimaryDark,
+      color: ColorTheme.m3OnSurfaceDark,
       fontFamily: _contentFontFamily,
       height: _M3TypographyMetrics.titleMediumHeight,
       letterSpacing: _M3TypographyMetrics.titleMediumLetterSpacing,
@@ -278,7 +278,7 @@ class TextThemes {
     titleSmall: TextStyle(
       fontSize: _M3TypographyMetrics.titleSmallSize,
       fontWeight: FontWeight.w500,
-      color: ColorTheme.textPrimaryDark,
+      color: ColorTheme.m3OnSurfaceDark,
       fontFamily: _contentFontFamily,
       height: _M3TypographyMetrics.titleSmallHeight,
       letterSpacing: _M3TypographyMetrics.titleSmallLetterSpacing,
@@ -286,7 +286,7 @@ class TextThemes {
     bodyLarge: TextStyle(
       fontSize: _M3TypographyMetrics.bodyLargeSize,
       fontWeight: FontWeight.w400,
-      color: ColorTheme.textPrimaryDark,
+      color: ColorTheme.m3OnSurfaceDark,
       fontFamily: _contentFontFamily,
       height: _M3TypographyMetrics.bodyLargeHeight,
       letterSpacing: _M3TypographyMetrics.bodyLargeLetterSpacing,
@@ -294,7 +294,7 @@ class TextThemes {
     bodyMedium: TextStyle(
       fontSize: _M3TypographyMetrics.bodyMediumSize,
       fontWeight: FontWeight.w400,
-      color: ColorTheme.textPrimaryDark,
+      color: ColorTheme.m3OnSurfaceDark,
       fontFamily: _contentFontFamily,
       height: _M3TypographyMetrics.bodyMediumHeight,
       letterSpacing: _M3TypographyMetrics.bodyMediumLetterSpacing,
@@ -302,7 +302,7 @@ class TextThemes {
     bodySmall: TextStyle(
       fontSize: _M3TypographyMetrics.bodySmallSize,
       fontWeight: FontWeight.w400,
-      color: ColorTheme.textSecondaryDark,
+      color: ColorTheme.m3OnSurfaceVariantDark,
       fontFamily: _contentFontFamily,
       height: _M3TypographyMetrics.bodySmallHeight,
       letterSpacing: _M3TypographyMetrics.bodySmallLetterSpacing,
@@ -310,7 +310,7 @@ class TextThemes {
     labelLarge: TextStyle(
       fontSize: _M3TypographyMetrics.labelLargeSize,
       fontWeight: FontWeight.w500,
-      color: ColorTheme.textPrimaryDark,
+      color: ColorTheme.m3OnSurfaceDark,
       fontFamily: _contentFontFamily,
       height: _M3TypographyMetrics.labelLargeHeight,
       letterSpacing: _M3TypographyMetrics.labelLargeLetterSpacing,
@@ -318,7 +318,7 @@ class TextThemes {
     labelMedium: TextStyle(
       fontSize: _M3TypographyMetrics.labelMediumSize,
       fontWeight: FontWeight.w500,
-      color: ColorTheme.textPrimaryDark,
+      color: ColorTheme.m3OnSurfaceDark,
       fontFamily: _contentFontFamily,
       height: _M3TypographyMetrics.labelMediumHeight,
       letterSpacing: _M3TypographyMetrics.labelMediumLetterSpacing,
@@ -326,7 +326,7 @@ class TextThemes {
     labelSmall: TextStyle(
       fontSize: _M3TypographyMetrics.labelSmallSize,
       fontWeight: FontWeight.w500,
-      color: ColorTheme.textSecondaryDark,
+      color: ColorTheme.m3OnSurfaceVariantDark,
       fontFamily: _contentFontFamily,
       height: _M3TypographyMetrics.labelSmallHeight,
       letterSpacing: _M3TypographyMetrics.labelSmallLetterSpacing,
@@ -344,7 +344,7 @@ class SpecialTextStyles {
   static TextStyle get appTitle => const TextStyle(
     fontSize: 42,
     fontWeight: FontWeight.w400,
-    color: ColorTheme.primary,
+    color: ColorTheme.m3Primary,
     fontFamily: _displayFontFamily,
     height: 1.0,
     letterSpacing: -0.5,
@@ -353,7 +353,7 @@ class SpecialTextStyles {
   static TextStyle get appTitleDark => const TextStyle(
     fontSize: 42,
     fontWeight: FontWeight.w400,
-    color: ColorTheme.primaryLightDark,
+    color: ColorTheme.m3PrimaryDark,
     fontFamily: _displayFontFamily,
     height: 1.0,
     letterSpacing: -0.5,
@@ -363,7 +363,7 @@ class SpecialTextStyles {
   static TextStyle get appSubtitle => const TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.w400,
-    color: ColorTheme.textSecondary,
+    color: ColorTheme.m3OnSurfaceVariant,
     fontFamily: _contentFontFamily,
     height: 1.4,
     letterSpacing: 0.5,
@@ -372,7 +372,7 @@ class SpecialTextStyles {
   static TextStyle get appSubtitleDark => const TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.w400,
-    color: ColorTheme.textSecondaryDark,
+    color: ColorTheme.m3OnSurfaceVariantDark,
     fontFamily: _contentFontFamily,
     height: 1.4,
     letterSpacing: 0.5,
@@ -382,7 +382,7 @@ class SpecialTextStyles {
   static TextStyle get decorativeHeading => const TextStyle(
     fontSize: 28,
     fontWeight: FontWeight.w400,
-    color: ColorTheme.primary,
+    color: ColorTheme.m3Primary,
     fontFamily: _displayFontFamily,
     height: 1.1,
     letterSpacing: 0,
@@ -391,7 +391,7 @@ class SpecialTextStyles {
   static TextStyle get decorativeHeadingDark => const TextStyle(
     fontSize: 28,
     fontWeight: FontWeight.w400,
-    color: ColorTheme.primaryLightDark,
+    color: ColorTheme.m3PrimaryDark,
     fontFamily: _displayFontFamily,
     height: 1.1,
     letterSpacing: 0,
@@ -401,7 +401,16 @@ class SpecialTextStyles {
   static TextStyle get buttonPrimary => const TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.w600,
-    color: ColorTheme.textInverse, // White text on colored button
+    color: ColorTheme.m3OnPrimary,
+    fontFamily: _contentFontFamily,
+    height: 1.2,
+    letterSpacing: 0.5,
+  );
+
+  static TextStyle get buttonPrimaryDark => const TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+    color: ColorTheme.m3OnPrimaryDark,
     fontFamily: _contentFontFamily,
     height: 1.2,
     letterSpacing: 0.5,
@@ -410,7 +419,16 @@ class SpecialTextStyles {
   static TextStyle get buttonSecondary => const TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.w600,
-    color: ColorTheme.primary, // Colored text on white/transparent button
+    color: ColorTheme.m3Primary,
+    fontFamily: _contentFontFamily,
+    height: 1.2,
+    letterSpacing: 0.5,
+  );
+
+  static TextStyle get buttonSecondaryDark => const TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+    color: ColorTheme.m3PrimaryDark,
     fontFamily: _contentFontFamily,
     height: 1.2,
     letterSpacing: 0.5,
@@ -420,7 +438,7 @@ class SpecialTextStyles {
   static TextStyle get cardTitle => const TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.w600,
-    color: ColorTheme.textPrimary,
+    color: ColorTheme.m3OnSurface,
     fontFamily: _contentFontFamily,
     height: 1.3,
     letterSpacing: 0.15,
@@ -429,7 +447,7 @@ class SpecialTextStyles {
   static TextStyle get cardTitleDark => const TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.w600,
-    color: ColorTheme.textPrimaryDark,
+    color: ColorTheme.m3OnSurfaceDark,
     fontFamily: _contentFontFamily,
     height: 1.3,
     letterSpacing: 0.15,
