@@ -1,4 +1,3 @@
-// lib/common/widgets/app_text_field.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:emababyspa/common/theme/color_theme.dart';
@@ -34,9 +33,12 @@ class AppTextField extends StatelessWidget {
   final bool enableSuggestions;
   final String? Function(String?)? validator;
 
-  // Custom label color parameters
+  // Baru
   final Color? labelColor;
   final Color? requiredColor;
+  final TextStyle? textStyle;
+  final TextAlign textAlign;
+  final Iterable<String>? autofillHints;
 
   const AppTextField({
     super.key,
@@ -69,11 +71,13 @@ class AppTextField extends StatelessWidget {
     this.validator,
     this.labelColor,
     this.requiredColor,
+    this.textStyle,
+    this.textAlign = TextAlign.start,
+    this.autofillHints,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Use Theme.of(context) instead of ThemeController for consistency
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final isError = errorText != null;
@@ -85,68 +89,71 @@ class AppTextField extends StatelessWidget {
         AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: _getContainerDecoration(isDark, isError),
-          child: TextFormField(
-            controller: controller,
-            obscureText: obscureText,
-            keyboardType: keyboardType,
-            enabled: enabled,
-            readOnly: readOnly,
-            onChanged: onChanged,
-            onTap: onTap,
-            maxLines: maxLines,
-            minLines: minLines,
-            maxLength: maxLength,
-            autofocus: autofocus,
-            focusNode: focusNode,
-            textCapitalization: textCapitalization,
-            textInputAction: textInputAction,
-            onFieldSubmitted: onSubmitted,
-            autocorrect: autocorrect,
-            enableSuggestions: enableSuggestions,
-            inputFormatters: inputFormatters,
-            validator: validator,
-            cursorColor: _getCursorColor(isDark),
-            cursorWidth: 2.0,
-            cursorRadius: const Radius.circular(1),
-            style: _getTextStyle(isDark),
-            decoration: InputDecoration(
-              hintText: placeholder,
-              hintStyle: _getHintStyle(isDark),
-              helperText: helperText,
-              helperStyle: _getHelperStyle(isDark),
-              // TIDAK menampilkan errorText di sini untuk menghindari background
-              errorText: null,
-              errorStyle: null,
-              errorMaxLines: null,
-              contentPadding: _getContentPadding(),
-              filled: true,
-              fillColor: _getFillColor(isDark),
-              border: _getBorder(isDark, isError: false),
-              enabledBorder: _getBorder(isDark, isError: false),
-              focusedBorder: _getBorder(isDark, isFocused: true),
-              errorBorder: _getBorder(isDark, isError: true),
-              focusedErrorBorder: _getBorder(
-                isDark,
-                isError: true,
-                isFocused: true,
-              ),
-              prefixIcon:
-                  prefix != null ? _buildIconWrapper(prefix!, isDark) : null,
-              suffixIcon:
-                  suffix != null ? _buildIconWrapper(suffix!, isDark) : null,
-              isDense: size == TextFieldSize.small,
-              prefixIconConstraints: const BoxConstraints(
-                minWidth: 48,
-                minHeight: 48,
-              ),
-              suffixIconConstraints: const BoxConstraints(
-                minWidth: 48,
-                minHeight: 48,
+          child: AnimatedSize(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOut,
+            child: TextFormField(
+              controller: controller,
+              obscureText: obscureText,
+              keyboardType: keyboardType,
+              enabled: enabled,
+              readOnly: readOnly,
+              onChanged: onChanged,
+              onTap: onTap,
+              maxLines: maxLines,
+              minLines: minLines,
+              maxLength: maxLength,
+              autofocus: autofocus,
+              focusNode: focusNode,
+              textCapitalization: textCapitalization,
+              textInputAction: textInputAction,
+              onFieldSubmitted: onSubmitted,
+              autocorrect: autocorrect,
+              enableSuggestions: enableSuggestions,
+              inputFormatters: inputFormatters,
+              validator: validator,
+              cursorColor: _getCursorColor(isDark),
+              cursorWidth: 2.0,
+              cursorRadius: const Radius.circular(1),
+              style: textStyle ?? _getTextStyle(isDark),
+              textAlign: textAlign,
+              autofillHints: autofillHints,
+              decoration: InputDecoration(
+                hintText: placeholder,
+                hintStyle: _getHintStyle(isDark),
+                helperText: helperText,
+                helperStyle: _getHelperStyle(isDark),
+                errorText: null,
+                errorStyle: null,
+                contentPadding: _getContentPadding(),
+                filled: true,
+                fillColor: _getFillColor(isDark),
+                border: _getBorder(isDark, isError: false),
+                enabledBorder: _getBorder(isDark, isError: false),
+                focusedBorder: _getBorder(isDark, isFocused: true),
+                errorBorder: _getBorder(isDark, isError: true),
+                focusedErrorBorder: _getBorder(
+                  isDark,
+                  isError: true,
+                  isFocused: true,
+                ),
+                prefixIcon:
+                    prefix != null ? _buildIconWrapper(prefix!, isDark) : null,
+                suffixIcon:
+                    suffix != null ? _buildIconWrapper(suffix!, isDark) : null,
+                isDense: size == TextFieldSize.small,
+                prefixIconConstraints: const BoxConstraints(
+                  minWidth: 48,
+                  minHeight: 48,
+                ),
+                suffixIconConstraints: const BoxConstraints(
+                  minWidth: 48,
+                  minHeight: 48,
+                ),
               ),
             ),
           ),
         ),
-        // Enhanced error text display with better visibility
         if (errorText != null)
           Container(
             margin: const EdgeInsets.only(top: 8.0, left: 4.0, right: 4.0),
@@ -177,7 +184,6 @@ class AppTextField extends StatelessWidget {
               ],
             ),
           ),
-        // Helper text hanya muncul jika tidak ada error
         if (helperText != null && errorText == null)
           Padding(
             padding: const EdgeInsets.only(top: 8.0, left: 4.0),
@@ -186,6 +192,8 @@ class AppTextField extends StatelessWidget {
       ],
     );
   }
+
+  // ————— Support methods below —————
 
   Widget _buildLabel(bool isDark) {
     return Padding(
@@ -219,7 +227,6 @@ class AppTextField extends StatelessWidget {
     );
   }
 
-  // Container decoration with proper shadow for both themes
   BoxDecoration _getContainerDecoration(bool isDark, bool isError) {
     return BoxDecoration(
       borderRadius: BorderRadius.circular(12),
@@ -228,8 +235,8 @@ class AppTextField extends StatelessWidget {
           BoxShadow(
             color:
                 isDark
-                    ? Colors.black.withValues(alpha: 0.4)
-                    : ColorTheme.primary.withValues(alpha: 0.08),
+                    ? Colors.black.withOpacity(0.4)
+                    : ColorTheme.primary.withOpacity(0.08),
             blurRadius: isDark ? 6 : 8,
             offset: const Offset(0, 2),
           ),
@@ -237,73 +244,27 @@ class AppTextField extends StatelessWidget {
     );
   }
 
-  // Improved color methods with proper light/dark mode support
-  Color _getCursorColor(bool isDark) {
-    return isDark ? ColorTheme.primaryLightDark : ColorTheme.primary;
-  }
-
-  Color _getIconColor(bool isDark) {
-    if (!enabled) {
-      return isDark
-          ? ColorTheme.textTertiaryDark.withValues(alpha: 0.5)
-          : ColorTheme.textTertiary.withValues(alpha: 0.5);
-    }
-    return isDark ? ColorTheme.textSecondaryDark : ColorTheme.textSecondary;
-  }
-
+  Color _getCursorColor(bool isDark) =>
+      isDark ? ColorTheme.primaryLightDark : ColorTheme.primary;
+  Color _getIconColor(bool isDark) =>
+      isDark ? ColorTheme.textSecondaryDark : ColorTheme.textSecondary;
+  Color _getLabelColor(bool isDark) =>
+      labelColor ??
+      (isDark ? ColorTheme.textPrimaryDark : ColorTheme.textPrimary);
+  Color _getRequiredColor(bool isDark) =>
+      requiredColor ?? (isDark ? ColorTheme.errorDark : ColorTheme.error);
   Color _getFillColor(bool isDark) {
     if (!enabled) {
       return isDark
-          ? ColorTheme.surfaceDark.withValues(alpha: 0.3)
-          : ColorTheme.surface.withValues(alpha: 0.5);
+          ? ColorTheme.surfaceDark.withOpacity(0.3)
+          : ColorTheme.surface.withOpacity(0.5);
     } else if (readOnly) {
       return isDark
-          ? ColorTheme.surfaceDark.withValues(alpha: 0.7)
+          ? ColorTheme.surfaceDark.withOpacity(0.7)
           : ColorTheme.surfaceAlt;
     } else {
       return isDark ? ColorTheme.surfaceDark : Colors.white;
     }
-  }
-
-  // Method untuk mendapatkan warna label
-  Color _getLabelColor(bool isDark) {
-    // Jika labelColor disediakan, gunakan itu
-    if (labelColor != null) {
-      return labelColor!;
-    }
-
-    // Jika tidak, gunakan default berdasarkan theme
-    return isDark ? ColorTheme.textPrimaryDark : ColorTheme.textPrimary;
-  }
-
-  // Method untuk mendapatkan warna required asterisk
-  Color _getRequiredColor(bool isDark) {
-    // Jika requiredColor disediakan, gunakan itu
-    if (requiredColor != null) {
-      return requiredColor!;
-    }
-
-    // Jika tidak, gunakan default error color
-    return isDark ? ColorTheme.errorDark : ColorTheme.error;
-  }
-
-  // Enhanced error color methods for better visibility
-  Color _getErrorColor(bool isDark) {
-    return isDark
-        ? ColorTheme.errorDark.withValues(alpha: 0.9)
-        : ColorTheme.error;
-  }
-
-  Color _getErrorBackgroundColor(bool isDark) {
-    return isDark
-        ? ColorTheme.errorDark.withValues(alpha: 0.15)
-        : ColorTheme.error.withValues(alpha: 0.08);
-  }
-
-  Color _getErrorBorderColor(bool isDark) {
-    return isDark
-        ? ColorTheme.errorDark.withValues(alpha: 0.3)
-        : ColorTheme.error.withValues(alpha: 0.2);
   }
 
   OutlineInputBorder _getBorder(
@@ -313,85 +274,48 @@ class AppTextField extends StatelessWidget {
   }) {
     Color borderColor;
     double borderWidth = 1.0;
-
     if (isError) {
       borderColor = isDark ? ColorTheme.errorDark : ColorTheme.error;
       borderWidth = isFocused ? 2.0 : 1.0;
     } else if (isFocused) {
       borderColor = isDark ? ColorTheme.primaryLightDark : ColorTheme.primary;
       borderWidth = 2.0;
-    } else if (!enabled) {
-      borderColor =
-          isDark
-              ? ColorTheme.borderDark.withValues(alpha: 0.5)
-              : ColorTheme.border.withValues(alpha: 0.5);
     } else {
       borderColor = isDark ? ColorTheme.borderDark : ColorTheme.border;
     }
-
     return OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
       borderSide: BorderSide(color: borderColor, width: borderWidth),
     );
   }
 
-  TextStyle _getLabelStyle(bool isDark) {
-    final baseColor = _getLabelColor(isDark);
+  TextStyle _getLabelStyle(bool isDark) => TextStyle(
+    fontSize: 15,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0.1,
+    color: _getLabelColor(isDark),
+    fontFamily: 'JosefinSans',
+  );
 
-    switch (size) {
-      case TextFieldSize.small:
-        return TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.1,
-          color: baseColor,
-          fontFamily: 'JosefinSans',
-        );
-      case TextFieldSize.medium:
-        return TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.1,
-          color: baseColor,
-          fontFamily: 'JosefinSans',
-        );
-      case TextFieldSize.large:
-        return TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.1,
-          color: baseColor,
-          fontFamily: 'JosefinSans',
-        );
-    }
-  }
-
-  TextStyle _getHelperTextStyle(bool isDark) {
-    return TextStyle(
-      fontSize: _getHelperFontSize(),
-      fontWeight: FontWeight.w400,
-      color:
-          isDark
-              ? ColorTheme.textTertiaryDark.withValues(alpha: 0.8)
-              : ColorTheme.textTertiary.withValues(alpha: 0.8),
-      fontFamily: 'JosefinSans',
-    );
-  }
+  TextStyle _getHelperTextStyle(bool isDark) => TextStyle(
+    fontSize: 12,
+    fontWeight: FontWeight.w400,
+    color:
+        isDark
+            ? ColorTheme.textTertiaryDark.withOpacity(0.8)
+            : ColorTheme.textTertiary.withOpacity(0.8),
+    fontFamily: 'JosefinSans',
+  );
 
   TextStyle _getTextStyle(bool isDark) {
-    Color textColor;
-    if (!enabled) {
-      textColor =
-          isDark ? ColorTheme.textTertiaryDark : ColorTheme.textTertiary;
-    } else {
-      textColor = isDark ? ColorTheme.textPrimaryDark : ColorTheme.textPrimary;
-    }
+    // Warna teks input yang terlihat jelas
+    final Color textColor = isDark ? Colors.white : Colors.black;
 
     switch (size) {
       case TextFieldSize.small:
         return TextStyle(
           fontSize: 13,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w800,
           letterSpacing: 0.2,
           height: 1.5,
           color: textColor,
@@ -400,7 +324,7 @@ class AppTextField extends StatelessWidget {
       case TextFieldSize.medium:
         return TextStyle(
           fontSize: 15,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w800,
           letterSpacing: 0.2,
           height: 1.5,
           color: textColor,
@@ -409,7 +333,7 @@ class AppTextField extends StatelessWidget {
       case TextFieldSize.large:
         return TextStyle(
           fontSize: 16,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w800,
           letterSpacing: 0.2,
           height: 1.5,
           color: textColor,
@@ -418,119 +342,50 @@ class AppTextField extends StatelessWidget {
     }
   }
 
-  TextStyle _getHintStyle(bool isDark) {
-    final hintColor =
+  TextStyle _getHintStyle(bool isDark) => TextStyle(
+    fontSize: 15,
+    fontWeight: FontWeight.w400,
+    letterSpacing: 0.2,
+    height: 1.5,
+    color:
         isDark
-            ? ColorTheme.textTertiaryDark.withValues(alpha: 0.7)
-            : ColorTheme.textTertiary.withValues(alpha: 0.7);
+            ? ColorTheme.textTertiaryDark.withOpacity(0.7)
+            : ColorTheme.textTertiary.withOpacity(0.7),
+    fontFamily: 'JosefinSans',
+  );
 
-    switch (size) {
-      case TextFieldSize.small:
-        return TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w400,
-          letterSpacing: 0.2,
-          height: 1.5,
-          color: hintColor,
-          fontFamily: 'JosefinSans',
-        );
-      case TextFieldSize.medium:
-        return TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w400,
-          letterSpacing: 0.2,
-          height: 1.5,
-          color: hintColor,
-          fontFamily: 'JosefinSans',
-        );
-      case TextFieldSize.large:
-        return TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w400,
-          letterSpacing: 0.2,
-          height: 1.5,
-          color: hintColor,
-          fontFamily: 'JosefinSans',
-        );
-    }
-  }
+  TextStyle _getHelperStyle(bool isDark) => TextStyle(
+    fontSize: 12,
+    fontWeight: FontWeight.w400,
+    height: 1.4,
+    color: isDark ? ColorTheme.textTertiaryDark : ColorTheme.textTertiary,
+    fontFamily: 'JosefinSans',
+  );
 
-  TextStyle _getHelperStyle(bool isDark) {
-    return TextStyle(
-      fontSize: _getHelperFontSize(),
-      fontWeight: FontWeight.w400,
-      height: 1.4,
-      color: isDark ? ColorTheme.textTertiaryDark : ColorTheme.textTertiary,
-      fontFamily: 'JosefinSans',
-    );
-  }
+  TextStyle _getErrorStyle(bool isDark) => TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+    height: 1.4,
+    color: _getErrorColor(isDark),
+    fontFamily: 'JosefinSans',
+    letterSpacing: 0.1,
+  );
 
-  // Enhanced error style with better readability
-  TextStyle _getErrorStyle(bool isDark) {
-    return TextStyle(
-      fontSize: _getErrorFontSize(),
-      fontWeight:
-          FontWeight.w600, // Slightly reduced from w800 for better readability
-      height: 1.4,
-      color: _getErrorColor(isDark),
-      fontFamily: 'JosefinSans',
-      letterSpacing: 0.1,
-    );
-  }
+  Color _getErrorColor(bool isDark) =>
+      isDark ? ColorTheme.errorDark.withOpacity(0.9) : ColorTheme.error;
 
-  EdgeInsets _getContentPadding() {
-    switch (size) {
-      case TextFieldSize.small:
-        return const EdgeInsets.symmetric(horizontal: 16, vertical: 12);
-      case TextFieldSize.medium:
-        return const EdgeInsets.symmetric(horizontal: 18, vertical: 16);
-      case TextFieldSize.large:
-        return const EdgeInsets.symmetric(horizontal: 20, vertical: 20);
-    }
-  }
+  Color _getErrorBackgroundColor(bool isDark) =>
+      isDark
+          ? ColorTheme.errorDark.withOpacity(0.15)
+          : ColorTheme.error.withOpacity(0.08);
 
-  double _getHelperFontSize() {
-    switch (size) {
-      case TextFieldSize.small:
-        return 11;
-      case TextFieldSize.medium:
-        return 12;
-      case TextFieldSize.large:
-        return 13;
-    }
-  }
+  Color _getErrorBorderColor(bool isDark) =>
+      isDark
+          ? ColorTheme.errorDark.withOpacity(0.3)
+          : ColorTheme.error.withOpacity(0.2);
 
-  // Improved error font size for better readability
-  double _getErrorFontSize() {
-    switch (size) {
-      case TextFieldSize.small:
-        return 13; // Slightly smaller for better proportion
-      case TextFieldSize.medium:
-        return 14;
-      case TextFieldSize.large:
-        return 15;
-    }
-  }
-
-  double _getErrorIconSize() {
-    switch (size) {
-      case TextFieldSize.small:
-        return 16;
-      case TextFieldSize.medium:
-        return 18;
-      case TextFieldSize.large:
-        return 20;
-    }
-  }
-
-  double _getIconSize() {
-    switch (size) {
-      case TextFieldSize.small:
-        return 18;
-      case TextFieldSize.medium:
-        return 20;
-      case TextFieldSize.large:
-        return 22;
-    }
-  }
+  EdgeInsets _getContentPadding() =>
+      const EdgeInsets.symmetric(horizontal: 18, vertical: 16);
+  double _getErrorIconSize() => 18;
+  double _getIconSize() => 20;
 }

@@ -122,4 +122,5 @@ class ColorTheme {
   static const Color m3SurfaceVariantDark = Color(0xFF40484C);
   static const Color m3OnSurfaceVariantDark = Color(0xFFC0C8CC);
   static const Color m3OutlineDark = Color(0xFF8A9296);
+  static const Color m3SurfaceContainerDark = Color(0xFF2A2A2A);
 }
