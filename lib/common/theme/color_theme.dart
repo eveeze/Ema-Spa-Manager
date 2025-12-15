@@ -81,27 +81,30 @@ class ColorTheme {
   static const Color m3OnPrimary = Color(0xFFFFFFFF);
   static const Color m3PrimaryContainer = Color(0xFFBDE9FF);
   static const Color m3OnPrimaryContainer = Color(0xFF001F29);
+
   static const Color m3Secondary = Color(0xFF4C626B);
   static const Color m3OnSecondary = Color(0xFFFFFFFF);
   static const Color m3SecondaryContainer = Color(0xFFCFE6F1);
   static const Color m3OnSecondaryContainer = Color(0xFF071E26);
+
   static const Color m3Error = Color(0xFFBA1A1A);
   static const Color m3OnError = Color(0xFFFFFFFF);
   static const Color m3ErrorContainer = Color(0xFFFFDAD6);
   static const Color m3OnErrorContainer = Color(0xFF410002);
+
   static const Color m3Background = Color(0xFFFBFCFD);
   static const Color m3OnBackground = Color(0xFF191C1E);
   static const Color m3Surface = Color(0xFFFBFCFD);
   static const Color m3OnSurface = Color(0xFF191C1E);
+
   static const Color m3SurfaceVariant = Color(0xFFDCE4E8);
 
-  // IMPROVED - onSurfaceVariant untuk text yang lebih gelap di light mode
-  static const Color m3OnSurfaceVariant = Color(
-    0xFF191C1E,
-  ); // Sama seperti onSurface untuk konsistensi
-  static const Color m3Outline = Color(
-    0xFF191C1E,
-  ); // Sama seperti onSurface untuk konsistensi
+  // ✅ FIX: harus muted, jangan sama dengan onSurface
+  static const Color m3OnSurfaceVariant = Color(0xFF40484B);
+
+  // ✅ FIX: outline jangan gelap banget
+  static const Color m3Outline = Color(0xFF6F797D);
+
   static const Color m3OutlineVariant = Color(0xFFC0C8CC);
 
   // M3 Dark Palette

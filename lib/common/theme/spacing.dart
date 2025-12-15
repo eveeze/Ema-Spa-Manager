@@ -1,3 +1,4 @@
+// lib/common/theme/spacing.dart
 class M3Spacing {
   static const double xs = 4.0;
   static const double sm = 8.0;

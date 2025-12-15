@@ -8,11 +8,23 @@ import 'package:emababyspa/utils/app_routes.dart';
 import 'package:emababyspa/bindings/app_bindings.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 
-void main() async {
+// ✅ ADD
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:intl/intl.dart';
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await GetStorage.init();
+
+  // ✅ INIT intl locale (fix LocaleDataException di chart DateFormat)
+  await initializeDateFormatting('id_ID', null);
+  Intl.defaultLocale = 'id_ID';
+
   OneSignal.initialize(AppConstants.appOneSignalId);
-  runApp(MyApp());
+
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -30,6 +42,15 @@ class MyApp extends StatelessWidget {
       initialRoute: AppRoutes.splash,
       getPages: AppRoutes.pages,
       defaultTransition: Transition.fadeIn,
+
+      // ✅ ADD (biar Material/Date formatting Indonesia siap)
+      locale: const Locale('id', 'ID'),
+      supportedLocales: const [Locale('id', 'ID'), Locale('en', 'US')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
     );
   }
 }

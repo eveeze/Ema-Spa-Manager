@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:emababyspa/common/theme/text_theme.dart';
 import 'package:emababyspa/common/theme/color_theme.dart';
+import 'package:emababyspa/common/theme/semantic_colors.dart';
 
 /// Global spacing tokens (biar layout antar page konsisten).
 @immutable
@@ -50,17 +51,17 @@ class AppSpacing extends ThemeExtension<AppSpacing> {
   AppSpacing lerp(ThemeExtension<AppSpacing>? other, double t) {
     if (other is! AppSpacing) return this;
     return AppSpacing(
-      xxs: lerpDouble(xxs, other.xxs, t),
-      xs: lerpDouble(xs, other.xs, t),
-      sm: lerpDouble(sm, other.sm, t),
-      md: lerpDouble(md, other.md, t),
-      lg: lerpDouble(lg, other.lg, t),
-      xl: lerpDouble(xl, other.xl, t),
-      xxl: lerpDouble(xxl, other.xxl, t),
+      xxs: _lerpDouble(xxs, other.xxs, t),
+      xs: _lerpDouble(xs, other.xs, t),
+      sm: _lerpDouble(sm, other.sm, t),
+      md: _lerpDouble(md, other.md, t),
+      lg: _lerpDouble(lg, other.lg, t),
+      xl: _lerpDouble(xl, other.xl, t),
+      xxl: _lerpDouble(xxl, other.xxl, t),
     );
   }
 
-  double lerpDouble(double a, double b, double t) => a + (b - a) * t;
+  double _lerpDouble(double a, double b, double t) => a + (b - a) * t;
 }
 
 /// Radius system (biar bentuk UI konsisten dan terasa modern).
@@ -95,7 +96,7 @@ class AppTheme {
     brightness: Brightness.light,
     useMaterial3: true,
 
-    // “Premium feel” di Material 3: InkSparkle + transisi native-feel.
+    // “Premium feel” di Material 3
     splashFactory: InkSparkle.splashFactory,
     pageTransitionsTheme: const PageTransitionsTheme(
       builders: {
@@ -104,7 +105,6 @@ class AppTheme {
       },
     ),
 
-    // Font family default tetap JosefinSans (bisnis & readable).
     fontFamily: 'JosefinSans',
 
     colorScheme: const ColorScheme.light(
@@ -130,17 +130,24 @@ class AppTheme {
 
     scaffoldBackgroundColor: ColorTheme.m3Background,
 
-    /// Typography:
-    /// - Display pakai DeliusSwashCaps (signature / brand)
-    /// - Sisanya JosefinSans (trustworthy)
+    /// Typography
     textTheme: TextThemes.textTheme.apply(
       bodyColor: ColorTheme.m3OnSurface,
       displayColor: ColorTheme.m3OnSurface,
     ),
 
-    extensions: const [AppSpacing()],
+    // ✅ add semantic colors extension + spacing
+    extensions: const [
+      AppSpacing(),
+      AppSemanticColors(
+        revenue: ColorTheme.m3Primary,
+        success: ColorTheme.success,
+        warning: ColorTheme.warning,
+        info: ColorTheme.m3Secondary,
+        danger: ColorTheme.m3Error,
+      ),
+    ],
 
-    // AppBar: lebih clean, terasa “produk serius”.
     appBarTheme: AppBarTheme(
       backgroundColor: ColorTheme.m3Surface,
       foregroundColor: ColorTheme.m3OnSurface,
@@ -149,8 +156,7 @@ class AppTheme {
       scrolledUnderElevation: 1.5,
       systemOverlayStyle: SystemUiOverlayStyle.dark,
       titleTextStyle: TextThemes.textTheme.titleLarge?.copyWith(
-        fontWeight:
-            FontWeight.w700, // lebih “confident” tapi nggak terlalu heavy
+        fontWeight: FontWeight.w700,
         fontSize: 19,
         letterSpacing: 0.1,
       ),
@@ -163,12 +169,11 @@ class AppTheme {
       space: 1,
     ),
 
-    // Cards: bukan datar, tapi juga bukan “shadow hitam berat”.
     cardTheme: CardThemeData(
       color: ColorTheme.m3Surface,
       elevation: 1.5,
       shadowColor: Colors.black.withOpacity(0.10),
-      surfaceTintColor: Colors.transparent, // biar nggak ada tint “abu aneh”
+      surfaceTintColor: Colors.transparent,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadii.lg),
@@ -180,7 +185,6 @@ class AppTheme {
       clipBehavior: Clip.antiAlias,
     ),
 
-    // Bottom Nav: tinggi + “floating” halus = premium.
     bottomNavigationBarTheme: BottomNavigationBarThemeData(
       backgroundColor: ColorTheme.m3Surface,
       selectedItemColor: ColorTheme.m3Primary,
@@ -207,7 +211,6 @@ class AppTheme {
       ),
     ),
 
-    // TACTILE BUTTONS (state-based elevation + overlay)
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ButtonStyle(
         padding: const WidgetStatePropertyAll(
@@ -230,7 +233,7 @@ class AppTheme {
         elevation: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.disabled)) return 0;
           if (states.contains(WidgetState.pressed)) return 0;
-          return 2; // default raised tipis
+          return 2;
         }),
         shadowColor: WidgetStatePropertyAll(
           ColorTheme.m3Primary.withOpacity(0.25),
@@ -308,8 +311,9 @@ class AppTheme {
           ),
         ),
         overlayColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.pressed))
+          if (states.contains(WidgetState.pressed)) {
             return ColorTheme.m3Primary.withOpacity(0.10);
+          }
           if (states.contains(WidgetState.hovered) ||
               states.contains(WidgetState.focused)) {
             return ColorTheme.m3Primary.withOpacity(0.06);
@@ -319,16 +323,12 @@ class AppTheme {
       ),
     ),
 
-    // Inputs: clean, approachable, fokus jelas.
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: ColorTheme.m3SurfaceVariant.withOpacity(
-        0.28,
-      ), // halus, beda tipis dari background
+      fillColor: ColorTheme.m3SurfaceVariant.withOpacity(0.28),
       contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
       floatingLabelBehavior: FloatingLabelBehavior.auto,
       isDense: false,
-
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadii.lg),
         borderSide: BorderSide(
@@ -355,7 +355,6 @@ class AppTheme {
         borderRadius: BorderRadius.circular(AppRadii.lg),
         borderSide: const BorderSide(color: ColorTheme.m3Error, width: 1.6),
       ),
-
       labelStyle: TextThemes.textTheme.bodyMedium?.copyWith(
         color: ColorTheme.m3OnSurfaceVariant.withOpacity(0.85),
         fontWeight: FontWeight.w600,
@@ -364,12 +363,10 @@ class AppTheme {
         color: ColorTheme.m3OnSurfaceVariant.withOpacity(0.60),
         fontWeight: FontWeight.w500,
       ),
-
       prefixIconColor: ColorTheme.m3OnSurfaceVariant.withOpacity(0.80),
       suffixIconColor: ColorTheme.m3OnSurfaceVariant.withOpacity(0.80),
     ),
 
-    // Dialog: lebih “spa”, radius besar & clean.
     dialogTheme: DialogThemeData(
       backgroundColor: ColorTheme.m3Surface,
       surfaceTintColor: Colors.transparent,
@@ -385,7 +382,6 @@ class AppTheme {
       ),
     ),
 
-    // ListTile: supaya list terasa “designed”, bukan default.
     listTileTheme: ListTileThemeData(
       iconColor: ColorTheme.m3OnSurfaceVariant.withOpacity(0.85),
       textColor: ColorTheme.m3OnSurface,
@@ -395,7 +391,6 @@ class AppTheme {
       ),
     ),
 
-    // Feedback (SnackBar): modern, rounded, readable.
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
       elevation: 6,
@@ -451,7 +446,18 @@ class AppTheme {
 
     scaffoldBackgroundColor: ColorTheme.m3BackgroundDark,
     textTheme: TextThemes.darkTextTheme,
-    extensions: const [AppSpacing()],
+
+    // ✅ add semantic colors extension + spacing
+    extensions: const [
+      AppSpacing(),
+      AppSemanticColors(
+        revenue: ColorTheme.m3PrimaryDark,
+        success: ColorTheme.successDark,
+        warning: ColorTheme.warningDark,
+        info: ColorTheme.m3SecondaryDark,
+        danger: ColorTheme.m3ErrorDark,
+      ),
+    ],
 
     appBarTheme: AppBarTheme(
       backgroundColor: ColorTheme.m3SurfaceDark,
@@ -568,8 +574,9 @@ class AppTheme {
           ),
         ),
         overlayColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.pressed))
+          if (states.contains(WidgetState.pressed)) {
             return ColorTheme.m3PrimaryDark.withOpacity(0.12);
+          }
           if (states.contains(WidgetState.hovered) ||
               states.contains(WidgetState.focused)) {
             return ColorTheme.m3PrimaryDark.withOpacity(0.07);
@@ -584,7 +591,6 @@ class AppTheme {
       fillColor: ColorTheme.m3SurfaceVariantDark.withOpacity(0.22),
       contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
       floatingLabelBehavior: FloatingLabelBehavior.auto,
-
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadii.lg),
         borderSide: BorderSide(
@@ -614,7 +620,6 @@ class AppTheme {
         borderRadius: BorderRadius.circular(AppRadii.lg),
         borderSide: const BorderSide(color: ColorTheme.m3ErrorDark, width: 1.6),
       ),
-
       labelStyle: TextThemes.darkTextTheme.bodyMedium?.copyWith(
         color: ColorTheme.m3OnSurfaceVariantDark.withOpacity(0.90),
         fontWeight: FontWeight.w600,
@@ -623,7 +628,6 @@ class AppTheme {
         color: ColorTheme.m3OnSurfaceVariantDark.withOpacity(0.65),
         fontWeight: FontWeight.w500,
       ),
-
       prefixIconColor: ColorTheme.m3OnSurfaceVariantDark.withOpacity(0.80),
       suffixIconColor: ColorTheme.m3OnSurfaceVariantDark.withOpacity(0.80),
     ),
@@ -647,6 +651,15 @@ class AppTheme {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadii.lg),
       ),
+    ),
+
+    checkboxTheme: CheckboxThemeData(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+      fillColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected))
+          return ColorTheme.m3PrimaryDark;
+        return null;
+      }),
     ),
   );
 }
