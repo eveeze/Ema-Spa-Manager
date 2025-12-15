@@ -1,5 +1,4 @@
 // lib/features/analytics/views/analytics_view.dart
-
 import 'dart:math' as math;
 
 import 'package:emababyspa/common/layouts/main_layout.dart';
@@ -108,48 +107,83 @@ class AnalyticsView extends GetView<AnalyticsController> {
   }
 
   // =========================================================
-  // DATE FILTER
+  // DATE FILTER (IMPROVED)
   // =========================================================
   Widget _buildDateFilter(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final sp = theme.extension<AppSpacing>() ?? const AppSpacing();
 
-    return Obx(
-      () => SegmentedButton<DateRangeFilter>(
-        segments: const [
-          ButtonSegment(
-            value: DateRangeFilter.last7Days,
-            label: Text('7 Hari'),
-          ),
-          ButtonSegment(
-            value: DateRangeFilter.thisMonth,
-            label: Text('Bulan Ini'),
-          ),
-          ButtonSegment(
-            value: DateRangeFilter.last3Months,
-            label: Text('3 Bulan'),
-          ),
-        ],
-        selected: {controller.selectedFilter.value},
-        onSelectionChanged: (Set<DateRangeFilter> newSelection) {
-          controller.changeDateFilter(newSelection.first);
-        },
-        style: SegmentedButton.styleFrom(
-          backgroundColor: cs.surface,
-          foregroundColor: cs.primary,
-          selectedBackgroundColor: cs.primary,
-          selectedForegroundColor: cs.onPrimary,
-          textStyle: theme.textTheme.labelLarge,
-          side: BorderSide(color: cs.outlineVariant.withOpacity(0.80)),
-          padding: EdgeInsets.symmetric(horizontal: sp.sm, vertical: sp.xs),
+    final radius = BorderRadius.circular(18);
+
+    return Obx(() {
+      final selected = controller.selectedFilter.value;
+
+      TextStyle labelStyle(bool isSelected) {
+        return (theme.textTheme.labelLarge ?? const TextStyle()).copyWith(
+          fontWeight: isSelected ? FontWeight.w900 : FontWeight.w800,
+          letterSpacing: 0.2,
+          color: isSelected ? cs.onPrimary : cs.primary,
+        );
+      }
+
+      return Container(
+        padding: EdgeInsets.all(sp.xs),
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: radius,
+          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.70)),
+          boxShadow: [
+            BoxShadow(
+              color: cs.shadow.withValues(alpha: 0.04),
+              blurRadius: 14,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
-      ),
-    );
+        child: SegmentedButton<DateRangeFilter>(
+          segments: [
+            ButtonSegment(
+              value: DateRangeFilter.last7Days,
+              label: Text(
+                '7 Hari',
+                style: labelStyle(selected == DateRangeFilter.last7Days),
+              ),
+            ),
+            ButtonSegment(
+              value: DateRangeFilter.thisMonth,
+              label: Text(
+                'Bulan Ini',
+                style: labelStyle(selected == DateRangeFilter.thisMonth),
+              ),
+            ),
+            ButtonSegment(
+              value: DateRangeFilter.last3Months,
+              label: Text(
+                '3 Bulan',
+                style: labelStyle(selected == DateRangeFilter.last3Months),
+              ),
+            ),
+          ],
+          selected: {selected},
+          onSelectionChanged: (s) => controller.changeDateFilter(s.first),
+          showSelectedIcon: true,
+          style: SegmentedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            selectedBackgroundColor: cs.primary,
+            selectedForegroundColor: cs.onPrimary,
+            foregroundColor: cs.primary,
+            padding: EdgeInsets.symmetric(horizontal: sp.md, vertical: sp.sm),
+            side: BorderSide.none,
+            shape: RoundedRectangleBorder(borderRadius: radius),
+          ),
+        ),
+      );
+    });
   }
 
   // =========================================================
-  // STATS GRID
+  // STATS GRID (IMPROVED CARDS)
   // =========================================================
   Widget _buildStatsGrid(BuildContext context) {
     final theme = Theme.of(context);
@@ -166,13 +200,12 @@ class AnalyticsView extends GetView<AnalyticsController> {
 
     final width = MediaQuery.of(context).size.width;
     final crossAxisCount = width > 600 ? 4 : 2;
-    final childAspectRatio = width > 600 ? 1.45 : 1.30;
+    final childAspectRatio = width > 600 ? 1.45 : 1.25;
 
-    // Accent colors (ambil dari scheme, no hardcode)
     final cRevenue = cs.primary;
     final cTotal = cs.secondary;
     final cDone = cs.tertiary;
-    final cRating = cs.primaryContainer;
+    final cRating = cs.primary;
 
     return GridView.count(
       crossAxisCount: crossAxisCount,
@@ -239,8 +272,6 @@ class AnalyticsView extends GetView<AnalyticsController> {
     final maxY = spots.map((s) => s.y).fold<double>(0, math.max);
     final safeMaxY = (maxY <= 0) ? 1.0 : maxY;
     final yInterval = _niceInterval(safeMaxY);
-
-    // Label bawah: tampilkan ~5 label saja (auto skip)
     final intervalX = _bottomLabelInterval(chartData.length);
 
     return _SectionShell(
@@ -256,23 +287,18 @@ class AnalyticsView extends GetView<AnalyticsController> {
               maxX: (chartData.length - 1).toDouble(),
               minY: 0,
               maxY: safeMaxY * 1.15,
-
-              // Grid halus (biar kebaca), vertical dimatikan biar clean
               gridData: FlGridData(
                 show: true,
                 drawVerticalLine: false,
                 horizontalInterval: yInterval,
                 getDrawingHorizontalLine:
                     (value) => FlLine(
-                      color: cs.outlineVariant.withOpacity(0.35),
+                      color: cs.outlineVariant.withValues(alpha: 0.35),
                       strokeWidth: 1,
                       dashArray: [6, 6],
                     ),
               ),
-
               borderData: FlBorderData(show: false),
-
-              // Titles
               titlesData: FlTitlesData(
                 topTitles: const AxisTitles(
                   sideTitles: SideTitles(showTitles: false),
@@ -280,43 +306,25 @@ class AnalyticsView extends GetView<AnalyticsController> {
                 rightTitles: const AxisTitles(
                   sideTitles: SideTitles(showTitles: false),
                 ),
-
-                // Y axis kiri: compact currency "rb/jt"
                 leftTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: true,
                     reservedSize: 44,
                     interval: yInterval,
                     getTitlesWidget: (value, meta) {
-                      // hide label 0 biar nggak ramai
-                      if (value == 0) {
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: Text(
-                            '0',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: cs.onSurfaceVariant.withOpacity(0.80),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        );
-                      }
-
                       return Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: Text(
-                          _compactRupiah(value),
+                          value == 0 ? '0' : _compactRupiah(value),
                           style: theme.textTheme.labelSmall?.copyWith(
-                            color: cs.onSurfaceVariant.withOpacity(0.85),
-                            fontWeight: FontWeight.w700,
+                            color: cs.onSurfaceVariant.withValues(alpha: 0.85),
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                       );
                     },
                   ),
                 ),
-
-                // X axis bawah: auto-skip label
                 bottomTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: true,
@@ -327,8 +335,6 @@ class AnalyticsView extends GetView<AnalyticsController> {
                       if (idx < 0 || idx >= chartData.length) {
                         return const SizedBox.shrink();
                       }
-
-                      // Pastikan hanya label yg sesuai interval yg muncul
                       if (idx % intervalX != 0 && idx != chartData.length - 1) {
                         return const SizedBox.shrink();
                       }
@@ -341,8 +347,8 @@ class AnalyticsView extends GetView<AnalyticsController> {
                         child: Text(
                           label,
                           style: theme.textTheme.labelSmall?.copyWith(
-                            color: cs.onSurfaceVariant.withOpacity(0.85),
-                            fontWeight: FontWeight.w700,
+                            color: cs.onSurfaceVariant.withValues(alpha: 0.85),
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                       );
@@ -350,26 +356,20 @@ class AnalyticsView extends GetView<AnalyticsController> {
                   ),
                 ),
               ),
-
-              // Line
               lineBarsData: [
                 LineChartBarData(
                   spots: spots,
                   isCurved: true,
                   barWidth: 3.2,
                   isStrokeCapRound: true,
-
-                  // Biar lebih premium: gradient tipis pada line
                   gradient: LinearGradient(
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
-                    colors: [cs.primary.withOpacity(0.75), cs.primary],
+                    colors: [cs.primary.withValues(alpha: 0.75), cs.primary],
                   ),
-
                   dotData: FlDotData(
                     show: true,
                     checkToShowDot: (spot, barData) {
-                      // Tampilkan dot hanya pada last point (lebih clean)
                       return spot.x == (chartData.length - 1).toDouble();
                     },
                     getDotPainter: (spot, percent, barData, index) {
@@ -381,23 +381,19 @@ class AnalyticsView extends GetView<AnalyticsController> {
                       );
                     },
                   ),
-
-                  // Area bawah: very subtle (tanpa “blob”)
                   belowBarData: BarAreaData(
                     show: true,
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        cs.primary.withOpacity(0.16),
-                        cs.primary.withOpacity(0.00),
+                        cs.primary.withValues(alpha: 0.16),
+                        cs.primary.withValues(alpha: 0.00),
                       ],
                     ),
                   ),
                 ),
               ],
-
-              // Tooltip
               lineTouchData: LineTouchData(
                 handleBuiltInTouches: true,
                 touchTooltipData: LineTouchTooltipData(
@@ -407,18 +403,17 @@ class AnalyticsView extends GetView<AnalyticsController> {
                   ),
                   tooltipMargin: 14,
                   tooltipBorder: BorderSide(
-                    color: cs.outlineVariant.withOpacity(0.55),
+                    color: cs.outlineVariant.withValues(alpha: 0.55),
                     width: 1,
                   ),
                   getTooltipColor:
-                      (touchedSpot) => cs.onSurface.withOpacity(0.92),
-                  getTooltipItems: (List<LineBarSpot> touchedSpots) {
+                      (touchedSpot) => cs.onSurface.withValues(alpha: 0.92),
+                  getTooltipItems: (touchedSpots) {
                     return touchedSpots
                         .map((spot) {
                           final idx = spot.x.round();
-                          if (idx < 0 || idx >= chartData.length) {
-                            return null;
-                          }
+                          if (idx < 0 || idx >= chartData.length) return null;
+
                           final date = DateTime.parse(chartData[idx].date);
                           final money = NumberFormat.currency(
                             locale: 'id_ID',
@@ -458,7 +453,7 @@ class AnalyticsView extends GetView<AnalyticsController> {
   }
 
   // =========================================================
-  // RESERVATION STATUS PIE CHART (slightly cleaned)
+  // RESERVATION STATUS PIE CHART
   // =========================================================
   Widget _buildReservationStatusChart(
     BuildContext context,
@@ -596,7 +591,7 @@ class AnalyticsView extends GetView<AnalyticsController> {
                           child: Text(
                             item.name,
                             style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w900,
                               letterSpacing: -0.1,
                             ),
                             maxLines: 2,
@@ -618,7 +613,9 @@ class AnalyticsView extends GetView<AnalyticsController> {
                       borderRadius: BorderRadius.circular(AppRadii.sm),
                       child: LinearProgressIndicator(
                         value: progress,
-                        backgroundColor: cs.surfaceVariant.withOpacity(0.65),
+                        backgroundColor: cs.surfaceVariant.withValues(
+                          alpha: 0.65,
+                        ),
                         color: cs.primary,
                         minHeight: 9,
                       ),
@@ -695,7 +692,7 @@ class AnalyticsView extends GetView<AnalyticsController> {
                           child: Text(
                             item.name,
                             style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w900,
                               letterSpacing: -0.1,
                             ),
                             maxLines: 2,
@@ -727,7 +724,9 @@ class AnalyticsView extends GetView<AnalyticsController> {
                       borderRadius: BorderRadius.circular(AppRadii.sm),
                       child: LinearProgressIndicator(
                         value: (item.averageRating / 5.0).clamp(0.0, 1.0),
-                        backgroundColor: cs.surfaceVariant.withOpacity(0.65),
+                        backgroundColor: cs.surfaceVariant.withValues(
+                          alpha: 0.65,
+                        ),
                         color: accent,
                         minHeight: 9,
                       ),
@@ -744,16 +743,14 @@ class AnalyticsView extends GetView<AnalyticsController> {
   // HELPERS
   // =========================================================
   int _bottomLabelInterval(int length) {
-    if (length <= 7) return 1; // 7 hari: tampil semua
-    // target sekitar 5-6 label biar kebaca
+    if (length <= 7) return 1;
     final target = 5;
     return math.max(1, (length / target).ceil());
   }
 
   double _niceInterval(double maxY) {
-    // bikin interval “enak” dilihat (misal 20rb, 50rb, 100rb, dst)
     if (maxY <= 0) return 1;
-    final raw = maxY / 4; // ~4 garis
+    final raw = maxY / 4;
     final pow10 = math.pow(10, (math.log(raw) / math.ln10).floor()).toDouble();
     final digit = raw / pow10;
 
@@ -771,7 +768,6 @@ class AnalyticsView extends GetView<AnalyticsController> {
   }
 
   String _compactRupiah(double value) {
-    // compact: 50 rb, 1.2 jt, dst (biar Y-axis bersih)
     if (value >= 1000000000) {
       final v = value / 1000000000;
       return '${v.toStringAsFixed(v < 10 ? 1 : 0)} m';
@@ -789,7 +785,7 @@ class AnalyticsView extends GetView<AnalyticsController> {
 }
 
 // =========================================================
-// REUSABLE UI (cleaner - no double shadow blob)
+// REUSABLE UI
 // =========================================================
 
 class _SectionShell extends StatelessWidget {
@@ -835,7 +831,7 @@ class _SectionShell extends StatelessWidget {
                     Text(
                       title,
                       style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w900,
                         letterSpacing: -0.25,
                       ),
                     ),
@@ -844,8 +840,8 @@ class _SectionShell extends StatelessWidget {
                       Text(
                         subtitle!,
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: cs.onSurface.withOpacity(0.78),
-                          fontWeight: FontWeight.w600,
+                          color: cs.onSurface.withValues(alpha: 0.80),
+                          fontWeight: FontWeight.w700,
                           height: 1.35,
                         ),
                       ),
@@ -857,8 +853,6 @@ class _SectionShell extends StatelessWidget {
           ),
         ),
         SizedBox(height: sp.md),
-
-        // ✅ Single surface container: no Card+inner shadow (hilang “bulatan”)
         Container(
           width: double.infinity,
           padding: EdgeInsets.all(sp.md),
@@ -866,12 +860,12 @@ class _SectionShell extends StatelessWidget {
             color: cs.surface,
             borderRadius: BorderRadius.circular(AppRadii.lg),
             border: Border.all(
-              color: cs.outlineVariant.withOpacity(0.55),
+              color: cs.outlineVariant.withValues(alpha: 0.55),
               width: 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: cs.shadow.withOpacity(0.06),
+                color: cs.shadow.withValues(alpha: 0.06),
                 blurRadius: 18,
                 offset: const Offset(0, 8),
               ),
@@ -903,8 +897,8 @@ class _EmptySection extends StatelessWidget {
           child: Text(
             message,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: cs.onSurfaceVariant.withOpacity(0.90),
-              fontWeight: FontWeight.w600,
+              color: cs.onSurfaceVariant.withValues(alpha: 0.90),
+              fontWeight: FontWeight.w700,
             ),
             textAlign: TextAlign.center,
           ),
@@ -935,7 +929,12 @@ class _LegendItem extends StatelessWidget {
             decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           SizedBox(width: sp.sm),
-          Text(text, style: theme.textTheme.bodyMedium),
+          Text(
+            text,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ],
       ),
     );
@@ -962,19 +961,20 @@ class _StatCard extends StatelessWidget {
     final sp = theme.extension<AppSpacing>() ?? const AppSpacing();
 
     return Container(
-      padding: EdgeInsets.all(sp.sm),
+      padding: EdgeInsets.all(sp.md),
       decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(AppRadii.lg),
-        border: Border.all(
-          color: cs.outlineVariant.withOpacity(0.55),
-          width: 1,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [accent.withValues(alpha: 0.14), cs.surface],
         ),
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+        border: Border.all(color: accent.withValues(alpha: 0.22), width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: cs.shadow.withOpacity(0.05),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
+            color: accent.withValues(alpha: 0.10),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
@@ -982,16 +982,23 @@ class _StatCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
-              color: accent.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(AppRadii.md),
-              border: Border.all(color: accent.withOpacity(0.22)),
+              color: cs.surface.withValues(alpha: 0.90),
+              borderRadius: BorderRadius.circular(AppRadii.lg),
+              border: Border.all(color: accent.withValues(alpha: 0.22)),
+              boxShadow: [
+                BoxShadow(
+                  color: accent.withValues(alpha: 0.14),
+                  blurRadius: 10,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
-            child: Icon(icon, color: accent, size: 20),
+            child: Icon(icon, color: accent, size: 22),
           ),
-          SizedBox(width: sp.sm),
+          SizedBox(width: sp.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1000,20 +1007,21 @@ class _StatCard extends StatelessWidget {
                   title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: cs.onSurfaceVariant.withOpacity(0.85),
-                    fontWeight: FontWeight.w600,
-                    height: 1.2,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: cs.onSurfaceVariant.withValues(alpha: 0.85),
+                    height: 1.15,
                   ),
                 ),
-                const Spacer(),
+                SizedBox(height: sp.md),
                 Text(
                   value,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleLarge?.copyWith(
+                  style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w900,
-                    letterSpacing: -0.2,
+                    letterSpacing: -0.6,
+                    color: cs.onSurface,
                   ),
                 ),
               ],
@@ -1057,12 +1065,12 @@ class _CenteredMessage extends StatelessWidget {
               color: cs.surface,
               borderRadius: BorderRadius.circular(AppRadii.xl),
               border: Border.all(
-                color: cs.outlineVariant.withOpacity(0.55),
+                color: cs.outlineVariant.withValues(alpha: 0.55),
                 width: 1,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: cs.shadow.withOpacity(0.06),
+                  color: cs.shadow.withValues(alpha: 0.06),
                   blurRadius: 18,
                   offset: const Offset(0, 10),
                 ),
@@ -1085,8 +1093,8 @@ class _CenteredMessage extends StatelessWidget {
                   message,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: cs.onSurface.withOpacity(0.78),
-                    fontWeight: FontWeight.w600,
+                    color: cs.onSurface.withValues(alpha: 0.78),
+                    fontWeight: FontWeight.w700,
                     height: 1.35,
                   ),
                 ),

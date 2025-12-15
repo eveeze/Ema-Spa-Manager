@@ -2,515 +2,444 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:emababyspa/common/theme/color_theme.dart';
+import 'package:emababyspa/common/layouts/main_layout.dart';
+import 'package:emababyspa/common/theme/app_theme.dart';
 import 'package:emababyspa/common/widgets/custom_appbar.dart';
 import 'package:emababyspa/common/widgets/app_button.dart';
 import 'package:emababyspa/common/widgets/app_text_field.dart';
-import 'package:emababyspa/common/layouts/main_layout.dart';
 import 'package:emababyspa/features/service_category/controllers/service_category_controller.dart';
-import 'package:emababyspa/features/theme/controllers/theme_controller.dart';
 import 'package:emababyspa/utils/app_routes.dart';
 
-class ServiceCategoryEditView extends GetView<ServiceCategoryController> {
+class ServiceCategoryEditView extends StatefulWidget {
   const ServiceCategoryEditView({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // Get the category ID from route params
-    final categoryId = Get.parameters['id'] ?? '';
-    Get.find<ThemeController>();
+  State<ServiceCategoryEditView> createState() =>
+      _ServiceCategoryEditViewState();
+}
 
-    // Form controllers - moved outside of build() for proper state management
-    final nameController = TextEditingController();
-    final descriptionController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
+class _ServiceCategoryEditViewState extends State<ServiceCategoryEditView> {
+  final ServiceCategoryController controller =
+      Get.find<ServiceCategoryController>();
 
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nameController;
+  late final TextEditingController _descriptionController;
+
+  String _categoryId = '';
+  bool _prefilled =
+      false; // penting: supaya tidak overwrite input user saat rebuild
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController();
+    _descriptionController = TextEditingController();
+
+    _categoryId = Get.parameters['id'] ?? '';
+
+    // ✅ PENTING: panggil load setelah frame pertama supaya tidak "markNeedsBuild during build"
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadCategoryData(categoryId, nameController, descriptionController);
+      _loadCategory();
     });
+  }
 
-    return GetBuilder<ThemeController>(
-      builder: (themeCtrl) {
-        final isDark = themeCtrl.isDarkMode;
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
 
-        return MainLayout(
-          // Set parent route to services untuk menjaga state bottom navbar
-          parentRoute: AppRoutes.services,
-          // Gunakan custom app bar
-          customAppBar: CustomAppBar(
-            title: 'Edit Service Category',
-            showBackButton: true,
-            onBackPressed: () => controller.navigateBackToServiceCategories(),
-          ),
-          child: PopScope(
-            onPopInvokedWithResult: (didPop, result) {
-              if (!didPop) {
-                controller.navigateBackToServiceCategories();
-              }
-            },
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors:
-                      isDark
-                          ? [
-                            ColorTheme.backgroundDark,
-                            ColorTheme.backgroundDark.withValues(alpha: 0.95),
-                          ]
-                          : [
-                            ColorTheme.background,
-                            ColorTheme.background.withValues(alpha: 0.98),
-                          ],
-                ),
-              ),
-              child: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 16,
+  Future<void> _loadCategory() async {
+    if (_categoryId.isEmpty) {
+      controller.errorMessage.value = 'Category ID tidak ditemukan.';
+      return;
+    }
+
+    // aman karena sudah di postFrameCallback
+    controller.isLoading.value = true;
+    controller.errorMessage.value = '';
+
+    try {
+      final category = await controller.getCategoryById(_categoryId);
+
+      if (!mounted) return;
+
+      if (category == null) {
+        controller.errorMessage.value = 'Kategori tidak ditemukan.';
+        return;
+      }
+
+      // ✅ prefill sekali saja
+      if (!_prefilled) {
+        _nameController.text = category.name;
+        _descriptionController.text = category.description ?? '';
+        _prefilled = true;
+      }
+    } catch (e) {
+      controller.errorMessage.value = 'Gagal memuat kategori: $e';
+    } finally {
+      controller.isLoading.value = false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final sp = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    return MainLayout(
+      parentRoute: AppRoutes.services,
+      customAppBar: CustomAppBar(
+        title: 'Edit Kategori Layanan',
+        showBackButton: true,
+        onBackPressed: () => controller.navigateBackToServiceCategories(),
+      ),
+      child: PopScope(
+        onPopInvokedWithResult: (didPop, result) {
+          if (!didPop) controller.navigateBackToServiceCategories();
+        },
+        child: Container(
+          color: cs.surface,
+          child: SafeArea(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(sp.lg, sp.md, sp.lg, sp.lg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _HeaderShell(
+                    title: 'Edit Kategori',
+                    subtitle: 'Perbarui nama dan deskripsi kategori layanan.',
+                    icon: Icons.edit_outlined,
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Enhanced Header Section
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color:
-                              isDark
-                                  ? ColorTheme.surfaceDark.withValues(
-                                    alpha: 0.6,
-                                  )
-                                  : Colors.white.withValues(alpha: 0.8),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color:
-                                isDark
-                                    ? ColorTheme.primaryLightDark.withValues(
-                                      alpha: 0.2,
-                                    )
-                                    : ColorTheme.primary.withValues(alpha: 0.1),
-                            width: 1,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color:
-                                  isDark
-                                      ? Colors.black.withValues(alpha: 0.3)
-                                      : ColorTheme.primary.withValues(
-                                        alpha: 0.08,
-                                      ),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                              spreadRadius: 0,
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            // Icon Container
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors:
-                                      isDark
-                                          ? [
-                                            ColorTheme.primaryLightDark,
-                                            ColorTheme.primaryLightDark
-                                                .withValues(alpha: 0.8),
-                                          ]
-                                          : [
-                                            ColorTheme.primary,
-                                            ColorTheme.primaryDark,
-                                          ],
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: (isDark
-                                            ? ColorTheme.primaryLightDark
-                                            : ColorTheme.primary)
-                                        .withValues(alpha: 0.3),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Icon(
-                                Icons.edit_outlined,
-                                color: isDark ? Colors.black : Colors.white,
-                                size: 24,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            // Header Text
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Edit Category',
-                                    style: TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                      color:
-                                          isDark
-                                              ? ColorTheme.textPrimaryDark
-                                              : ColorTheme.textPrimary,
-                                      fontFamily: 'JosefinSans',
-                                      letterSpacing: 0.5,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Update service category details',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color:
-                                          isDark
-                                              ? ColorTheme.textSecondaryDark
-                                              : ColorTheme.textSecondary,
-                                      fontFamily: 'JosefinSans',
-                                      height: 1.3,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
+                  SizedBox(height: sp.lg),
 
-                      // Form Section
-                      Expanded(
-                        child: Obx(() {
-                          if (controller.isLoading.value) {
-                            return _buildLoadingState(isDark);
-                          }
+                  Expanded(
+                    child: Obx(() {
+                      final loading = controller.isLoading.value;
+                      final err = controller.errorMessage.value;
 
-                          if (controller.errorMessage.isNotEmpty) {
-                            return _buildErrorState(
-                              'Error',
-                              controller.errorMessage.value,
-                              () => _loadCategoryData(
-                                categoryId,
-                                nameController,
-                                descriptionController,
-                              ),
-                              isDark,
-                            );
-                          }
+                      if (loading) {
+                        return _LoadingState(onRetry: _loadCategory);
+                      }
 
-                          if (controller.selectedCategory.value == null) {
-                            return _buildErrorState(
-                              'Category Not Found',
-                              'The requested category could not be found.',
-                              () => _loadCategoryData(
-                                categoryId,
-                                nameController,
-                                descriptionController,
-                              ),
-                              isDark,
-                            );
-                          }
+                      if (err.isNotEmpty) {
+                        return _ErrorState(
+                          title: 'Terjadi Kesalahan',
+                          message: err,
+                          onRetry: _loadCategory,
+                        );
+                      }
 
-                          // Form is ready to be displayed
-                          return Container(
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color:
-                                  isDark
-                                      ? ColorTheme.surfaceDark.withValues(
-                                        alpha: 0.6,
-                                      )
-                                      : Colors.white.withValues(alpha: 0.9),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color:
-                                    isDark
-                                        ? ColorTheme.primaryLightDark
-                                            .withValues(alpha: 0.15)
-                                        : ColorTheme.primary.withValues(
-                                          alpha: 0.08,
-                                        ),
-                                width: 1,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color:
-                                      isDark
-                                          ? Colors.black.withValues(alpha: 0.2)
-                                          : ColorTheme.primary.withValues(
-                                            alpha: 0.06,
-                                          ),
-                                  blurRadius: 16,
-                                  offset: const Offset(0, 6),
-                                  spreadRadius: 0,
-                                ),
-                              ],
-                            ),
-                            child: Form(
-                              key: formKey,
-                              child: ListView(
-                                children: [
-                                  // Name Field
-                                  _buildFormField(
-                                    child: AppTextField(
-                                      controller: nameController,
-                                      placeholder: 'Enter category name',
-                                      prefix: Icon(
-                                        Icons.category_outlined,
-                                        color:
-                                            isDark
-                                                ? ColorTheme.primaryLightDark
-                                                : ColorTheme.primary,
-                                      ),
-                                      isRequired: true,
-                                      errorText:
-                                          nameController.text.isEmpty &&
-                                                  formKey.currentState
-                                                          ?.validate() ==
-                                                      false
-                                              ? 'Please enter a category name'
-                                              : null,
-                                    ),
-                                    label: 'Category Name',
-                                    isRequired: true,
-                                    isDark: isDark,
-                                  ),
-                                  const SizedBox(height: 20),
-
-                                  // Description Field
-                                  _buildFormField(
-                                    child: AppTextField(
-                                      controller: descriptionController,
-                                      placeholder:
-                                          'Enter category description (optional)',
-                                      prefix: Icon(
-                                        Icons.description_outlined,
-                                        color:
-                                            isDark
-                                                ? ColorTheme.primaryLightDark
-                                                : ColorTheme.primary,
-                                      ),
-                                      maxLines: 3,
-                                    ),
-                                    label: 'Description',
-                                    isDark: isDark,
-                                  ),
-                                  const SizedBox(height: 32),
-
-                                  // Action Buttons Section
-                                  _buildActionButtonsSection(
-                                    categoryId: categoryId,
-                                    nameController: nameController,
-                                    descriptionController:
-                                        descriptionController,
-                                    formKey: formKey,
-                                    isDark: isDark,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        }),
-                      ),
-                    ],
+                      // ✅ Tidak bergantung ke selectedCategory (biar ga infinite loading)
+                      return _FormCard(
+                        formKey: _formKey,
+                        nameController: _nameController,
+                        descriptionController: _descriptionController,
+                        onSubmit: _handleSubmit,
+                        onDelete: _handleDelete,
+                        onCancel: controller.navigateBackToServiceCategories,
+                      );
+                    }),
                   ),
-                ),
+                ],
               ),
             ),
           ),
-        );
-      },
-    );
-  }
-
-  Widget _buildFormField({
-    required Widget child,
-    required String label,
-    required bool isDark,
-    bool isRequired = false,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color:
-                    isDark
-                        ? ColorTheme.textPrimaryDark
-                        : ColorTheme.textPrimary,
-                fontFamily: 'JosefinSans',
-              ),
-            ),
-            if (isRequired) ...[
-              const SizedBox(width: 4),
-              Text(
-                '*',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: ColorTheme.error,
-                ),
-              ),
-            ],
-          ],
         ),
-        const SizedBox(height: 8),
-        child,
-      ],
+      ),
     );
   }
 
-  Widget _buildActionButtonsSection({
-    required String categoryId,
-    required TextEditingController nameController,
-    required TextEditingController descriptionController,
-    required GlobalKey<FormState> formKey,
-    required bool isDark,
-  }) {
-    return Column(
-      children: [
-        // Primary Action - Update Button
-        Obx(
-          () => AppButton(
-            text: 'Update Category',
-            isLoading: controller.isFormSubmitting.value,
-            onPressed: () {
-              if (nameController.text.trim().isNotEmpty) {
-                controller.updateServiceCategory(
-                  id: categoryId,
-                  name: nameController.text.trim(),
-                  description: descriptionController.text.trim(),
-                );
-              } else {
-                formKey.currentState?.validate();
-              }
-            },
-            type: AppButtonType.primary,
-            size: AppButtonSize.large,
-            isFullWidth: true,
-            icon: Icons.check_circle_outline,
+  void _handleSubmit() {
+    final name = _nameController.text.trim();
+    final desc = _descriptionController.text.trim();
+
+    if (name.isEmpty) {
+      _formKey.currentState?.validate();
+      return;
+    }
+
+    controller.updateServiceCategory(
+      id: _categoryId,
+      name: name,
+      description: desc,
+    );
+  }
+
+  void _handleDelete() {
+    // kalau controller kamu butuh id+name, ambil dari textfield biar tetap jalan
+    final name = _nameController.text.trim();
+    if (_categoryId.isEmpty) return;
+
+    controller.showDeleteConfirmation(
+      _categoryId,
+      name.isEmpty ? 'Category' : name,
+    );
+  }
+}
+
+// ======================== UI PARTS (theme-driven) ========================
+
+class _HeaderShell extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+
+  const _HeaderShell({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final sp = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    return Container(
+      padding: EdgeInsets.all(sp.md),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.55)),
+        boxShadow: [
+          BoxShadow(
+            color: cs.shadow.withValues(alpha: 0.06),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
           ),
-        ),
-        const SizedBox(height: 16),
-
-        // Divider
-        Container(
-          height: 1,
-          margin: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Colors.transparent,
-                isDark
-                    ? ColorTheme.primaryLightDark.withValues(alpha: 0.3)
-                    : ColorTheme.primary.withValues(alpha: 0.2),
-                Colors.transparent,
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: cs.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(AppRadii.md),
+              border: Border.all(color: cs.primary.withValues(alpha: 0.18)),
+            ),
+            child: Icon(icon, color: cs.primary, size: 22),
+          ),
+          SizedBox(width: sp.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                SizedBox(height: sp.xs),
+                Text(
+                  subtitle,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: cs.onSurface.withValues(alpha: 0.78),
+                    fontWeight: FontWeight.w600,
+                    height: 1.35,
+                  ),
+                ),
               ],
             ),
           ),
-        ),
-        const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+}
 
-        // Secondary Actions
-        Row(
+class _FormCard extends StatelessWidget {
+  final GlobalKey<FormState> formKey;
+  final TextEditingController nameController;
+  final TextEditingController descriptionController;
+
+  final VoidCallback onSubmit;
+  final VoidCallback onDelete;
+  final VoidCallback onCancel;
+
+  const _FormCard({
+    required this.formKey,
+    required this.nameController,
+    required this.descriptionController,
+    required this.onSubmit,
+    required this.onDelete,
+    required this.onCancel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final sp = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    return Container(
+      padding: EdgeInsets.all(sp.lg),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.55)),
+        boxShadow: [
+          BoxShadow(
+            color: cs.shadow.withValues(alpha: 0.06),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Form(
+        key: formKey,
+        child: ListView(
+          physics: const BouncingScrollPhysics(),
           children: [
-            // Delete Button
-            Expanded(
-              child: AppButton(
-                text: 'Delete',
-                type: AppButtonType.secondary,
-                size: AppButtonSize.medium,
-                isFullWidth: true,
-                icon: Icons.delete_outline,
-                onPressed: () {
-                  final category = controller.selectedCategory.value;
-                  if (category != null) {
-                    controller.showDeleteConfirmation(
-                      category.id,
-                      category.name,
-                    );
-                  }
-                },
-              ),
+            _FieldLabel(label: 'Nama Kategori', requiredMark: true),
+            SizedBox(height: sp.sm),
+            AppTextField(
+              controller: nameController,
+              placeholder: 'Contoh: Baby Spa Premium',
+              prefix: Icon(Icons.category_outlined, color: cs.primary),
+              isRequired: true,
+              errorText: null,
             ),
-            const SizedBox(width: 12),
-            // Cancel Button
-            Expanded(
-              child: AppButton(
-                text: 'Cancel',
-                type: AppButtonType.outline,
-                size: AppButtonSize.medium,
-                isFullWidth: true,
-                icon: Icons.close_outlined,
-                onPressed: () {
-                  controller.navigateBackToServiceCategories();
-                },
-              ),
+            SizedBox(height: sp.lg),
+            _FieldLabel(label: 'Deskripsi', requiredMark: false),
+            SizedBox(height: sp.sm),
+            AppTextField(
+              controller: descriptionController,
+              placeholder: 'Tulis deskripsi singkat (opsional)',
+              prefix: Icon(Icons.description_outlined, color: cs.primary),
+              maxLines: 3,
             ),
+            SizedBox(height: sp.xl),
+
+            Obx(() {
+              final c = Get.find<ServiceCategoryController>();
+              final submitting = c.isFormSubmitting.value;
+
+              return Column(
+                children: [
+                  AppButton(
+                    text: 'Update Category',
+                    icon: Icons.check_circle_outline,
+                    isLoading: submitting,
+                    onPressed: submitting ? null : onSubmit,
+                    type: AppButtonType.primary,
+                    size: AppButtonSize.large,
+                    isFullWidth: true,
+                  ),
+                  SizedBox(height: sp.md),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: AppButton(
+                          text: 'Delete',
+                          icon: Icons.delete_outline,
+                          onPressed: submitting ? null : onDelete,
+                          type: AppButtonType.secondary,
+                          size: AppButtonSize.medium,
+                          isFullWidth: true,
+                        ),
+                      ),
+                      SizedBox(width: sp.sm),
+                      Expanded(
+                        child: AppButton(
+                          text: 'Cancel',
+                          icon: Icons.close_outlined,
+                          onPressed: submitting ? null : onCancel,
+                          type: AppButtonType.outline,
+                          size: AppButtonSize.medium,
+                          isFullWidth: true,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            }),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _FieldLabel extends StatelessWidget {
+  final String label;
+  final bool requiredMark;
+
+  const _FieldLabel({required this.label, required this.requiredMark});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Row(
+      children: [
+        Text(
+          label,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.1,
+          ),
+        ),
+        if (requiredMark) ...[
+          const SizedBox(width: 4),
+          Text(
+            '*',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w900,
+              color: cs.error,
+            ),
+          ),
+        ],
       ],
     );
   }
+}
 
-  Widget _buildLoadingState(bool isDark) {
+class _LoadingState extends StatelessWidget {
+  final VoidCallback onRetry;
+  const _LoadingState({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final sp = theme.extension<AppSpacing>() ?? const AppSpacing();
+
     return Center(
       child: Container(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(sp.lg),
         decoration: BoxDecoration(
-          color:
-              isDark
-                  ? ColorTheme.surfaceDark.withValues(alpha: 0.6)
-                  : Colors.white.withValues(alpha: 0.9),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color:
-                  isDark
-                      ? Colors.black.withValues(alpha: 0.3)
-                      : ColorTheme.primary.withValues(alpha: 0.1),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
+          color: cs.surface,
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.55)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(
-              width: 48,
-              height: 48,
+              width: 44,
+              height: 44,
               child: CircularProgressIndicator(
                 strokeWidth: 3,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  isDark ? ColorTheme.primaryLightDark : ColorTheme.primary,
-                ),
-                strokeCap: StrokeCap.round,
+                valueColor: AlwaysStoppedAnimation(cs.primary),
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: sp.md),
             Text(
-              'Loading category data...',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color:
-                    isDark
-                        ? ColorTheme.textPrimaryDark
-                        : ColorTheme.textPrimary,
-                fontFamily: 'JosefinSans',
+              'Memuat data kategori...',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: cs.onSurface.withValues(alpha: 0.82),
               ),
             ),
           ],
@@ -518,91 +447,59 @@ class ServiceCategoryEditView extends GetView<ServiceCategoryController> {
       ),
     );
   }
+}
 
-  Widget _buildErrorState(
-    String title,
-    String message,
-    VoidCallback onRetry,
-    bool isDark,
-  ) {
+class _ErrorState extends StatelessWidget {
+  final String title;
+  final String message;
+  final VoidCallback onRetry;
+
+  const _ErrorState({
+    required this.title,
+    required this.message,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final sp = theme.extension<AppSpacing>() ?? const AppSpacing();
+
     return Center(
       child: Container(
-        padding: const EdgeInsets.all(32),
-        margin: const EdgeInsets.symmetric(horizontal: 16),
+        padding: EdgeInsets.all(sp.lg),
+        margin: EdgeInsets.symmetric(horizontal: sp.md),
         decoration: BoxDecoration(
-          color:
-              isDark
-                  ? ColorTheme.surfaceDark.withValues(alpha: 0.8)
-                  : Colors.white.withValues(alpha: 0.95),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: ColorTheme.error.withValues(alpha: 0.2),
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color:
-                  isDark
-                      ? Colors.black.withValues(alpha: 0.4)
-                      : ColorTheme.error.withValues(alpha: 0.1),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-              spreadRadius: 0,
-            ),
-          ],
+          color: cs.surface,
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+          border: Border.all(color: cs.error.withValues(alpha: 0.20)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Error Icon
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: ColorTheme.error.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Icon(
-                Icons.error_outline_rounded,
-                size: 48,
-                color: ColorTheme.error,
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Error Title
+            Icon(Icons.error_outline_rounded, color: cs.error, size: 40),
+            SizedBox(height: sp.md),
             Text(
               title,
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color:
-                    isDark
-                        ? ColorTheme.textPrimaryDark
-                        : ColorTheme.textPrimary,
-                fontFamily: 'JosefinSans',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w900,
               ),
             ),
-            const SizedBox(height: 8),
-
-            // Error Message
+            SizedBox(height: sp.xs),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color:
-                    isDark
-                        ? ColorTheme.textSecondaryDark
-                        : ColorTheme.textSecondary,
-                fontFamily: 'JosefinSans',
-                height: 1.4,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: cs.onSurface.withValues(alpha: 0.78),
+                fontWeight: FontWeight.w600,
+                height: 1.35,
               ),
             ),
-            const SizedBox(height: 24),
-
-            // Retry Button
+            SizedBox(height: sp.lg),
             AppButton(
-              text: 'Try Again',
+              text: 'Coba Lagi',
               icon: Icons.refresh_rounded,
               onPressed: onRetry,
               type: AppButtonType.primary,
@@ -612,29 +509,5 @@ class ServiceCategoryEditView extends GetView<ServiceCategoryController> {
         ),
       ),
     );
-  }
-
-  // Helper method to load category data
-  Future<void> _loadCategoryData(
-    String categoryId,
-    TextEditingController nameController,
-    TextEditingController descriptionController,
-  ) async {
-    // Clear previous state before loading new data
-    controller.errorMessage.value = '';
-    controller.isLoading.value = true;
-
-    try {
-      final category = await controller.getCategoryById(categoryId);
-
-      if (category != null) {
-        nameController.text = category.name;
-        descriptionController.text = category.description ?? '';
-      }
-    } catch (e) {
-      controller.errorMessage.value = 'Failed to load category data: $e';
-    } finally {
-      controller.isLoading.value = false;
-    }
   }
 }
