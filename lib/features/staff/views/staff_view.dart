@@ -6,6 +6,7 @@ import 'package:emababyspa/common/widgets/custom_appbar.dart';
 import 'package:emababyspa/common/widgets/empty_state_widget.dart';
 import 'package:emababyspa/common/layouts/main_layout.dart';
 import 'package:emababyspa/features/staff/controllers/staff_controller.dart';
+import 'package:emababyspa/features/theme/controllers/theme_controller.dart';
 import 'package:emababyspa/data/models/staff.dart';
 
 class StaffView extends GetView<StaffController> {
@@ -13,570 +14,529 @@ class StaffView extends GetView<StaffController> {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final ThemeController themeController = Get.find<ThemeController>();
 
     return MainLayout(
-      child: Scaffold(
-        backgroundColor:
-            isDarkMode ? ColorTheme.backgroundDark : ColorTheme.background,
-        appBar: const CustomAppBar(
-          title: 'Staff Management',
-          showBackButton: true,
-        ),
-        floatingActionButton: Container(
-          margin: const EdgeInsets.only(
-            bottom: 16,
-          ), // Add margin to prevent overlap
-          child: FloatingActionButton.extended(
-            onPressed: controller.navigateToAddStaff,
-            backgroundColor:
-                isDarkMode ? ColorTheme.primaryLightDark : ColorTheme.primary,
-            foregroundColor: isDarkMode ? Colors.black : Colors.white,
-            elevation: 8, // Increased elevation for better visibility
-            highlightElevation: 12,
-            splashColor: (isDarkMode ? Colors.black : Colors.white).withValues(
-              alpha: 0.2,
-            ),
-            icon: Container(
-              padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
-              child: Icon(
-                Icons.person_add_alt_1_rounded, // More specific icon
-                color: isDarkMode ? Colors.black : Colors.white,
-                size: 20,
-              ),
-            ),
-            label: Text(
-              'Add Team Member', // More descriptive label
-              style: TextStyle(
-                color: isDarkMode ? Colors.black : Colors.white,
-                fontFamily: 'JosefinSans',
-                fontWeight: FontWeight.w700, // Bolder text
-                fontSize: 15, // Slightly larger
-                letterSpacing: 0.5,
-              ),
-            ),
-            extendedPadding: const EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: 0,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(28), // More rounded
-            ),
+      child: Obx(() {
+        final isDark = themeController.isDarkMode;
+
+        final bg = isDark ? ColorTheme.backgroundDark : ColorTheme.background;
+        final surface = isDark ? ColorTheme.surfaceDark : Colors.white;
+
+        final primary =
+            isDark ? ColorTheme.primaryLightDark : ColorTheme.primary;
+        final textPrimary =
+            isDark ? ColorTheme.textPrimaryDark : ColorTheme.textPrimary;
+        final textSecondary =
+            isDark ? ColorTheme.textSecondaryDark : ColorTheme.textSecondary;
+
+        final isLoading = controller.isLoading.value;
+        final error = controller.errorMessage.value;
+        final items = controller.staffList;
+
+        return Scaffold(
+          backgroundColor: bg,
+          appBar: const CustomAppBar(
+            title: 'Manajemen Staf',
+            showBackButton: true,
           ),
-        ),
-        floatingActionButtonLocation:
-            FloatingActionButtonLocation.endFloat, // Bett
-        body: SafeArea(
-          child: RefreshIndicator(
-            onRefresh: () async {
-              controller.refreshData();
-            },
-            color:
-                isDarkMode ? ColorTheme.primaryLightDark : ColorTheme.primary,
-            backgroundColor: isDarkMode ? ColorTheme.surfaceDark : Colors.white,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24.0,
-                vertical: 16.0,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header with counter badge
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Staff Members',
-                              style: Theme.of(
-                                context,
-                              ).textTheme.headlineMedium?.copyWith(
-                                color:
-                                    isDarkMode
-                                        ? ColorTheme.textPrimaryDark
-                                        : ColorTheme.textPrimary,
-                                fontFamily: 'JosefinSans',
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Obx(
-                              () => Text(
-                                'Managing ${controller.staffList.length} team members',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  color:
-                                      isDarkMode
-                                          ? ColorTheme.textSecondaryDark
-                                          : ColorTheme.textSecondary,
-                                  fontFamily: 'JosefinSans',
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+
+          floatingActionButton: _FabAddStaff(
+            isDark: isDark,
+            primary: primary,
+            onTap: controller.navigateToAddStaff,
+          ),
+
+          floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+
+          body: SafeArea(
+            child: RefreshIndicator(
+              onRefresh: () async => controller.refreshData(),
+              color: primary,
+              backgroundColor: surface,
+              strokeWidth: 2.5,
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                ),
+                slivers: [
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(24, 18, 24, 14),
+                    sliver: SliverToBoxAdapter(
+                      child: _HeaderHero(
+                        isDark: isDark,
+                        primary: primary,
+                        textPrimary: textPrimary,
+                        textSecondary: textSecondary,
+                        count: items.length,
                       ),
-                      // Counter badge
-                      Obx(
-                        () => Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color:
-                                isDarkMode
-                                    ? ColorTheme.primaryLightDark.withValues(
-                                      alpha: 0.2,
-                                    )
-                                    : ColorTheme.primaryLight,
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          child: Text(
-                            '${controller.staffList.length}',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color:
-                                  isDarkMode
-                                      ? ColorTheme.primaryLightDark
-                                      : ColorTheme.primaryDark,
-                              fontFamily: 'JosefinSans',
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                  const SizedBox(height: 24),
 
-                  Expanded(
-                    child: Obx(() {
-                      if (controller.isLoading.value) {
-                        return Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              CircularProgressIndicator(
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  isDarkMode
-                                      ? ColorTheme.primaryLightDark
-                                      : ColorTheme.primary,
-                                ),
-                                strokeWidth: 3,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Loading staff...',
-                                style: TextStyle(
-                                  color:
-                                      isDarkMode
-                                          ? ColorTheme.textSecondaryDark
-                                          : ColorTheme.textSecondary,
-                                  fontFamily: 'JosefinSans',
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
+                  if (isLoading)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: _LoadingState(
+                        primary: primary,
+                        textSecondary: textSecondary,
+                      ),
+                    ),
 
-                      if (controller.errorMessage.isNotEmpty) {
-                        return EmptyStateWidget(
-                          title: 'Oops!',
-                          message: controller.errorMessage.value,
+                  if (!isLoading && error.isNotEmpty)
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 120),
+                      sliver: SliverToBoxAdapter(
+                        child: EmptyStateWidget(
+                          title: 'Terjadi Kendala',
+                          message: error,
                           icon: Icons.error_outline_rounded,
-                          buttonLabel: 'Refresh',
+                          buttonLabel: 'Muat Ulang',
                           onButtonPressed: controller.refreshData,
                           fullScreen: false,
-                        );
-                      }
+                        ),
+                      ),
+                    ),
 
-                      if (controller.staffList.isEmpty) {
-                        return EmptyStateWidget(
-                          title: 'No Staff Found',
-                          message: 'You haven\'t added any staff members yet.',
+                  if (!isLoading && error.isEmpty && items.isEmpty)
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 120),
+                      sliver: SliverToBoxAdapter(
+                        child: EmptyStateWidget(
+                          title: 'Belum Ada Staf',
+                          message:
+                              'Tambahkan staf untuk membantu mengelola layanan dan reservasi.',
                           icon: Icons.people_outline_rounded,
-                          buttonLabel: 'Add Staff',
+                          buttonLabel: 'Tambah Staf',
                           onButtonPressed: controller.navigateToAddStaff,
                           fullScreen: false,
-                        );
-                      }
+                        ),
+                      ),
+                    ),
 
-                      return _buildStaffList(context);
-                    }),
-                  ),
+                  if (!isLoading && error.isEmpty && items.isNotEmpty)
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 120),
+                      sliver: SliverList.separated(
+                        itemCount: items.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 16),
+                        itemBuilder: (context, index) {
+                          final staff = items[index];
+                          return _AppearIn(
+                            delayMs: (index * 35).clamp(0, 240),
+                            child: _StaffCard(
+                              staff: staff,
+                              isDark: isDark,
+                              primary: primary,
+                              surface: surface,
+                              textPrimary: textPrimary,
+                              textSecondary: textSecondary,
+                              onTap:
+                                  () =>
+                                      controller.navigateToEditStaff(staff.id),
+                              onEdit:
+                                  () =>
+                                      controller.navigateToEditStaff(staff.id),
+                              onToggle:
+                                  () => controller.toggleStaffStatus(staff),
+                              onDelete:
+                                  () => _showDeleteConfirmation(
+                                    context,
+                                    staff,
+                                    isDark,
+                                  ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                 ],
               ),
             ),
+          ),
+        );
+      }),
+    );
+  }
+
+  void _showDeleteConfirmation(BuildContext context, Staff staff, bool isDark) {
+    Get.dialog(
+      AlertDialog(
+        backgroundColor: isDark ? ColorTheme.surfaceDark : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Hapus Staf',
+          style: TextStyle(
+            fontFamily: 'JosefinSans',
+            fontWeight: FontWeight.w800,
+            color: isDark ? ColorTheme.textPrimaryDark : ColorTheme.textPrimary,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: (isDark ? ColorTheme.errorDark : ColorTheme.error)
+                    .withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(
+                Icons.warning_amber_rounded,
+                size: 46,
+                color: isDark ? ColorTheme.errorDark : ColorTheme.error,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'Yakin ingin menghapus ${staff.name}?',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'JosefinSans',
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color:
+                    isDark
+                        ? ColorTheme.textPrimaryDark
+                        : ColorTheme.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Tindakan ini tidak dapat dibatalkan.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'JosefinSans',
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+                color:
+                    isDark
+                        ? ColorTheme.textSecondaryDark
+                        : ColorTheme.textSecondary,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: Text(
+              'Batal',
+              style: TextStyle(
+                fontFamily: 'JosefinSans',
+                fontWeight: FontWeight.w700,
+                color:
+                    isDark
+                        ? ColorTheme.textSecondaryDark
+                        : ColorTheme.textSecondary,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Get.back();
+              controller.deleteStaff(staff.id);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isDark ? ColorTheme.errorDark : ColorTheme.error,
+              foregroundColor: isDark ? Colors.black : Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              elevation: 0,
+            ),
+            child: Text(
+              'Hapus',
+              style: TextStyle(
+                fontFamily: 'JosefinSans',
+                fontWeight: FontWeight.w800,
+                color: isDark ? Colors.black : Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// =========================================================
+// FAB
+// =========================================================
+class _FabAddStaff extends StatelessWidget {
+  final bool isDark;
+  final Color primary;
+  final VoidCallback onTap;
+
+  const _FabAddStaff({
+    required this.isDark,
+    required this.primary,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      child: FloatingActionButton.extended(
+        onPressed: onTap,
+        backgroundColor: primary,
+        elevation: 10,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        icon: Icon(
+          Icons.person_add_alt_1_rounded,
+          color: isDark ? Colors.black : Colors.white,
+          size: 20,
+        ),
+        label: Text(
+          'Tambah Staf',
+          style: TextStyle(
+            color: isDark ? Colors.black : Colors.white,
+            fontFamily: 'JosefinSans',
+            fontWeight: FontWeight.w900,
+            fontSize: 15,
+            letterSpacing: 0.1,
           ),
         ),
       ),
     );
   }
+}
 
-  Widget _buildStaffList(BuildContext context) {
-    return ListView.separated(
-      physics: const BouncingScrollPhysics(),
-      itemCount: controller.staffList.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 16),
-      itemBuilder: (context, index) {
-        final staff = controller.staffList[index];
-        return _buildStaffCard(context, staff);
-      },
+// =========================================================
+// Header (brand biru, ada count)
+// =========================================================
+class _HeaderHero extends StatelessWidget {
+  final bool isDark;
+  final Color primary;
+  final Color textPrimary;
+  final Color textSecondary;
+  final int count;
+
+  const _HeaderHero({
+    required this.isDark,
+    required this.primary,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.count,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 54,
+          height: 54,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              colors: [
+                primary.withValues(alpha: 0.22),
+                primary.withValues(alpha: 0.08),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            border: Border.all(
+              color: primary.withValues(alpha: 0.22),
+              width: 1.2,
+            ),
+          ),
+          child: Icon(Icons.groups_rounded, color: primary, size: 28),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Daftar Staf',
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'JosefinSans',
+                  color: textPrimary,
+                  letterSpacing: 0.2,
+                  height: 1.1,
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                count == 0
+                    ? 'Belum ada staf terdaftar'
+                    : 'Mengelola $count staf untuk operasional harian',
+                style: TextStyle(
+                  fontSize: 15.5,
+                  fontWeight: FontWeight.w700,
+                  fontFamily: 'JosefinSans',
+                  color: textSecondary,
+                  height: 1.25,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 10),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: primary.withValues(alpha: isDark ? 0.16 : 0.10),
+            border: Border.all(
+              color: primary.withValues(alpha: 0.22),
+              width: 1,
+            ),
+          ),
+          child: Text(
+            '$count',
+            style: TextStyle(
+              fontFamily: 'JosefinSans',
+              fontSize: 15,
+              fontWeight: FontWeight.w900,
+              color: primary,
+            ),
+          ),
+        ),
+      ],
     );
   }
+}
 
-  Widget _buildStaffCard(BuildContext context, Staff staff) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+// =========================================================
+// Loading
+// =========================================================
+class _LoadingState extends StatelessWidget {
+  final Color primary;
+  final Color textSecondary;
+
+  const _LoadingState({required this.primary, required this.textSecondary});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 46,
+            height: 46,
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(primary),
+              strokeWidth: 3,
+              strokeCap: StrokeCap.round,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'Memuat data staf...',
+            style: TextStyle(
+              color: textSecondary,
+              fontFamily: 'JosefinSans',
+              fontSize: 14.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// =========================================================
+// Card staf (lebih clean + konsisten)
+// =========================================================
+class _StaffCard extends StatelessWidget {
+  final Staff staff;
+  final bool isDark;
+  final Color primary;
+  final Color surface;
+  final Color textPrimary;
+  final Color textSecondary;
+
+  final VoidCallback onTap;
+  final VoidCallback onEdit;
+  final VoidCallback onToggle;
+  final VoidCallback onDelete;
+
+  const _StaffCard({
+    required this.staff,
+    required this.isDark,
+    required this.primary,
+    required this.surface,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.onTap,
+    required this.onEdit,
+    required this.onToggle,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final borderColor =
+        isDark
+            ? ColorTheme.borderDark.withValues(alpha: 0.30)
+            : Colors.black.withValues(alpha: 0.06);
 
     return Container(
-      margin: const EdgeInsets.only(
-        bottom: 4,
-      ), // Add subtle spacing between cards
       decoration: BoxDecoration(
-        color: isDarkMode ? ColorTheme.surfaceDark : Colors.white,
-        borderRadius: BorderRadius.circular(
-          20,
-        ), // Increased from 16 for softer look
-        border:
-            isDarkMode
-                ? Border.all(
-                  color: ColorTheme.borderDark.withValues(alpha: 0.3),
-                  width: 1,
-                )
-                : null,
+        color: surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: borderColor, width: 1),
         boxShadow: [
           BoxShadow(
-            color:
-                isDarkMode
-                    ? Colors.black.withValues(alpha: 0.2)
-                    : Colors.black.withValues(alpha: 0.08), // Enhanced shadow
-            blurRadius: 16, // Increased blur
-            spreadRadius: 0,
-            offset: const Offset(0, 6), // Slightly more offset
-          ),
-          // Add secondary shadow for depth
-          BoxShadow(
-            color:
-                isDarkMode
-                    ? Colors.black.withValues(alpha: 0.1)
-                    : Colors.black.withValues(alpha: 0.02),
-            blurRadius: 4,
-            spreadRadius: 0,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.08),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
       child: Material(
         color: Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
         child: InkWell(
-          onTap: () => controller.navigateToEditStaff(staff.id),
+          onTap: onTap,
           borderRadius: BorderRadius.circular(20),
-          splashColor: (isDarkMode
-                  ? ColorTheme.primaryLightDark
-                  : ColorTheme.primaryLight)
-              .withValues(alpha: 0.15),
-          highlightColor: (isDarkMode
-                  ? ColorTheme.primaryLightDark
-                  : ColorTheme.primaryLight)
-              .withValues(alpha: 0.08),
+          splashColor: primary.withValues(alpha: 0.10),
+          highlightColor: primary.withValues(alpha: 0.05),
           child: Padding(
-            padding: const EdgeInsets.all(20.0), // Increased padding
+            padding: const EdgeInsets.all(18),
             child: Column(
               children: [
                 Row(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start, // Better alignment
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Enhanced profile image container
-                    Stack(
-                      children: [
-                        Container(
-                          width: 72, // Slightly larger
-                          height: 72,
-                          decoration: BoxDecoration(
-                            color: (isDarkMode
-                                    ? ColorTheme.accentDark
-                                    : ColorTheme.accent)
-                                .withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(36),
-                            border: Border.all(
-                              color:
-                                  staff.isActive
-                                      ? (isDarkMode
-                                          ? ColorTheme.primaryLightDark
-                                          : ColorTheme.primary)
-                                      : (isDarkMode
-                                          ? ColorTheme.borderDark
-                                          : ColorTheme.divider),
-                              width: 3, // Thicker border
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: (isDarkMode
-                                        ? ColorTheme.primaryLightDark
-                                        : ColorTheme.primary)
-                                    .withValues(alpha: 0.2),
-                                blurRadius: 12,
-                                spreadRadius: 0,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child:
-                              staff.profilePicture != null &&
-                                      staff.profilePicture!.isNotEmpty
-                                  ? ClipRRect(
-                                    borderRadius: BorderRadius.circular(33),
-                                    child: Image.network(
-                                      staff.profilePicture!,
-                                      width: 66,
-                                      height: 66,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (
-                                        context,
-                                        error,
-                                        stackTrace,
-                                      ) {
-                                        return Icon(
-                                          Icons.person_rounded,
-                                          size: 36,
-                                          color:
-                                              isDarkMode
-                                                  ? ColorTheme.primaryLightDark
-                                                  : ColorTheme.primary,
-                                        );
-                                      },
-                                    ),
-                                  )
-                                  : Icon(
-                                    Icons.person_rounded,
-                                    size: 36,
-                                    color:
-                                        isDarkMode
-                                            ? ColorTheme.primaryLightDark
-                                            : ColorTheme.primary,
-                                  ),
-                        ),
-                        // Status indicator dot
-                        Positioned(
-                          bottom: 2,
-                          right: 2,
-                          child: Container(
-                            width: 20,
-                            height: 20,
-                            decoration: BoxDecoration(
-                              color:
-                                  staff.isActive
-                                      ? (isDarkMode
-                                          ? ColorTheme.successDark
-                                          : ColorTheme.success)
-                                      : (isDarkMode
-                                          ? ColorTheme.errorDark
-                                          : ColorTheme.error),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color:
-                                    isDarkMode
-                                        ? ColorTheme.surfaceDark
-                                        : Colors.white,
-                                width: 2,
-                              ),
-                            ),
-                            child: Icon(
-                              staff.isActive ? Icons.check : Icons.close,
-                              size: 12,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ],
+                    _AvatarWithStatus(
+                      staff: staff,
+                      isDark: isDark,
+                      primary: primary,
                     ),
-                    const SizedBox(width: 24), // Increased spacing
-                    // Enhanced staff info section
+                    const SizedBox(width: 16),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Name with enhanced typography
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  staff.name,
-                                  style: TextStyle(
-                                    fontSize: 20, // Larger font
-                                    fontWeight: FontWeight.w700, // Bolder
-                                    fontFamily: 'JosefinSans',
-                                    color:
-                                        isDarkMode
-                                            ? ColorTheme.textPrimaryDark
-                                            : ColorTheme.textPrimary,
-                                    letterSpacing:
-                                        -0.3, // Tighter letter spacing
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              // Enhanced status pill badge
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color:
-                                      staff.isActive
-                                          ? (isDarkMode
-                                              ? ColorTheme.successDark
-                                                  .withValues(alpha: 0.2)
-                                              : const Color(0xFFE8F5E8))
-                                          : (isDarkMode
-                                              ? ColorTheme.errorDark.withValues(
-                                                alpha: 0.2,
-                                              )
-                                              : const Color(0xFFFFF0F0)),
-                                  borderRadius: BorderRadius.circular(
-                                    20,
-                                  ), // Full rounded
-                                  border: Border.all(
-                                    color:
-                                        staff.isActive
-                                            ? (isDarkMode
-                                                ? ColorTheme.successDark
-                                                : ColorTheme.success)
-                                            : (isDarkMode
-                                                ? ColorTheme.errorDark
-                                                : ColorTheme.error),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      staff.isActive
-                                          ? Icons.check_circle
-                                          : Icons.cancel,
-                                      size: 14,
-                                      color:
-                                          staff.isActive
-                                              ? (isDarkMode
-                                                  ? ColorTheme.successDark
-                                                  : ColorTheme.success)
-                                              : (isDarkMode
-                                                  ? ColorTheme.errorDark
-                                                  : ColorTheme.error),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      staff.isActive ? 'Active' : 'Inactive',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700,
-                                        color:
-                                            staff.isActive
-                                                ? (isDarkMode
-                                                    ? ColorTheme.successDark
-                                                    : ColorTheme.success)
-                                                : (isDarkMode
-                                                    ? ColorTheme.errorDark
-                                                    : ColorTheme.error),
-                                        fontFamily: 'JosefinSans',
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12), // Increased spacing
-                          // Enhanced contact info with better contrast
-                          _buildContactRow(
-                            context,
-                            Icons.email_rounded,
-                            staff.email,
-                            isDarkMode,
-                          ),
-                          const SizedBox(height: 8),
-                          _buildContactRow(
-                            context,
-                            Icons.phone_rounded,
-                            staff.phoneNumber,
-                            isDarkMode,
-                          ),
-                        ],
+                      child: _StaffInfo(
+                        staff: staff,
+                        isDark: isDark,
+                        textPrimary: textPrimary,
+                        textSecondary: textSecondary,
                       ),
                     ),
                   ],
                 ),
-
-                // Enhanced action buttons section
-                Padding(
-                  padding: const EdgeInsets.only(top: 20),
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color:
-                          isDarkMode
-                              ? ColorTheme.backgroundDark.withValues(alpha: 0.3)
-                              : ColorTheme.background,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        // Enhanced Edit button
-                        _buildEnhancedActionButton(
-                          context: context,
-                          label: 'Edit',
-                          icon: Icons.edit_rounded,
-                          color:
-                              isDarkMode
-                                  ? ColorTheme.infoDark
-                                  : ColorTheme.info,
-                          onTap: () => controller.navigateToEditStaff(staff.id),
-                        ),
-
-                        // Enhanced Toggle status button
-                        _buildEnhancedActionButton(
-                          context: context,
-                          label: staff.isActive ? 'Deactivate' : 'Activate',
-                          icon:
-                              staff.isActive
-                                  ? Icons.person_off_rounded
-                                  : Icons.person_add_rounded,
-                          color:
-                              staff.isActive
-                                  ? (isDarkMode
-                                      ? ColorTheme.warningDark
-                                      : ColorTheme.warning)
-                                  : (isDarkMode
-                                      ? ColorTheme.successDark
-                                      : ColorTheme.success),
-                          onTap: () => controller.toggleStaffStatus(staff),
-                        ),
-
-                        // Enhanced Delete button
-                        _buildEnhancedActionButton(
-                          context: context,
-                          label: 'Delete',
-                          icon: Icons.delete_rounded,
-                          color:
-                              isDarkMode
-                                  ? ColorTheme.errorDark
-                                  : ColorTheme.error,
-                          onTap: () => _showDeleteConfirmation(context, staff),
-                        ),
-                      ],
-                    ),
-                  ),
+                const SizedBox(height: 14),
+                _ActionRow(
+                  staff: staff,
+                  isDark: isDark,
+                  onEdit: onEdit,
+                  onToggle: onToggle,
+                  onDelete: onDelete,
                 ),
               ],
             ),
@@ -585,45 +545,222 @@ class StaffView extends GetView<StaffController> {
       ),
     );
   }
+}
 
-  // Helper method for contact information rows
-  Widget _buildContactRow(
-    BuildContext context,
-    IconData icon,
-    String text,
-    bool isDarkMode,
-  ) {
+class _AvatarWithStatus extends StatelessWidget {
+  final Staff staff;
+  final bool isDark;
+  final Color primary;
+
+  const _AvatarWithStatus({
+    required this.staff,
+    required this.isDark,
+    required this.primary,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final ringColor =
+        staff.isActive
+            ? primary
+            : (isDark ? ColorTheme.borderDark : ColorTheme.divider);
+
+    return Stack(
+      children: [
+        Container(
+          width: 68,
+          height: 68,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(34),
+            color: (isDark ? ColorTheme.accentDark : ColorTheme.accent)
+                .withValues(alpha: 0.14),
+            border: Border.all(color: ringColor, width: 3),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(31),
+            child:
+                (staff.profilePicture != null &&
+                        (staff.profilePicture ?? '').isNotEmpty)
+                    ? Image.network(
+                      staff.profilePicture!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) {
+                        return Icon(
+                          Icons.person_rounded,
+                          size: 34,
+                          color: primary,
+                        );
+                      },
+                    )
+                    : Icon(Icons.person_rounded, size: 34, color: primary),
+          ),
+        ),
+        Positioned(
+          right: 2,
+          bottom: 2,
+          child: Container(
+            width: 18,
+            height: 18,
+            decoration: BoxDecoration(
+              color:
+                  staff.isActive
+                      ? (isDark ? ColorTheme.successDark : ColorTheme.success)
+                      : (isDark ? ColorTheme.errorDark : ColorTheme.error),
+              borderRadius: BorderRadius.circular(9),
+              border: Border.all(
+                color: isDark ? ColorTheme.surfaceDark : Colors.white,
+                width: 2,
+              ),
+            ),
+            child: Icon(
+              staff.isActive ? Icons.check : Icons.close,
+              size: 11,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StaffInfo extends StatelessWidget {
+  final Staff staff;
+  final bool isDark;
+  final Color textPrimary;
+  final Color textSecondary;
+
+  const _StaffInfo({
+    required this.staff,
+    required this.isDark,
+    required this.textPrimary,
+    required this.textSecondary,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                staff.name,
+                style: TextStyle(
+                  fontSize: 19,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'JosefinSans',
+                  color: textPrimary,
+                  letterSpacing: -0.2,
+                  height: 1.15,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 10),
+            _StatusPill(isDark: isDark, isActive: staff.isActive),
+          ],
+        ),
+        const SizedBox(height: 10),
+        _ContactRow(
+          icon: Icons.email_rounded,
+          text: staff.email,
+          isDark: isDark,
+        ),
+        const SizedBox(height: 8),
+        _ContactRow(
+          icon: Icons.phone_rounded,
+          text: staff.phoneNumber,
+          isDark: isDark,
+        ),
+      ],
+    );
+  }
+}
+
+class _StatusPill extends StatelessWidget {
+  final bool isDark;
+  final bool isActive;
+
+  const _StatusPill({required this.isDark, required this.isActive});
+
+  @override
+  Widget build(BuildContext context) {
+    final fg =
+        isActive
+            ? (isDark ? ColorTheme.successDark : ColorTheme.success)
+            : (isDark ? ColorTheme.errorDark : ColorTheme.error);
+
+    final bg = fg.withValues(alpha: 0.14);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: fg.withValues(alpha: 0.85), width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isActive ? Icons.check_circle : Icons.cancel,
+            size: 14,
+            color: fg,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            isActive ? 'Aktif' : 'Nonaktif',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+              fontFamily: 'JosefinSans',
+              color: fg,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ContactRow extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  final bool isDark;
+
+  const _ContactRow({
+    required this.icon,
+    required this.text,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = isDark ? ColorTheme.primaryLightDark : ColorTheme.primary;
+
     return Row(
       children: [
         Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: (isDarkMode
-                    ? ColorTheme.primaryLightDark
-                    : ColorTheme.primary)
-                .withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
+            color: primary.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(
-            icon,
-            size: 16,
-            color:
-                isDarkMode ? ColorTheme.primaryLightDark : ColorTheme.primary,
-          ),
+          child: Icon(icon, size: 16, color: primary),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         Expanded(
           child: Text(
             text,
             style: TextStyle(
-              fontSize: 15, // Slightly larger for better readability
-              fontWeight: FontWeight.w500, // Medium weight for better contrast
-              color:
-                  isDarkMode
-                      ? ColorTheme.textPrimaryDark.withValues(alpha: 0.9)
-                      : ColorTheme.textPrimary.withValues(
-                        alpha: 0.8,
-                      ), // Better contrast
+              fontSize: 14.5,
+              fontWeight: FontWeight.w700,
+              color: (isDark
+                      ? ColorTheme.textPrimaryDark
+                      : ColorTheme.textPrimary)
+                  .withValues(alpha: 0.82),
               fontFamily: 'JosefinSans',
             ),
             overflow: TextOverflow.ellipsis,
@@ -632,14 +769,89 @@ class StaffView extends GetView<StaffController> {
       ],
     );
   }
+}
 
-  Widget _buildEnhancedActionButton({
-    required BuildContext context,
-    required String label,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
+class _ActionRow extends StatelessWidget {
+  final Staff staff;
+  final bool isDark;
+  final VoidCallback onEdit;
+  final VoidCallback onToggle;
+  final VoidCallback onDelete;
+
+  const _ActionRow({
+    required this.staff,
+    required this.isDark,
+    required this.onEdit,
+    required this.onToggle,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bg =
+        isDark
+            ? ColorTheme.backgroundDark.withValues(alpha: 0.30)
+            : ColorTheme.background;
+
+    final border =
+        isDark
+            ? Colors.white.withValues(alpha: 0.10)
+            : Colors.black.withValues(alpha: 0.06);
+
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: border),
+      ),
+      child: Row(
+        children: [
+          _ActionButton(
+            label: 'Edit',
+            icon: Icons.edit_rounded,
+            color: isDark ? ColorTheme.infoDark : ColorTheme.info,
+            onTap: onEdit,
+          ),
+          _ActionButton(
+            label: staff.isActive ? 'Nonaktifkan' : 'Aktifkan',
+            icon:
+                staff.isActive
+                    ? Icons.person_off_rounded
+                    : Icons.person_add_rounded,
+            color:
+                staff.isActive
+                    ? (isDark ? ColorTheme.warningDark : ColorTheme.warning)
+                    : (isDark ? ColorTheme.successDark : ColorTheme.success),
+            onTap: onToggle,
+          ),
+          _ActionButton(
+            label: 'Hapus',
+            icon: Icons.delete_rounded,
+            color: isDark ? ColorTheme.errorDark : ColorTheme.error,
+            onTap: onDelete,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ActionButton({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Expanded(
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -649,8 +861,8 @@ class StaffView extends GetView<StaffController> {
           child: InkWell(
             onTap: onTap,
             borderRadius: BorderRadius.circular(12),
-            splashColor: color.withValues(alpha: 0.2),
-            highlightColor: color.withValues(alpha: 0.1),
+            splashColor: color.withValues(alpha: 0.20),
+            highlightColor: color.withValues(alpha: 0.10),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               child: Column(
@@ -663,10 +875,12 @@ class StaffView extends GetView<StaffController> {
                     style: TextStyle(
                       fontSize: 11,
                       color: color,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w800,
                       fontFamily: 'JosefinSans',
                     ),
                     textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
@@ -676,116 +890,56 @@ class StaffView extends GetView<StaffController> {
       ),
     );
   }
+}
 
-  // Show delete confirmation dialog
-  void _showDeleteConfirmation(BuildContext context, Staff staff) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+// =========================================================
+// Appear animation (ringan)
+// =========================================================
+class _AppearIn extends StatefulWidget {
+  final Widget child;
+  final int delayMs;
 
-    Get.dialog(
-      AlertDialog(
-        backgroundColor: isDarkMode ? ColorTheme.surfaceDark : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'Delete Staff Member',
-          style: TextStyle(
-            fontFamily: 'JosefinSans',
-            fontWeight: FontWeight.bold,
-            color:
-                isDarkMode
-                    ? ColorTheme.textPrimaryDark
-                    : ColorTheme.textPrimary,
-          ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: (isDarkMode ? ColorTheme.errorDark : ColorTheme.error)
-                    .withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                Icons.warning_amber_rounded,
-                color: isDarkMode ? ColorTheme.errorDark : ColorTheme.error,
-                size: 48,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Are you sure you want to delete ${staff.name}?',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'JosefinSans',
-                fontSize: 16,
-                color:
-                    isDarkMode
-                        ? ColorTheme.textPrimaryDark
-                        : ColorTheme.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'This action cannot be undone.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'JosefinSans',
-                fontSize: 14,
-                color:
-                    isDarkMode
-                        ? ColorTheme.textSecondaryDark
-                        : ColorTheme.textSecondary,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            style: TextButton.styleFrom(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            ),
-            child: Text(
-              'Cancel',
-              style: TextStyle(
-                color:
-                    isDarkMode
-                        ? ColorTheme.textSecondaryDark
-                        : ColorTheme.textSecondary,
-                fontFamily: 'JosefinSans',
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Get.back();
-              controller.deleteStaff(staff.id);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor:
-                  isDarkMode ? ColorTheme.errorDark : ColorTheme.error,
-              foregroundColor: isDarkMode ? Colors.black : Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            ),
-            child: Text(
-              'Delete',
-              style: TextStyle(
-                fontFamily: 'JosefinSans',
-                fontWeight: FontWeight.w600,
-                color: isDarkMode ? Colors.black : Colors.white,
-              ),
-            ),
-          ),
-        ],
-      ),
+  const _AppearIn({required this.child, required this.delayMs});
+
+  @override
+  State<_AppearIn> createState() => _AppearInState();
+}
+
+class _AppearInState extends State<_AppearIn>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c;
+  late final Animation<double> _fade;
+  late final Animation<Offset> _slide;
+
+  @override
+  void initState() {
+    super.initState();
+    _c = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 520),
+    );
+    _fade = CurvedAnimation(parent: _c, curve: Curves.easeOutCubic);
+    _slide = Tween<Offset>(
+      begin: const Offset(0, 0.06),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _c, curve: Curves.easeOutCubic));
+
+    Future.delayed(Duration(milliseconds: widget.delayMs), () {
+      if (mounted) _c.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _fade,
+      child: SlideTransition(position: _slide, child: widget.child),
     );
   }
 }
