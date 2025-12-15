@@ -1,16 +1,110 @@
+// lib/common/theme/app_theme.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:emababyspa/common/theme/text_theme.dart';
 import 'package:emababyspa/common/theme/color_theme.dart';
 
-class AppTheme {
-  static const double _defaultRadius = 16.0;
-  static const double _buttonRadius = 12.0;
+/// Global spacing tokens (biar layout antar page konsisten).
+@immutable
+class AppSpacing extends ThemeExtension<AppSpacing> {
+  final double xxs;
+  final double xs;
+  final double sm;
+  final double md;
+  final double lg;
+  final double xl;
+  final double xxl;
 
-  // --- LIGHT THEME ---
-  static final ThemeData lightTheme = ThemeData(
+  const AppSpacing({
+    this.xxs = 6,
+    this.xs = 10,
+    this.sm = 14,
+    this.md = 16,
+    this.lg = 24,
+    this.xl = 32,
+    this.xxl = 44,
+  });
+
+  @override
+  AppSpacing copyWith({
+    double? xxs,
+    double? xs,
+    double? sm,
+    double? md,
+    double? lg,
+    double? xl,
+    double? xxl,
+  }) {
+    return AppSpacing(
+      xxs: xxs ?? this.xxs,
+      xs: xs ?? this.xs,
+      sm: sm ?? this.sm,
+      md: md ?? this.md,
+      lg: lg ?? this.lg,
+      xl: xl ?? this.xl,
+      xxl: xxl ?? this.xxl,
+    );
+  }
+
+  @override
+  AppSpacing lerp(ThemeExtension<AppSpacing>? other, double t) {
+    if (other is! AppSpacing) return this;
+    return AppSpacing(
+      xxs: lerpDouble(xxs, other.xxs, t),
+      xs: lerpDouble(xs, other.xs, t),
+      sm: lerpDouble(sm, other.sm, t),
+      md: lerpDouble(md, other.md, t),
+      lg: lerpDouble(lg, other.lg, t),
+      xl: lerpDouble(xl, other.xl, t),
+      xxl: lerpDouble(xxl, other.xxl, t),
+    );
+  }
+
+  double lerpDouble(double a, double b, double t) => a + (b - a) * t;
+}
+
+/// Radius system (biar bentuk UI konsisten dan terasa modern).
+class AppRadii {
+  static const double sm = 12;
+  static const double md = 16;
+  static const double lg = 20;
+  static const double xl = 28;
+}
+
+/// Shadow yang “diffused” (lebih spa, less corporate).
+class AppShadows {
+  static List<BoxShadow> soft(Color c) => [
+    BoxShadow(
+      color: c.withOpacity(0.08),
+      blurRadius: 20,
+      spreadRadius: 0,
+      offset: const Offset(0, 10),
+    ),
+    BoxShadow(
+      color: c.withOpacity(0.05),
+      blurRadius: 8,
+      spreadRadius: 0,
+      offset: const Offset(0, 3),
+    ),
+  ];
+}
+
+class AppTheme {
+  // ---------- LIGHT ----------
+  static ThemeData lightTheme = ThemeData(
     brightness: Brightness.light,
     useMaterial3: true,
+
+    // “Premium feel” di Material 3: InkSparkle + transisi native-feel.
+    splashFactory: InkSparkle.splashFactory,
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      },
+    ),
+
+    // Font family default tetap JosefinSans (bisnis & readable).
     fontFamily: 'JosefinSans',
 
     colorScheme: const ColorScheme.light(
@@ -36,120 +130,31 @@ class AppTheme {
 
     scaffoldBackgroundColor: ColorTheme.m3Background,
 
+    /// Typography:
+    /// - Display pakai DeliusSwashCaps (signature / brand)
+    /// - Sisanya JosefinSans (trustworthy)
     textTheme: TextThemes.textTheme.apply(
       bodyColor: ColorTheme.m3OnSurface,
       displayColor: ColorTheme.m3OnSurface,
     ),
 
+    extensions: const [AppSpacing()],
+
+    // AppBar: lebih clean, terasa “produk serius”.
     appBarTheme: AppBarTheme(
       backgroundColor: ColorTheme.m3Surface,
       foregroundColor: ColorTheme.m3OnSurface,
       elevation: 0,
       centerTitle: true,
-      scrolledUnderElevation: 2,
+      scrolledUnderElevation: 1.5,
       systemOverlayStyle: SystemUiOverlayStyle.dark,
       titleTextStyle: TextThemes.textTheme.titleLarge?.copyWith(
-        color: ColorTheme.m3OnSurface,
-        fontWeight: FontWeight.bold,
-        fontSize: 20,
+        fontWeight:
+            FontWeight.w700, // lebih “confident” tapi nggak terlalu heavy
+        fontSize: 19,
+        letterSpacing: 0.1,
       ),
       iconTheme: const IconThemeData(color: ColorTheme.m3OnSurface),
-    ),
-
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: ColorTheme.m3Primary,
-        foregroundColor: ColorTheme.m3OnPrimary,
-        elevation: 2,
-        shadowColor: ColorTheme.m3Primary.withOpacity(0.4),
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(_buttonRadius),
-        ),
-        textStyle: const TextStyle(
-          fontFamily: 'JosefinSans',
-          fontWeight: FontWeight.w600,
-          fontSize: 16,
-          letterSpacing: 0.5,
-        ),
-      ),
-    ),
-
-    outlinedButtonTheme: OutlinedButtonThemeData(
-      style: OutlinedButton.styleFrom(
-        foregroundColor: ColorTheme.m3Primary,
-        side: const BorderSide(color: ColorTheme.m3OutlineVariant, width: 1.5),
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(_buttonRadius),
-        ),
-        textStyle: const TextStyle(
-          fontFamily: 'JosefinSans',
-          fontWeight: FontWeight.w600,
-          fontSize: 16,
-        ),
-      ),
-    ),
-
-    textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(
-        foregroundColor: ColorTheme.m3Primary,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      ),
-    ),
-
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: ColorTheme.m3SurfaceVariant.withOpacity(0.3),
-      contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(_defaultRadius),
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(_defaultRadius),
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(_defaultRadius),
-        borderSide: const BorderSide(color: ColorTheme.m3Primary, width: 1.5),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(_defaultRadius),
-        borderSide: const BorderSide(color: ColorTheme.m3Error),
-      ),
-      labelStyle: const TextStyle(color: ColorTheme.m3OnSurfaceVariant),
-      hintStyle: TextStyle(
-        color: ColorTheme.m3OnSurfaceVariant.withOpacity(0.7),
-      ),
-      prefixIconColor: ColorTheme.m3OnSurfaceVariant,
-      suffixIconColor: ColorTheme.m3OnSurfaceVariant,
-    ),
-
-    cardTheme: CardThemeData(
-      color: ColorTheme.m3Surface,
-      surfaceTintColor: ColorTheme.m3Primary,
-      elevation: 2,
-      shadowColor: Colors.black.withOpacity(0.1),
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(_defaultRadius),
-      ),
-      clipBehavior: Clip.antiAlias,
-    ),
-
-    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-      backgroundColor: ColorTheme.m3Surface,
-      selectedItemColor: ColorTheme.m3Primary,
-      unselectedItemColor: ColorTheme.m3Outline,
-      selectedLabelStyle: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
-      unselectedLabelStyle: TextStyle(
-        fontWeight: FontWeight.w500,
-        fontSize: 12,
-      ),
-      type: BottomNavigationBarType.fixed,
-      elevation: 8,
     ),
 
     dividerTheme: const DividerThemeData(
@@ -158,21 +163,250 @@ class AppTheme {
       space: 1,
     ),
 
-    dialogTheme: DialogThemeData(
-      backgroundColor: ColorTheme.m3Surface,
-      surfaceTintColor: ColorTheme.m3Primary,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      titleTextStyle: TextThemes.textTheme.titleLarge?.copyWith(
-        fontWeight: FontWeight.bold,
-        color: ColorTheme.m3OnSurface,
+    // Cards: bukan datar, tapi juga bukan “shadow hitam berat”.
+    cardTheme: CardThemeData(
+      color: ColorTheme.m3Surface,
+      elevation: 1.5,
+      shadowColor: Colors.black.withOpacity(0.10),
+      surfaceTintColor: Colors.transparent, // biar nggak ada tint “abu aneh”
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        side: BorderSide(
+          color: ColorTheme.m3OutlineVariant.withOpacity(0.55),
+          width: 1,
+        ),
       ),
+      clipBehavior: Clip.antiAlias,
+    ),
+
+    // Bottom Nav: tinggi + “floating” halus = premium.
+    bottomNavigationBarTheme: BottomNavigationBarThemeData(
+      backgroundColor: ColorTheme.m3Surface,
+      selectedItemColor: ColorTheme.m3Primary,
+      unselectedItemColor: ColorTheme.m3OnSurfaceVariant.withOpacity(0.70),
+      selectedLabelStyle: const TextStyle(
+        fontWeight: FontWeight.w700,
+        fontSize: 12,
+      ),
+      unselectedLabelStyle: const TextStyle(
+        fontWeight: FontWeight.w600,
+        fontSize: 12,
+      ),
+      type: BottomNavigationBarType.fixed,
+      elevation: 10,
     ),
 
     floatingActionButtonTheme: FloatingActionButtonThemeData(
       backgroundColor: ColorTheme.m3PrimaryContainer,
       foregroundColor: ColorTheme.m3OnPrimaryContainer,
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 6,
+      highlightElevation: 10,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+      ),
+    ),
+
+    // TACTILE BUTTONS (state-based elevation + overlay)
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ButtonStyle(
+        padding: const WidgetStatePropertyAll(
+          EdgeInsets.symmetric(vertical: 16, horizontal: 18),
+        ),
+        minimumSize: const WidgetStatePropertyAll(Size(0, 52)),
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadii.md),
+          ),
+        ),
+        backgroundColor: const WidgetStatePropertyAll(ColorTheme.m3Primary),
+        foregroundColor: const WidgetStatePropertyAll(ColorTheme.m3OnPrimary),
+        textStyle: WidgetStatePropertyAll(
+          TextThemes.textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.2,
+          ),
+        ),
+        elevation: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) return 0;
+          if (states.contains(WidgetState.pressed)) return 0;
+          return 2; // default raised tipis
+        }),
+        shadowColor: WidgetStatePropertyAll(
+          ColorTheme.m3Primary.withOpacity(0.25),
+        ),
+        overlayColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.pressed)) {
+            return ColorTheme.m3OnPrimary.withOpacity(0.10);
+          }
+          if (states.contains(WidgetState.hovered) ||
+              states.contains(WidgetState.focused)) {
+            return ColorTheme.m3OnPrimary.withOpacity(0.06);
+          }
+          return null;
+        }),
+      ),
+    ),
+
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: ButtonStyle(
+        padding: const WidgetStatePropertyAll(
+          EdgeInsets.symmetric(vertical: 16, horizontal: 18),
+        ),
+        minimumSize: const WidgetStatePropertyAll(Size(0, 52)),
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadii.md),
+          ),
+        ),
+        foregroundColor: const WidgetStatePropertyAll(ColorTheme.m3Primary),
+        side: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.pressed)) {
+            return BorderSide(
+              color: ColorTheme.m3Primary.withOpacity(0.75),
+              width: 1.5,
+            );
+          }
+          return BorderSide(
+            color: ColorTheme.m3OutlineVariant.withOpacity(0.95),
+            width: 1.25,
+          );
+        }),
+        textStyle: WidgetStatePropertyAll(
+          TextThemes.textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.2,
+          ),
+        ),
+        overlayColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.pressed)) {
+            return ColorTheme.m3Primary.withOpacity(0.10);
+          }
+          if (states.contains(WidgetState.hovered) ||
+              states.contains(WidgetState.focused)) {
+            return ColorTheme.m3Primary.withOpacity(0.06);
+          }
+          return null;
+        }),
+      ),
+    ),
+
+    textButtonTheme: TextButtonThemeData(
+      style: ButtonStyle(
+        padding: const WidgetStatePropertyAll(
+          EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+        ),
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadii.sm),
+          ),
+        ),
+        foregroundColor: const WidgetStatePropertyAll(ColorTheme.m3Primary),
+        textStyle: WidgetStatePropertyAll(
+          TextThemes.textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        overlayColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.pressed))
+            return ColorTheme.m3Primary.withOpacity(0.10);
+          if (states.contains(WidgetState.hovered) ||
+              states.contains(WidgetState.focused)) {
+            return ColorTheme.m3Primary.withOpacity(0.06);
+          }
+          return null;
+        }),
+      ),
+    ),
+
+    // Inputs: clean, approachable, fokus jelas.
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: ColorTheme.m3SurfaceVariant.withOpacity(
+        0.28,
+      ), // halus, beda tipis dari background
+      contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+      floatingLabelBehavior: FloatingLabelBehavior.auto,
+      isDense: false,
+
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        borderSide: BorderSide(
+          color: ColorTheme.m3OutlineVariant.withOpacity(0.55),
+          width: 1,
+        ),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        borderSide: BorderSide(
+          color: ColorTheme.m3OutlineVariant.withOpacity(0.55),
+          width: 1,
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        borderSide: const BorderSide(color: ColorTheme.m3Primary, width: 1.6),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        borderSide: const BorderSide(color: ColorTheme.m3Error, width: 1.4),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        borderSide: const BorderSide(color: ColorTheme.m3Error, width: 1.6),
+      ),
+
+      labelStyle: TextThemes.textTheme.bodyMedium?.copyWith(
+        color: ColorTheme.m3OnSurfaceVariant.withOpacity(0.85),
+        fontWeight: FontWeight.w600,
+      ),
+      hintStyle: TextThemes.textTheme.bodyMedium?.copyWith(
+        color: ColorTheme.m3OnSurfaceVariant.withOpacity(0.60),
+        fontWeight: FontWeight.w500,
+      ),
+
+      prefixIconColor: ColorTheme.m3OnSurfaceVariant.withOpacity(0.80),
+      suffixIconColor: ColorTheme.m3OnSurfaceVariant.withOpacity(0.80),
+    ),
+
+    // Dialog: lebih “spa”, radius besar & clean.
+    dialogTheme: DialogThemeData(
+      backgroundColor: ColorTheme.m3Surface,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+      ),
+      titleTextStyle: TextThemes.textTheme.titleLarge?.copyWith(
+        fontWeight: FontWeight.w800,
+        color: ColorTheme.m3OnSurface,
+      ),
+      contentTextStyle: TextThemes.textTheme.bodyMedium?.copyWith(
+        color: ColorTheme.m3OnSurfaceVariant.withOpacity(0.90),
+      ),
+    ),
+
+    // ListTile: supaya list terasa “designed”, bukan default.
+    listTileTheme: ListTileThemeData(
+      iconColor: ColorTheme.m3OnSurfaceVariant.withOpacity(0.85),
+      textColor: ColorTheme.m3OnSurface,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+      ),
+    ),
+
+    // Feedback (SnackBar): modern, rounded, readable.
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      elevation: 6,
+      backgroundColor: ColorTheme.m3OnSurface,
+      contentTextStyle: TextThemes.textTheme.bodyMedium?.copyWith(
+        color: ColorTheme.m3Surface,
+        fontWeight: FontWeight.w600,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+      ),
     ),
 
     checkboxTheme: CheckboxThemeData(
@@ -184,10 +418,17 @@ class AppTheme {
     ),
   );
 
-  // --- DARK THEME ---
-  static final ThemeData darkTheme = ThemeData(
+  // ---------- DARK ----------
+  static ThemeData darkTheme = ThemeData(
     brightness: Brightness.dark,
     useMaterial3: true,
+    splashFactory: InkSparkle.splashFactory,
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      },
+    ),
     fontFamily: 'JosefinSans',
 
     colorScheme: const ColorScheme.dark(
@@ -209,103 +450,203 @@ class AppTheme {
     ),
 
     scaffoldBackgroundColor: ColorTheme.m3BackgroundDark,
-    textTheme: TextThemes.darkTextTheme, // Sudah berisi teks terang
+    textTheme: TextThemes.darkTextTheme,
+    extensions: const [AppSpacing()],
 
     appBarTheme: AppBarTheme(
       backgroundColor: ColorTheme.m3SurfaceDark,
       foregroundColor: ColorTheme.m3OnSurfaceDark,
       elevation: 0,
       centerTitle: true,
-      scrolledUnderElevation: 2,
+      scrolledUnderElevation: 1.5,
       systemOverlayStyle: SystemUiOverlayStyle.light,
       titleTextStyle: TextThemes.darkTextTheme.titleLarge?.copyWith(
-        color: ColorTheme.m3OnSurfaceDark,
-        fontWeight: FontWeight.bold,
-        fontSize: 20,
+        fontWeight: FontWeight.w700,
+        fontSize: 19,
+        letterSpacing: 0.1,
+      ),
+    ),
+
+    cardTheme: CardThemeData(
+      color: ColorTheme.m3SurfaceVariantDark.withOpacity(0.22),
+      elevation: 0,
+      surfaceTintColor: Colors.transparent,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        side: BorderSide(
+          color: ColorTheme.m3OutlineDark.withOpacity(0.22),
+          width: 1,
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+    ),
+
+    bottomNavigationBarTheme: BottomNavigationBarThemeData(
+      backgroundColor: ColorTheme.m3SurfaceDark,
+      selectedItemColor: ColorTheme.m3PrimaryDark,
+      unselectedItemColor: ColorTheme.m3OnSurfaceVariantDark.withOpacity(0.70),
+      type: BottomNavigationBarType.fixed,
+      elevation: 10,
+    ),
+
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+      backgroundColor: ColorTheme.m3PrimaryContainerDark,
+      foregroundColor: ColorTheme.m3OnPrimaryContainerDark,
+      elevation: 6,
+      highlightElevation: 10,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadii.lg),
       ),
     ),
 
     elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: ColorTheme.m3PrimaryDark,
-        foregroundColor: ColorTheme.m3OnPrimaryDark,
-        elevation: 0,
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(_buttonRadius),
+      style: ButtonStyle(
+        padding: const WidgetStatePropertyAll(
+          EdgeInsets.symmetric(vertical: 16, horizontal: 18),
         ),
-        textStyle: const TextStyle(
-          fontFamily: 'JosefinSans',
-          fontWeight: FontWeight.w600,
-          fontSize: 16,
+        minimumSize: const WidgetStatePropertyAll(Size(0, 52)),
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadii.md),
+          ),
         ),
+        backgroundColor: const WidgetStatePropertyAll(ColorTheme.m3PrimaryDark),
+        foregroundColor: const WidgetStatePropertyAll(
+          ColorTheme.m3OnPrimaryDark,
+        ),
+        textStyle: WidgetStatePropertyAll(
+          TextThemes.darkTextTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        elevation: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) return 0;
+          if (states.contains(WidgetState.pressed)) return 0;
+          return 1;
+        }),
+        overlayColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.pressed)) {
+            return ColorTheme.m3OnPrimaryContainerDark.withOpacity(0.10);
+          }
+          if (states.contains(WidgetState.hovered) ||
+              states.contains(WidgetState.focused)) {
+            return ColorTheme.m3OnPrimaryContainerDark.withOpacity(0.06);
+          }
+          return null;
+        }),
       ),
     ),
 
     outlinedButtonTheme: OutlinedButtonThemeData(
-      style: OutlinedButton.styleFrom(
-        foregroundColor: ColorTheme.m3PrimaryDark,
-        side: const BorderSide(color: ColorTheme.m3OutlineDark),
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(_buttonRadius),
+      style: ButtonStyle(
+        padding: const WidgetStatePropertyAll(
+          EdgeInsets.symmetric(vertical: 16, horizontal: 18),
         ),
+        minimumSize: const WidgetStatePropertyAll(Size(0, 52)),
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadii.md),
+          ),
+        ),
+        foregroundColor: const WidgetStatePropertyAll(ColorTheme.m3PrimaryDark),
+        side: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.pressed)) {
+            return BorderSide(
+              color: ColorTheme.m3PrimaryDark.withOpacity(0.70),
+              width: 1.5,
+            );
+          }
+          return BorderSide(
+            color: ColorTheme.m3OutlineDark.withOpacity(0.55),
+            width: 1.25,
+          );
+        }),
+        textStyle: WidgetStatePropertyAll(
+          TextThemes.darkTextTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        overlayColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.pressed))
+            return ColorTheme.m3PrimaryDark.withOpacity(0.12);
+          if (states.contains(WidgetState.hovered) ||
+              states.contains(WidgetState.focused)) {
+            return ColorTheme.m3PrimaryDark.withOpacity(0.07);
+          }
+          return null;
+        }),
       ),
     ),
 
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: ColorTheme.m3SurfaceVariantDark.withOpacity(0.2),
-      contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+      fillColor: ColorTheme.m3SurfaceVariantDark.withOpacity(0.22),
+      contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+      floatingLabelBehavior: FloatingLabelBehavior.auto,
+
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(_defaultRadius),
-        borderSide: BorderSide.none,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        borderSide: BorderSide(
+          color: ColorTheme.m3OutlineDark.withOpacity(0.35),
+          width: 1,
+        ),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(_defaultRadius),
-        borderSide: BorderSide.none,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        borderSide: BorderSide(
+          color: ColorTheme.m3OutlineDark.withOpacity(0.35),
+          width: 1,
+        ),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(_defaultRadius),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
         borderSide: const BorderSide(
           color: ColorTheme.m3PrimaryDark,
-          width: 1.5,
+          width: 1.6,
         ),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(_defaultRadius),
-        borderSide: const BorderSide(color: ColorTheme.m3ErrorDark),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        borderSide: const BorderSide(color: ColorTheme.m3ErrorDark, width: 1.4),
       ),
-      labelStyle: const TextStyle(color: ColorTheme.m3OnSurfaceVariantDark),
-      hintStyle: TextStyle(
-        color: ColorTheme.m3OnSurfaceVariantDark.withOpacity(
-          0.8,
-        ), // Lebih terang
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        borderSide: const BorderSide(color: ColorTheme.m3ErrorDark, width: 1.6),
       ),
-      prefixIconColor: ColorTheme.m3OnSurfaceVariantDark,
-      suffixIconColor: ColorTheme.m3OnSurfaceVariantDark,
-    ),
 
-    cardTheme: CardThemeData(
-      color: ColorTheme.m3SurfaceVariantDark.withOpacity(0.3),
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(_defaultRadius),
-        side: BorderSide(color: ColorTheme.m3OutlineDark.withOpacity(0.2)),
+      labelStyle: TextThemes.darkTextTheme.bodyMedium?.copyWith(
+        color: ColorTheme.m3OnSurfaceVariantDark.withOpacity(0.90),
+        fontWeight: FontWeight.w600,
       ),
-    ),
+      hintStyle: TextThemes.darkTextTheme.bodyMedium?.copyWith(
+        color: ColorTheme.m3OnSurfaceVariantDark.withOpacity(0.65),
+        fontWeight: FontWeight.w500,
+      ),
 
-    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-      backgroundColor: ColorTheme.m3SurfaceDark,
-      selectedItemColor: ColorTheme.m3PrimaryDark,
-      unselectedItemColor: ColorTheme.m3OnSurfaceVariantDark,
-      type: BottomNavigationBarType.fixed,
+      prefixIconColor: ColorTheme.m3OnSurfaceVariantDark.withOpacity(0.80),
+      suffixIconColor: ColorTheme.m3OnSurfaceVariantDark.withOpacity(0.80),
     ),
 
     dialogTheme: DialogThemeData(
-      backgroundColor: ColorTheme.m3SurfaceContainerDark,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      backgroundColor: ColorTheme.m3SurfaceDark,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+      ),
+    ),
+
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      elevation: 6,
+      backgroundColor: ColorTheme.m3OnSurfaceDark,
+      contentTextStyle: TextThemes.darkTextTheme.bodyMedium?.copyWith(
+        color: ColorTheme.m3SurfaceDark,
+        fontWeight: FontWeight.w600,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+      ),
     ),
   );
 }
