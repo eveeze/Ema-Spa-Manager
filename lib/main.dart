@@ -1,4 +1,3 @@
-// lib/main.dart
 import 'package:emababyspa/common/constants/app_constants.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -8,20 +7,18 @@ import 'package:emababyspa/utils/app_routes.dart';
 import 'package:emababyspa/bindings/app_bindings.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 
-// ✅ localization
+// localization
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 
-// ✅ IMPORTANT: import ThemeController
+// IMPORTANT: ThemeController
 import 'package:emababyspa/features/theme/controllers/theme_controller.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   await GetStorage.init();
 
-  // ✅ INIT intl locale
   await initializeDateFormatting('id_ID', null);
   Intl.defaultLocale = 'id_ID';
 
@@ -35,32 +32,25 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Pastikan controller tersedia (AppBindings akan register, tapi ini aman)
     final ThemeController themeController =
         Get.isRegistered<ThemeController>()
             ? Get.find<ThemeController>()
             : Get.put(ThemeController(), permanent: true);
 
     return Obx(() {
-      // Opsional: kalau ada file yang “listen” forceRebuild, ini memastikan
-      // nilai terbaca sehingga Obx ikut rebuild saat trigger.
-      final _ = themeController.forceRebuild;
+      // ✅ HARUS Rx supaya Obx beneran rebuild
+      final _ = themeController.forceRebuildRx.value;
 
       return GetMaterialApp(
         title: 'Ema Spa Manager',
         debugShowCheckedModeBanner: false,
-
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
-
-        // ✅ SOURCE OF TRUTH: dari ThemeController (bukan hardcode)
         themeMode: themeController.themeMode,
-
         initialBinding: AppBindings(),
         initialRoute: AppRoutes.splash,
         getPages: AppRoutes.pages,
         defaultTransition: Transition.fadeIn,
-
         locale: const Locale('id', 'ID'),
         supportedLocales: const [Locale('id', 'ID'), Locale('en', 'US')],
         localizationsDelegates: const [

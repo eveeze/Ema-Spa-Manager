@@ -1,8 +1,6 @@
-// lib/common/layouts/main_layout.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:emababyspa/common/theme/color_theme.dart';
 import 'package:emababyspa/common/widgets/custom_bottom_navigation.dart';
 import 'package:emababyspa/features/theme/controllers/theme_controller.dart';
 import 'package:emababyspa/utils/app_routes.dart';
@@ -36,8 +34,6 @@ class MainLayout extends StatefulWidget {
     this.floatingActionButton,
     this.floatingActionButtonLocation,
   });
-
-  // --- NAMED CONSTRUCTORS ---
 
   factory MainLayout.dashboard({
     required Widget child,
@@ -81,7 +77,7 @@ class MainLayout extends StatefulWidget {
     String? title,
     List<Widget>? actions,
     bool showAppBar = true,
-    bool showBottomNavigation = true, // Added for flexibility
+    bool showBottomNavigation = true,
     Widget? floatingActionButton,
     FloatingActionButtonLocation? floatingActionButtonLocation,
   }) {
@@ -122,6 +118,7 @@ class MainLayout extends StatefulWidget {
 class _MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
   final RxInt selectedIndex = 0.obs;
   final RxBool isNavigating = false.obs;
+
   late ThemeController _themeController;
   late final List<NavItem> navigationItems;
 
@@ -141,8 +138,6 @@ class _MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
     '/account': 4,
   };
 
-  // ✨ --- PERBAIKAN --- ✨
-  // Menambahkan AppRoutes.staffEdit ke dalam map
   static const Map<String, String> _parentRouteMap = {
     AppRoutes.serviceManage: AppRoutes.services,
     AppRoutes.serviceForm: AppRoutes.services,
@@ -152,7 +147,7 @@ class _MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
     AppRoutes.serviceCategoryEdit: AppRoutes.services,
     AppRoutes.staffList: AppRoutes.services,
     AppRoutes.staffForm: AppRoutes.services,
-    AppRoutes.staffEdit: AppRoutes.services, // <-- BARIS INI DITAMBAHKAN
+    AppRoutes.staffEdit: AppRoutes.services,
     AppRoutes.timeSlotDetail: AppRoutes.schedule,
     AppRoutes.timeSlotEdit: AppRoutes.schedule,
     AppRoutes.sessionForm: AppRoutes.schedule,
@@ -166,7 +161,9 @@ class _MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
     _themeController = Get.find<ThemeController>();
+
     _initializeNavigationItems();
     _initializeCurrentRoute();
     _setupRouteListener();
@@ -181,15 +178,13 @@ class _MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
   @override
   void didChangePlatformBrightness() {
     super.didChangePlatformBrightness();
-    debugPrint('🌙 MainLayout: System brightness changed');
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _themeController.updateSystemBrightness();
-      }
+      if (mounted) _themeController.updateSystemBrightness();
     });
   }
 
   void _initializeNavigationItems() {
+    // ❌ JANGAN const (NavItem kamu bukan const)
     navigationItems = [
       NavItem(
         label: 'Dashboard',
@@ -219,23 +214,14 @@ class _MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
     ];
   }
 
-  // ✨ --- PERBAIKAN --- ✨
-  // Mengganti logika untuk menjadi lebih andal dengan menggunakan `Get.routing.current`.
   void _initializeCurrentRoute() {
-    // `Get.routing.current` memberikan pola rute (misal, '/staffs/edit/:id')
-    // yang cocok dengan kunci di `_parentRouteMap`.
     final String currentRoutePattern = Get.routing.current;
 
-    // Cek apakah rute saat ini ada di dalam map parent.
     String? routeToEvaluate = _parentRouteMap[currentRoutePattern];
-
-    // Jika tidak ditemukan di map, anggap rute itu adalah rute utama itu sendiri.
     routeToEvaluate ??= currentRoutePattern;
 
-    // Jika `parentRoute` di-passing secara eksplisit ke widget, itu menjadi prioritas utama.
     routeToEvaluate = widget.parentRoute ?? routeToEvaluate;
 
-    // Set `selectedIndex` berdasarkan rute final yang telah ditentukan.
     selectedIndex.value = _indexMap[routeToEvaluate] ?? 0;
   }
 
@@ -243,70 +229,51 @@ class _MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
     ever(selectedIndex, (int index) {});
   }
 
-  Color _getBackgroundColor() {
+  // ✅ Semua warna ambil dari Theme (M3) -> realtime & konsisten
+  Color _backgroundColor(BuildContext context) {
     if (widget.backgroundColor != null) return widget.backgroundColor!;
-    return _themeController.isDarkMode
-        ? ColorTheme.backgroundDark
-        : ColorTheme.background;
+    return Theme.of(context).colorScheme.surface;
   }
 
-  Color _getSurfaceColor() {
-    return _themeController.isDarkMode
-        ? ColorTheme.surfaceDark
-        : ColorTheme.surface;
+  Color _surfaceColor(BuildContext context) {
+    return Theme.of(context).colorScheme.surface;
   }
 
-  Color _getTextPrimaryColor() {
-    return _themeController.isDarkMode
-        ? ColorTheme.textPrimaryDark
-        : ColorTheme.textPrimary;
+  Color _primary(BuildContext context) {
+    return Theme.of(context).colorScheme.primary;
   }
 
-  Color _getTextSecondaryColor() {
-    return _themeController.isDarkMode
-        ? ColorTheme.textSecondaryDark
-        : ColorTheme.textSecondary;
+  Color _textPrimary(BuildContext context) {
+    return Theme.of(context).colorScheme.onSurface;
   }
 
-  Color _getPrimaryColor() {
-    return _themeController.isDarkMode
-        ? ColorTheme.primaryLightDark
-        : ColorTheme.primary;
+  Color _textSecondary(BuildContext context) {
+    return Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.72);
   }
 
-  Color _getErrorColor() {
-    return _themeController.isDarkMode
-        ? ColorTheme.errorDark
-        : ColorTheme.error;
-  }
+  SystemUiOverlayStyle _systemUi(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = _themeController.isDarkMode;
 
-  SystemUiOverlayStyle _getSystemUIOverlayStyle() {
     return SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
-      statusBarIconBrightness:
-          _themeController.isDarkMode ? Brightness.light : Brightness.dark,
-      statusBarBrightness:
-          _themeController.isDarkMode ? Brightness.dark : Brightness.light,
-      systemNavigationBarColor:
-          _themeController.isDarkMode
-              ? ColorTheme.surfaceDark
-              : ColorTheme.surface,
+      statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+      statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+      systemNavigationBarColor: cs.surface,
       systemNavigationBarIconBrightness:
-          _themeController.isDarkMode ? Brightness.light : Brightness.dark,
+          isDark ? Brightness.light : Brightness.dark,
+      systemNavigationBarDividerColor: cs.outlineVariant,
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      // Obx di sini untuk me-rebuild layout saat tema berubah
-      final isDarkMode = _themeController.isDarkMode;
-      final forceRebuild = _themeController.forceRebuild;
-      debugPrint(
-        '🌙 MainLayout rebuild: isDarkMode=$isDarkMode, forceRebuild=$forceRebuild',
-      );
+      // ✅ Cukup baca 1 Rx untuk “paksa” rebuild tiap theme change
+      _themeController.forceRebuildRx.value;
+
       return AnnotatedRegion<SystemUiOverlayStyle>(
-        value: _getSystemUIOverlayStyle(),
+        value: _systemUi(context),
         child: _buildMainScaffold(context),
       );
     });
@@ -314,51 +281,49 @@ class _MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
 
   Widget _buildMainScaffold(BuildContext context) {
     return Scaffold(
-      backgroundColor: _getBackgroundColor(),
-      appBar: _buildAppBar(),
+      backgroundColor: _backgroundColor(context),
+      appBar: _buildAppBar(context),
       body: _buildBody(context),
       bottomNavigationBar:
-          widget.showBottomNavigation ? _buildBottomNavigation() : null,
+          widget.showBottomNavigation ? _buildBottomNavigation(context) : null,
       floatingActionButton: widget.floatingActionButton,
       floatingActionButtonLocation: widget.floatingActionButtonLocation,
       resizeToAvoidBottomInset: true,
     );
   }
 
-  PreferredSizeWidget? _buildAppBar() {
+  PreferredSizeWidget? _buildAppBar(BuildContext context) {
     if (widget.customAppBar != null) return widget.customAppBar;
     if (!widget.showAppBar) return null;
+
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
     return AppBar(
       title:
           widget.appBarTitle != null
               ? Text(
                 widget.appBarTitle!,
-                style: TextStyle(
+                style: theme.textTheme.titleMedium?.copyWith(
                   fontFamily: 'JosefinSans',
-                  fontWeight: FontWeight.w600,
-                  color: _getTextPrimaryColor(),
+                  fontWeight: FontWeight.w700,
+                  color: _textPrimary(context),
                 ),
               )
               : null,
-      backgroundColor: _getSurfaceColor(),
+      backgroundColor: _surfaceColor(context),
       elevation: 0,
-      iconTheme: IconThemeData(color: _getTextPrimaryColor()),
+      iconTheme: IconThemeData(color: _textPrimary(context)),
       actions: widget.appBarActions,
       centerTitle: true,
       surfaceTintColor: Colors.transparent,
-      shadowColor:
-          _themeController.isDarkMode
-              ? Colors.transparent
-              : Colors.black.withValues(alpha: 0.1),
-      shape:
-          _themeController.isDarkMode
-              ? Border(
-                bottom: BorderSide(
-                  color: ColorTheme.borderDark.withValues(alpha: 0.3),
-                  width: 0.5,
-                ),
-              )
-              : null,
+      shadowColor: Colors.black.withValues(alpha: 0.06),
+      shape: Border(
+        bottom: BorderSide(
+          color: cs.outlineVariant.withValues(alpha: 0.45),
+          width: 0.5,
+        ),
+      ),
     );
   }
 
@@ -368,48 +333,32 @@ class _MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
     if (widget.enablePullToRefresh) {
       body = RefreshIndicator(
         onRefresh: _handleRefresh,
-        color: _getPrimaryColor(),
-        backgroundColor: _getSurfaceColor(),
+        color: _primary(context),
+        backgroundColor: _surfaceColor(context),
         child: body,
       );
     }
 
-    // Fix: Handle SafeArea properly based on AppBar presence
     body = SafeArea(
-      top:
-          !widget.showAppBar &&
-          widget.customAppBar == null, // Only apply top padding if no AppBar
+      top: !widget.showAppBar && widget.customAppBar == null,
       bottom: widget.showBottomNavigation,
       child: body,
     );
 
-    // Alternative approach - add manual padding if needed
-    /*
-  if (!widget.showAppBar && widget.customAppBar == null) {
-    body = Padding(
-      padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
-      child: body,
-    );
-  }
-  */
-
     return body;
   }
 
-  Widget _buildBottomNavigation() {
+  Widget _buildBottomNavigation(BuildContext context) {
     return Obx(() {
-      final isDarkMode = _themeController.isDarkMode;
-      final forceRebuild = _themeController.forceRebuild;
-      debugPrint(
-        '🌙 Bottom navigation rebuild: isDarkMode=$isDarkMode, forceRebuild=$forceRebuild',
-      );
+      _themeController.forceRebuildRx.value;
+
       return CustomBottomNavigation(
         items: navigationItems,
         currentIndex: selectedIndex.value,
-        onTap: _handleBottomNavTap,
-        backgroundColor: _getSurfaceColor(),
-        activeColor: _getPrimaryColor(),
-        inactiveColor: _getTextSecondaryColor(),
+        onTap: (i) => _handleBottomNavTap(context, i),
+        backgroundColor: _surfaceColor(context),
+        activeColor: _primary(context),
+        inactiveColor: _textSecondary(context),
         elevation: _themeController.isDarkMode ? 8 : 12,
         iconSize: 26,
         showLabels: true,
@@ -418,25 +367,21 @@ class _MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
     });
   }
 
-  void _handleBottomNavTap(int index) {
-    if (_themeController.isDarkMode) {
-      HapticFeedback.mediumImpact();
-    } else {
-      HapticFeedback.lightImpact();
-    }
+  void _handleBottomNavTap(BuildContext context, int index) {
+    HapticFeedback.selectionClick();
     try {
       _navigateToTab(index);
     } catch (e) {
       debugPrint('Navigation error in MainLayout: $e');
-      _showNavigationError();
+      _showNavigationError(context);
     }
   }
 
   Future<void> _navigateToTab(int index) async {
-    if (!_isValidIndex(index) || _isDuplicateNavigation(index)) {
-      return;
-    }
+    if (!_isValidIndex(index) || _isDuplicateNavigation(index)) return;
+
     isNavigating.value = true;
+
     try {
       selectedIndex.value = index;
       final targetRoute = _routeMap[index]!;
@@ -446,9 +391,7 @@ class _MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
       _revertToCurrentRoute();
     } finally {
       Future.delayed(const Duration(milliseconds: 300), () {
-        if (mounted) {
-          isNavigating.value = false;
-        }
+        if (mounted) isNavigating.value = false;
       });
     }
   }
@@ -486,21 +429,24 @@ class _MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
     }
   }
 
-  void _showNavigationError() {
+  void _showNavigationError(BuildContext context) {
     if (Get.isSnackbarOpen) return;
+
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
     Get.showSnackbar(
       GetSnackBar(
-        message: 'Navigation failed. Please try again.',
         duration: const Duration(seconds: 2),
-        backgroundColor: _getErrorColor(),
-        margin: const EdgeInsets.all(16),
-        borderRadius: 8,
-        isDismissible: true,
         snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+        backgroundColor: cs.error,
         messageText: Text(
           'Navigation failed. Please try again.',
-          style: TextStyle(
-            color: _themeController.isDarkMode ? Colors.black : Colors.white,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: cs.onError,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),
