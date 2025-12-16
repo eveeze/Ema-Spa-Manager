@@ -76,13 +76,13 @@ class AppRadii {
 class AppShadows {
   static List<BoxShadow> soft(Color c) => [
     BoxShadow(
-      color: c.withOpacity(0.08),
+      color: c.withValues(alpha: 0.08),
       blurRadius: 20,
       spreadRadius: 0,
       offset: const Offset(0, 10),
     ),
     BoxShadow(
-      color: c.withOpacity(0.05),
+      color: c.withValues(alpha: 0.05),
       blurRadius: 8,
       spreadRadius: 0,
       offset: const Offset(0, 3),
@@ -96,7 +96,6 @@ class AppTheme {
     brightness: Brightness.light,
     useMaterial3: true,
 
-    // “Premium feel” di Material 3
     splashFactory: InkSparkle.splashFactory,
     pageTransitionsTheme: const PageTransitionsTheme(
       builders: {
@@ -116,6 +115,13 @@ class AppTheme {
       onSecondary: ColorTheme.m3OnSecondary,
       secondaryContainer: ColorTheme.m3SecondaryContainer,
       onSecondaryContainer: ColorTheme.m3OnSecondaryContainer,
+
+      // ✅ NEW (aman): pink accent halus
+      tertiary: ColorTheme.m3Tertiary,
+      onTertiary: ColorTheme.m3OnTertiary,
+      tertiaryContainer: ColorTheme.m3TertiaryContainer,
+      onTertiaryContainer: ColorTheme.m3OnTertiaryContainer,
+
       error: ColorTheme.m3Error,
       onError: ColorTheme.m3OnError,
       errorContainer: ColorTheme.m3ErrorContainer,
@@ -130,13 +136,11 @@ class AppTheme {
 
     scaffoldBackgroundColor: ColorTheme.m3Background,
 
-    /// Typography
     textTheme: TextThemes.textTheme.apply(
       bodyColor: ColorTheme.m3OnSurface,
       displayColor: ColorTheme.m3OnSurface,
     ),
 
-    // ✅ add semantic colors extension + spacing
     extensions: const [
       AppSpacing(),
       AppSemanticColors(
@@ -172,13 +176,13 @@ class AppTheme {
     cardTheme: CardThemeData(
       color: ColorTheme.m3Surface,
       elevation: 1.5,
-      shadowColor: Colors.black.withOpacity(0.10),
+      shadowColor: Colors.black.withValues(alpha: 0.10),
       surfaceTintColor: Colors.transparent,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadii.lg),
         side: BorderSide(
-          color: ColorTheme.m3OutlineVariant.withOpacity(0.55),
+          color: ColorTheme.m3OutlineVariant.withValues(alpha: 0.55),
           width: 1,
         ),
       ),
@@ -188,7 +192,9 @@ class AppTheme {
     bottomNavigationBarTheme: BottomNavigationBarThemeData(
       backgroundColor: ColorTheme.m3Surface,
       selectedItemColor: ColorTheme.m3Primary,
-      unselectedItemColor: ColorTheme.m3OnSurfaceVariant.withOpacity(0.70),
+      unselectedItemColor: ColorTheme.m3OnSurfaceVariant.withValues(
+        alpha: 0.70,
+      ),
       selectedLabelStyle: const TextStyle(
         fontWeight: FontWeight.w700,
         fontSize: 12,
@@ -236,15 +242,15 @@ class AppTheme {
           return 2;
         }),
         shadowColor: WidgetStatePropertyAll(
-          ColorTheme.m3Primary.withOpacity(0.25),
+          ColorTheme.m3Primary.withValues(alpha: 0.25),
         ),
         overlayColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.pressed)) {
-            return ColorTheme.m3OnPrimary.withOpacity(0.10);
+            return ColorTheme.m3OnPrimary.withValues(alpha: 0.10);
           }
           if (states.contains(WidgetState.hovered) ||
               states.contains(WidgetState.focused)) {
-            return ColorTheme.m3OnPrimary.withOpacity(0.06);
+            return ColorTheme.m3OnPrimary.withValues(alpha: 0.06);
           }
           return null;
         }),
@@ -266,12 +272,12 @@ class AppTheme {
         side: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.pressed)) {
             return BorderSide(
-              color: ColorTheme.m3Primary.withOpacity(0.75),
+              color: ColorTheme.m3Primary.withValues(alpha: 0.75),
               width: 1.5,
             );
           }
           return BorderSide(
-            color: ColorTheme.m3OutlineVariant.withOpacity(0.95),
+            color: ColorTheme.m3OutlineVariant.withValues(alpha: 0.95),
             width: 1.25,
           );
         }),
@@ -283,11 +289,11 @@ class AppTheme {
         ),
         overlayColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.pressed)) {
-            return ColorTheme.m3Primary.withOpacity(0.10);
+            return ColorTheme.m3Primary.withValues(alpha: 0.10);
           }
           if (states.contains(WidgetState.hovered) ||
               states.contains(WidgetState.focused)) {
-            return ColorTheme.m3Primary.withOpacity(0.06);
+            return ColorTheme.m3Primary.withValues(alpha: 0.06);
           }
           return null;
         }),
@@ -312,11 +318,11 @@ class AppTheme {
         ),
         overlayColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.pressed)) {
-            return ColorTheme.m3Primary.withOpacity(0.10);
+            return ColorTheme.m3Primary.withValues(alpha: 0.10);
           }
           if (states.contains(WidgetState.hovered) ||
               states.contains(WidgetState.focused)) {
-            return ColorTheme.m3Primary.withOpacity(0.06);
+            return ColorTheme.m3Primary.withValues(alpha: 0.06);
           }
           return null;
         }),
@@ -325,21 +331,21 @@ class AppTheme {
 
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: ColorTheme.m3SurfaceVariant.withOpacity(0.28),
+      fillColor: ColorTheme.m3SurfaceVariant.withValues(alpha: 0.28),
       contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
       floatingLabelBehavior: FloatingLabelBehavior.auto,
       isDense: false,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadii.lg),
         borderSide: BorderSide(
-          color: ColorTheme.m3OutlineVariant.withOpacity(0.55),
+          color: ColorTheme.m3OutlineVariant.withValues(alpha: 0.55),
           width: 1,
         ),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadii.lg),
         borderSide: BorderSide(
-          color: ColorTheme.m3OutlineVariant.withOpacity(0.55),
+          color: ColorTheme.m3OutlineVariant.withValues(alpha: 0.55),
           width: 1,
         ),
       ),
@@ -356,15 +362,15 @@ class AppTheme {
         borderSide: const BorderSide(color: ColorTheme.m3Error, width: 1.6),
       ),
       labelStyle: TextThemes.textTheme.bodyMedium?.copyWith(
-        color: ColorTheme.m3OnSurfaceVariant.withOpacity(0.85),
+        color: ColorTheme.m3OnSurfaceVariant.withValues(alpha: 0.85),
         fontWeight: FontWeight.w600,
       ),
       hintStyle: TextThemes.textTheme.bodyMedium?.copyWith(
-        color: ColorTheme.m3OnSurfaceVariant.withOpacity(0.60),
+        color: ColorTheme.m3OnSurfaceVariant.withValues(alpha: 0.60),
         fontWeight: FontWeight.w500,
       ),
-      prefixIconColor: ColorTheme.m3OnSurfaceVariant.withOpacity(0.80),
-      suffixIconColor: ColorTheme.m3OnSurfaceVariant.withOpacity(0.80),
+      prefixIconColor: ColorTheme.m3OnSurfaceVariant.withValues(alpha: 0.80),
+      suffixIconColor: ColorTheme.m3OnSurfaceVariant.withValues(alpha: 0.80),
     ),
 
     dialogTheme: DialogThemeData(
@@ -378,12 +384,12 @@ class AppTheme {
         color: ColorTheme.m3OnSurface,
       ),
       contentTextStyle: TextThemes.textTheme.bodyMedium?.copyWith(
-        color: ColorTheme.m3OnSurfaceVariant.withOpacity(0.90),
+        color: ColorTheme.m3OnSurfaceVariant.withValues(alpha: 0.90),
       ),
     ),
 
     listTileTheme: ListTileThemeData(
-      iconColor: ColorTheme.m3OnSurfaceVariant.withOpacity(0.85),
+      iconColor: ColorTheme.m3OnSurfaceVariant.withValues(alpha: 0.85),
       textColor: ColorTheme.m3OnSurface,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       shape: RoundedRectangleBorder(
@@ -435,6 +441,13 @@ class AppTheme {
       onSecondary: ColorTheme.m3OnSecondaryDark,
       secondaryContainer: ColorTheme.m3SecondaryContainerDark,
       onSecondaryContainer: ColorTheme.m3OnSecondaryContainerDark,
+
+      // ✅ NEW (aman)
+      tertiary: ColorTheme.m3TertiaryDark,
+      onTertiary: ColorTheme.m3OnTertiaryDark,
+      tertiaryContainer: ColorTheme.m3TertiaryContainerDark,
+      onTertiaryContainer: ColorTheme.m3OnTertiaryContainerDark,
+
       error: ColorTheme.m3ErrorDark,
       onError: ColorTheme.m3OnErrorDark,
       surface: ColorTheme.m3SurfaceDark,
@@ -447,7 +460,6 @@ class AppTheme {
     scaffoldBackgroundColor: ColorTheme.m3BackgroundDark,
     textTheme: TextThemes.darkTextTheme,
 
-    // ✅ add semantic colors extension + spacing
     extensions: const [
       AppSpacing(),
       AppSemanticColors(
@@ -474,14 +486,14 @@ class AppTheme {
     ),
 
     cardTheme: CardThemeData(
-      color: ColorTheme.m3SurfaceVariantDark.withOpacity(0.22),
+      color: ColorTheme.m3SurfaceVariantDark.withValues(alpha: 0.22),
       elevation: 0,
       surfaceTintColor: Colors.transparent,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadii.lg),
         side: BorderSide(
-          color: ColorTheme.m3OutlineDark.withOpacity(0.22),
+          color: ColorTheme.m3OutlineDark.withValues(alpha: 0.22),
           width: 1,
         ),
       ),
@@ -491,7 +503,9 @@ class AppTheme {
     bottomNavigationBarTheme: BottomNavigationBarThemeData(
       backgroundColor: ColorTheme.m3SurfaceDark,
       selectedItemColor: ColorTheme.m3PrimaryDark,
-      unselectedItemColor: ColorTheme.m3OnSurfaceVariantDark.withOpacity(0.70),
+      unselectedItemColor: ColorTheme.m3OnSurfaceVariantDark.withValues(
+        alpha: 0.70,
+      ),
       type: BottomNavigationBarType.fixed,
       elevation: 10,
     ),
@@ -533,11 +547,11 @@ class AppTheme {
         }),
         overlayColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.pressed)) {
-            return ColorTheme.m3OnPrimaryContainerDark.withOpacity(0.10);
+            return ColorTheme.m3OnPrimaryContainerDark.withValues(alpha: 0.10);
           }
           if (states.contains(WidgetState.hovered) ||
               states.contains(WidgetState.focused)) {
-            return ColorTheme.m3OnPrimaryContainerDark.withOpacity(0.06);
+            return ColorTheme.m3OnPrimaryContainerDark.withValues(alpha: 0.06);
           }
           return null;
         }),
@@ -559,12 +573,12 @@ class AppTheme {
         side: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.pressed)) {
             return BorderSide(
-              color: ColorTheme.m3PrimaryDark.withOpacity(0.70),
+              color: ColorTheme.m3PrimaryDark.withValues(alpha: 0.70),
               width: 1.5,
             );
           }
           return BorderSide(
-            color: ColorTheme.m3OutlineDark.withOpacity(0.55),
+            color: ColorTheme.m3OutlineDark.withValues(alpha: 0.55),
             width: 1.25,
           );
         }),
@@ -575,11 +589,11 @@ class AppTheme {
         ),
         overlayColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.pressed)) {
-            return ColorTheme.m3PrimaryDark.withOpacity(0.12);
+            return ColorTheme.m3PrimaryDark.withValues(alpha: 0.12);
           }
           if (states.contains(WidgetState.hovered) ||
               states.contains(WidgetState.focused)) {
-            return ColorTheme.m3PrimaryDark.withOpacity(0.07);
+            return ColorTheme.m3PrimaryDark.withValues(alpha: 0.07);
           }
           return null;
         }),
@@ -588,20 +602,20 @@ class AppTheme {
 
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: ColorTheme.m3SurfaceVariantDark.withOpacity(0.22),
+      fillColor: ColorTheme.m3SurfaceVariantDark.withValues(alpha: 0.22),
       contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
       floatingLabelBehavior: FloatingLabelBehavior.auto,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadii.lg),
         borderSide: BorderSide(
-          color: ColorTheme.m3OutlineDark.withOpacity(0.35),
+          color: ColorTheme.m3OutlineDark.withValues(alpha: 0.35),
           width: 1,
         ),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadii.lg),
         borderSide: BorderSide(
-          color: ColorTheme.m3OutlineDark.withOpacity(0.35),
+          color: ColorTheme.m3OutlineDark.withValues(alpha: 0.35),
           width: 1,
         ),
       ),
@@ -621,15 +635,19 @@ class AppTheme {
         borderSide: const BorderSide(color: ColorTheme.m3ErrorDark, width: 1.6),
       ),
       labelStyle: TextThemes.darkTextTheme.bodyMedium?.copyWith(
-        color: ColorTheme.m3OnSurfaceVariantDark.withOpacity(0.90),
+        color: ColorTheme.m3OnSurfaceVariantDark.withValues(alpha: 0.90),
         fontWeight: FontWeight.w600,
       ),
       hintStyle: TextThemes.darkTextTheme.bodyMedium?.copyWith(
-        color: ColorTheme.m3OnSurfaceVariantDark.withOpacity(0.65),
+        color: ColorTheme.m3OnSurfaceVariantDark.withValues(alpha: 0.65),
         fontWeight: FontWeight.w500,
       ),
-      prefixIconColor: ColorTheme.m3OnSurfaceVariantDark.withOpacity(0.80),
-      suffixIconColor: ColorTheme.m3OnSurfaceVariantDark.withOpacity(0.80),
+      prefixIconColor: ColorTheme.m3OnSurfaceVariantDark.withValues(
+        alpha: 0.80,
+      ),
+      suffixIconColor: ColorTheme.m3OnSurfaceVariantDark.withValues(
+        alpha: 0.80,
+      ),
     ),
 
     dialogTheme: DialogThemeData(
@@ -656,8 +674,9 @@ class AppTheme {
     checkboxTheme: CheckboxThemeData(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
       fillColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected))
+        if (states.contains(WidgetState.selected)) {
           return ColorTheme.m3PrimaryDark;
+        }
         return null;
       }),
     ),

@@ -235,8 +235,8 @@ class AppTextField extends StatelessWidget {
           BoxShadow(
             color:
                 isDark
-                    ? Colors.black.withOpacity(0.4)
-                    : ColorTheme.primary.withOpacity(0.08),
+                    ? Colors.black.withValues(alpha: 0.4)
+                    : ColorTheme.primary.withValues(alpha: 0.08),
             blurRadius: isDark ? 6 : 8,
             offset: const Offset(0, 2),
           ),
@@ -256,11 +256,11 @@ class AppTextField extends StatelessWidget {
   Color _getFillColor(bool isDark) {
     if (!enabled) {
       return isDark
-          ? ColorTheme.surfaceDark.withOpacity(0.3)
-          : ColorTheme.surface.withOpacity(0.5);
+          ? ColorTheme.surfaceDark.withValues(alpha: 0.3)
+          : ColorTheme.surface.withValues(alpha: 0.5);
     } else if (readOnly) {
       return isDark
-          ? ColorTheme.surfaceDark.withOpacity(0.7)
+          ? ColorTheme.surfaceDark.withValues(alpha: 0.7)
           : ColorTheme.surfaceAlt;
     } else {
       return isDark ? ColorTheme.surfaceDark : Colors.white;
@@ -302,8 +302,8 @@ class AppTextField extends StatelessWidget {
     fontWeight: FontWeight.w400,
     color:
         isDark
-            ? ColorTheme.textTertiaryDark.withOpacity(0.8)
-            : ColorTheme.textTertiary.withOpacity(0.8),
+            ? ColorTheme.textTertiaryDark.withValues(alpha: 0.8)
+            : ColorTheme.textTertiary.withValues(alpha: 0.8),
     fontFamily: 'JosefinSans',
   );
 
@@ -349,8 +349,8 @@ class AppTextField extends StatelessWidget {
     height: 1.5,
     color:
         isDark
-            ? ColorTheme.textTertiaryDark.withOpacity(0.7)
-            : ColorTheme.textTertiary.withOpacity(0.7),
+            ? ColorTheme.textTertiaryDark.withValues(alpha: 0.7)
+            : ColorTheme.textTertiary.withValues(alpha: 0.7),
     fontFamily: 'JosefinSans',
   );
 
@@ -372,17 +372,17 @@ class AppTextField extends StatelessWidget {
   );
 
   Color _getErrorColor(bool isDark) =>
-      isDark ? ColorTheme.errorDark.withOpacity(0.9) : ColorTheme.error;
+      isDark ? ColorTheme.errorDark.withValues(alpha: 0.9) : ColorTheme.error;
 
   Color _getErrorBackgroundColor(bool isDark) =>
       isDark
-          ? ColorTheme.errorDark.withOpacity(0.15)
-          : ColorTheme.error.withOpacity(0.08);
+          ? ColorTheme.errorDark.withValues(alpha: 0.15)
+          : ColorTheme.error.withValues(alpha: 0.08);
 
   Color _getErrorBorderColor(bool isDark) =>
       isDark
-          ? ColorTheme.errorDark.withOpacity(0.3)
-          : ColorTheme.error.withOpacity(0.2);
+          ? ColorTheme.errorDark.withValues(alpha: 0.3)
+          : ColorTheme.error.withValues(alpha: 0.2);
 
   EdgeInsets _getContentPadding() =>
       const EdgeInsets.symmetric(horizontal: 18, vertical: 16);

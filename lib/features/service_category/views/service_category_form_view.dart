@@ -159,7 +159,7 @@ class _Header extends StatelessWidget {
             width: spacing.xxl * 3.2,
             height: spacing.xxl * 3.2,
             decoration: BoxDecoration(
-              color: cs.primary.withOpacity(0.12),
+              color: cs.primary.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
           ),
@@ -171,7 +171,7 @@ class _Header extends StatelessWidget {
             width: spacing.xxl * 3.8,
             height: spacing.xxl * 3.8,
             decoration: BoxDecoration(
-              color: cs.primary.withOpacity(0.06),
+              color: cs.primary.withValues(alpha: 0.06),
               shape: BoxShape.circle,
             ),
           ),
@@ -181,7 +181,9 @@ class _Header extends StatelessWidget {
           decoration: BoxDecoration(
             color: cs.surface,
             borderRadius: BorderRadius.circular(AppRadii.xl),
-            border: Border.all(color: cs.outlineVariant.withOpacity(0.65)),
+            border: Border.all(
+              color: cs.outlineVariant.withValues(alpha: 0.65),
+            ),
             boxShadow: AppShadows.soft(cs.shadow),
           ),
           child: Row(
@@ -193,14 +195,14 @@ class _Header extends StatelessWidget {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      cs.primary.withOpacity(0.22),
-                      cs.primary.withOpacity(0.08),
+                      cs.primary.withValues(alpha: 0.22),
+                      cs.primary.withValues(alpha: 0.08),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(AppRadii.lg),
-                  border: Border.all(color: cs.primary.withOpacity(0.28)),
+                  border: Border.all(color: cs.primary.withValues(alpha: 0.28)),
                 ),
                 child: Icon(icon, color: cs.primary, size: spacing.xl),
               ),
@@ -221,7 +223,7 @@ class _Header extends StatelessWidget {
                     Text(
                       subtitle,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: cs.onBackground.withOpacity(0.72),
+                        color: cs.onBackground.withValues(alpha: 0.72),
                         fontWeight: FontWeight.w700,
                         height: 1.35,
                       ),
@@ -269,7 +271,7 @@ class _FormCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.surface,
         borderRadius: BorderRadius.circular(AppRadii.xl),
-        border: Border.all(color: cs.outlineVariant.withOpacity(0.65)),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.65)),
         boxShadow: AppShadows.soft(cs.shadow),
       ),
       child: Form(
@@ -357,7 +359,7 @@ class _SectionTitle extends StatelessWidget {
           height: spacing.xl,
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [cs.primary, cs.primary.withOpacity(0.65)],
+              colors: [cs.primary, cs.primary.withValues(alpha: 0.65)],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
             ),

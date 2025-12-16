@@ -1,3 +1,4 @@
+// lib/common/theme/color_theme.dart
 import 'package:flutter/material.dart';
 
 class ColorTheme {
@@ -17,12 +18,8 @@ class ColorTheme {
 
   // IMPROVED TEXT COLORS - Better visibility for light mode
   static const Color textPrimary = Color(0xFF1A1C1E);
-  static const Color textSecondary = Color(
-    0xFF1A1C1E,
-  ); // Sama seperti textPrimary, bedanya di weight
-  static const Color textTertiary = Color(
-    0xFF1A1C1E,
-  ); // Sama seperti textPrimary, bedanya di weight
+  static const Color textSecondary = Color(0xFF1A1C1E);
+  static const Color textTertiary = Color(0xFF1A1C1E);
   static const Color textInverse = Color(0xFFFFFFFF);
 
   static const Color border = Color(0xFFDEE2E6);
@@ -76,16 +73,26 @@ class ColorTheme {
   static const Color surfaceBrightDark = Color(0xFF424242);
   static const Color surfaceDimDark = Color(0xFF121212);
 
-  // M3 Light Palette - IMPROVED VARIANTS
-  static const Color m3Primary = Color(0xFF006782);
+  // =========================
+  // M3 Light Palette - BABY SPA SKY (UPDATED)
+  // =========================
+  // Primary = soft sky-blue yang lebih “airy”
+  static const Color m3Primary = Color(0xFF1B8ED6);
   static const Color m3OnPrimary = Color(0xFFFFFFFF);
-  static const Color m3PrimaryContainer = Color(0xFFBDE9FF);
-  static const Color m3OnPrimaryContainer = Color(0xFF001F29);
+  static const Color m3PrimaryContainer = Color(0xFFD7F0FF);
+  static const Color m3OnPrimaryContainer = Color(0xFF001E2D);
 
-  static const Color m3Secondary = Color(0xFF4C626B);
+  // Secondary = muted slate-blue (lebih calm)
+  static const Color m3Secondary = Color(0xFF4B6676);
   static const Color m3OnSecondary = Color(0xFFFFFFFF);
-  static const Color m3SecondaryContainer = Color(0xFFCFE6F1);
-  static const Color m3OnSecondaryContainer = Color(0xFF071E26);
+  static const Color m3SecondaryContainer = Color(0xFFD7ECF8);
+  static const Color m3OnSecondaryContainer = Color(0xFF061E28);
+
+  // ✅ NEW: Tertiary = blush pink accent (aman karena baru)
+  static const Color m3Tertiary = Color(0xFFB93B78);
+  static const Color m3OnTertiary = Color(0xFFFFFFFF);
+  static const Color m3TertiaryContainer = Color(0xFFFFD8EA);
+  static const Color m3OnTertiaryContainer = Color(0xFF3B001E);
 
   static const Color m3Error = Color(0xFFBA1A1A);
   static const Color m3OnError = Color(0xFFFFFFFF);
@@ -93,37 +100,46 @@ class ColorTheme {
   static const Color m3OnErrorContainer = Color(0xFF410002);
 
   static const Color m3Background = Color(0xFFFBFCFD);
-  static const Color m3OnBackground = Color(0xFF191C1E);
+  static const Color m3OnBackground = Color(0xFF141A1F);
   static const Color m3Surface = Color(0xFFFBFCFD);
-  static const Color m3OnSurface = Color(0xFF191C1E);
+  static const Color m3OnSurface = Color(0xFF141A1F);
 
-  static const Color m3SurfaceVariant = Color(0xFFDCE4E8);
+  static const Color m3SurfaceVariant = Color(0xFFE3EDF5);
 
-  // ✅ FIX: harus muted, jangan sama dengan onSurface
-  static const Color m3OnSurfaceVariant = Color(0xFF40484B);
+  // muted
+  static const Color m3OnSurfaceVariant = Color(0xFF3B4953);
 
-  // ✅ FIX: outline jangan gelap banget
-  static const Color m3Outline = Color(0xFF6F797D);
+  static const Color m3Outline = Color(0xFF6D7E89);
+  static const Color m3OutlineVariant = Color(0xFFC6D4DD);
 
-  static const Color m3OutlineVariant = Color(0xFFC0C8CC);
+  // =========================
+  // M3 Dark Palette - BABY SPA NIGHT (UPDATED)
+  // =========================
+  static const Color m3PrimaryDark = Color(0xFF74D0FF);
+  static const Color m3OnPrimaryDark = Color(0xFF003549);
+  static const Color m3PrimaryContainerDark = Color(0xFF004C67);
+  static const Color m3OnPrimaryContainerDark = Color(0xFFD7F0FF);
 
-  // M3 Dark Palette
-  static const Color m3PrimaryDark = Color(0xFF65D2FF);
-  static const Color m3OnPrimaryDark = Color(0xFF003545);
-  static const Color m3PrimaryContainerDark = Color(0xFF004D63);
-  static const Color m3OnPrimaryContainerDark = Color(0xFFBDE9FF);
-  static const Color m3SecondaryDark = Color(0xFFB4CAD5);
-  static const Color m3OnSecondaryDark = Color(0xFF1E333C);
-  static const Color m3SecondaryContainerDark = Color(0xFF354A53);
-  static const Color m3OnSecondaryContainerDark = Color(0xFFCFE6F1);
+  static const Color m3SecondaryDark = Color(0xFFB3CAD6);
+  static const Color m3OnSecondaryDark = Color(0xFF1D333C);
+  static const Color m3SecondaryContainerDark = Color(0xFF344A54);
+  static const Color m3OnSecondaryContainerDark = Color(0xFFD7ECF8);
+
+  // ✅ NEW: Tertiary dark
+  static const Color m3TertiaryDark = Color(0xFFFFAFD4);
+  static const Color m3OnTertiaryDark = Color(0xFF5C0030);
+  static const Color m3TertiaryContainerDark = Color(0xFF7A174B);
+  static const Color m3OnTertiaryContainerDark = Color(0xFFFFD8EA);
+
   static const Color m3ErrorDark = Color(0xFFFFB4AB);
   static const Color m3OnErrorDark = Color(0xFF690005);
-  static const Color m3BackgroundDark = Color(0xFF191C1E);
-  static const Color m3OnBackgroundDark = Color(0xFFE1E2E4);
-  static const Color m3SurfaceDark = Color(0xFF191C1E);
-  static const Color m3OnSurfaceDark = Color(0xFFE1E2E4);
-  static const Color m3SurfaceVariantDark = Color(0xFF40484C);
-  static const Color m3OnSurfaceVariantDark = Color(0xFFC0C8CC);
-  static const Color m3OutlineDark = Color(0xFF8A9296);
+  static const Color m3BackgroundDark = Color(0xFF0F1418);
+  static const Color m3OnBackgroundDark = Color(0xFFE6EDF3);
+  static const Color m3SurfaceDark = Color(0xFF0F1418);
+  static const Color m3OnSurfaceDark = Color(0xFFE6EDF3);
+  static const Color m3SurfaceVariantDark = Color(0xFF2A3840);
+  static const Color m3OnSurfaceVariantDark = Color(0xFFB8C9D4);
+  static const Color m3OutlineDark = Color(0xFF80919C);
+
   static const Color m3SurfaceContainerDark = Color(0xFF2A2A2A);
 }

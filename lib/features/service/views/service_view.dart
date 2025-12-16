@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:emababyspa/common/layouts/main_layout.dart';
+import 'package:emababyspa/common/theme/app_theme.dart';
 import 'package:emababyspa/common/widgets/empty_state_widget.dart';
 import 'package:emababyspa/features/service/controllers/service_controller.dart';
 
@@ -12,7 +13,7 @@ class ServiceView extends GetView<ServiceController> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs = theme.colorScheme;
+    final sp = theme.extension<AppSpacing>() ?? const AppSpacing();
 
     return MainLayout(
       showBottomNavigation: true,
@@ -46,12 +47,11 @@ class ServiceView extends GetView<ServiceController> {
           );
         }
 
-        // ✅ Mirip DashboardView: ScrollView + padding 24
         return SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(
             parent: ClampingScrollPhysics(),
           ),
-          padding: const EdgeInsets.all(24.0),
+          padding: EdgeInsets.all(sp.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -59,12 +59,12 @@ class ServiceView extends GetView<ServiceController> {
                 duration: const Duration(milliseconds: 520),
                 child: _buildStatsSection(context),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: sp.lg),
               _buildAnimatedSection(
                 duration: const Duration(milliseconds: 620),
                 child: _buildManagementSection(context),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: sp.lg),
             ],
           ),
         );
@@ -79,43 +79,40 @@ class ServiceView extends GetView<ServiceController> {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final tt = theme.textTheme;
+    final sp = theme.extension<AppSpacing>() ?? const AppSpacing();
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(sp.lg),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 420),
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: theme.cardColor,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: cs.outlineVariant.withOpacity(0.7)),
-              boxShadow: [
-                BoxShadow(
-                  color: theme.shadowColor.withOpacity(0.08),
-                  blurRadius: 18,
-                  offset: const Offset(0, 10),
-                ),
-              ],
+              color: cs.surface,
+              borderRadius: BorderRadius.circular(AppRadii.xl),
+              border: Border.all(
+                color: cs.outlineVariant.withValues(alpha: 0.70),
+              ),
+              boxShadow: AppShadows.soft(cs.shadow),
             ),
             child: Padding(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(sp.lg),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   SizedBox(
-                    width: 44,
-                    height: 44,
+                    width: sp.xl + sp.sm, // ~46
+                    height: sp.xl + sp.sm,
                     child: CircularProgressIndicator(
                       strokeWidth: 3,
                       valueColor: AlwaysStoppedAnimation<Color>(cs.primary),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: sp.md),
                   Text(
                     'Memuat data layanan...',
                     style: tt.bodyMedium?.copyWith(
-                      color: cs.onSurface.withOpacity(0.78),
+                      color: cs.onSurface.withValues(alpha: 0.78),
                       fontWeight: FontWeight.w600,
                     ),
                     textAlign: TextAlign.center,
@@ -165,21 +162,22 @@ class ServiceView extends GetView<ServiceController> {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final tt = theme.textTheme;
+    final sp = theme.extension<AppSpacing>() ?? const AppSpacing();
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
+      padding: EdgeInsets.fromLTRB(sp.xxs, 0, sp.xxs, sp.sm),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             width: 6,
-            height: 26,
+            height: sp.xxl * 0.6, // ~26
             decoration: BoxDecoration(
               color: cs.primary,
               borderRadius: BorderRadius.circular(99),
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: sp.sm),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -188,7 +186,7 @@ class ServiceView extends GetView<ServiceController> {
                   children: [
                     if (icon != null) ...[
                       Icon(icon, size: 18, color: cs.primary),
-                      const SizedBox(width: 8),
+                      SizedBox(width: sp.xs),
                     ],
                     Expanded(
                       child: Text(
@@ -202,11 +200,11 @@ class ServiceView extends GetView<ServiceController> {
                   ],
                 ),
                 if (subtitle != null) ...[
-                  const SizedBox(height: 6),
+                  SizedBox(height: sp.xxs),
                   Text(
                     subtitle,
                     style: tt.bodyMedium?.copyWith(
-                      color: cs.onSurface.withOpacity(0.78),
+                      color: cs.onSurface.withValues(alpha: 0.78),
                       height: 1.35,
                       fontWeight: FontWeight.w600,
                     ),
@@ -225,6 +223,8 @@ class ServiceView extends GetView<ServiceController> {
   // =========================
   Widget _buildStatsSection(BuildContext context) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final sp = theme.extension<AppSpacing>() ?? const AppSpacing();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -246,7 +246,7 @@ class ServiceView extends GetView<ServiceController> {
                   children: [
                     Expanded(
                       child: Padding(
-                        padding: const EdgeInsets.only(right: 8, bottom: 6),
+                        padding: EdgeInsets.only(right: sp.sm, bottom: sp.xxs),
                         child: Obx(
                           () => _buildStatCard(
                             context,
@@ -263,7 +263,7 @@ class ServiceView extends GetView<ServiceController> {
                     ),
                     Expanded(
                       child: Padding(
-                        padding: const EdgeInsets.only(right: 8, top: 6),
+                        padding: EdgeInsets.only(right: sp.sm, top: sp.xxs),
                         child: Obx(
                           () => _buildStatCard(
                             context,
@@ -284,7 +284,7 @@ class ServiceView extends GetView<ServiceController> {
               Expanded(
                 flex: 4,
                 child: Padding(
-                  padding: const EdgeInsets.only(left: 8),
+                  padding: EdgeInsets.only(left: sp.sm),
                   child: Obx(
                     () => _buildStatCard(
                       context,
@@ -302,8 +302,11 @@ class ServiceView extends GetView<ServiceController> {
             ],
           ),
         ),
-        const SizedBox(height: 8),
-        Divider(height: 24, color: theme.dividerColor.withOpacity(0.6)),
+        SizedBox(height: sp.xxs),
+        Divider(
+          height: sp.lg,
+          color: cs.outlineVariant.withValues(alpha: 0.60),
+        ),
       ],
     );
   }
@@ -324,9 +327,11 @@ class ServiceView extends GetView<ServiceController> {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final tt = theme.textTheme;
+    final sp = theme.extension<AppSpacing>() ?? const AppSpacing();
+
     final w = MediaQuery.of(context).size.width;
 
-    final padding = isCompact ? 14.0 : 16.0;
+    final padding = isCompact ? sp.sm : sp.md;
     final countSize =
         isCompact ? (w > 360 ? 20.0 : 18.0) : (w > 360 ? 32.0 : 28.0);
 
@@ -344,24 +349,24 @@ class ServiceView extends GetView<ServiceController> {
           colors: [cs.primary, cs.secondary],
         );
         fg = cs.onPrimary;
-        fgSoft = cs.onPrimary.withOpacity(0.90);
+        fgSoft = cs.onPrimary.withValues(alpha: 0.90);
         break;
 
       case CardType.accent:
         gradient = LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [cs.secondary, cs.primary.withOpacity(0.90)],
+          colors: [cs.secondary, cs.primary.withValues(alpha: 0.90)],
         );
         fg = cs.onSecondary;
-        fgSoft = cs.onSecondary.withOpacity(0.90);
+        fgSoft = cs.onSecondary.withValues(alpha: 0.90);
         break;
 
       case CardType.secondary:
-        solid = theme.cardColor;
+        solid = cs.surface;
         fg = cs.onSurface;
-        fgSoft = cs.onSurface.withOpacity(0.78);
-        border = Border.all(color: cs.outlineVariant.withOpacity(0.65));
+        fgSoft = cs.onSurface.withValues(alpha: 0.78);
+        border = Border.all(color: cs.outlineVariant.withValues(alpha: 0.65));
         break;
     }
 
@@ -369,15 +374,9 @@ class ServiceView extends GetView<ServiceController> {
       decoration: BoxDecoration(
         color: gradient == null ? solid : null,
         gradient: gradient,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
         border: border,
-        boxShadow: [
-          BoxShadow(
-            color: theme.shadowColor.withOpacity(0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 10),
-          ),
-        ],
+        boxShadow: AppShadows.soft(cs.shadow),
       ),
       child: Padding(
         padding: EdgeInsets.all(padding),
@@ -388,9 +387,10 @@ class ServiceView extends GetView<ServiceController> {
               child: Builder(
                 builder: (_) {
                   if (isLoading) {
+                    final s = isCompact ? sp.md : sp.lg;
                     return SizedBox(
-                      width: isCompact ? 20 : 24,
-                      height: isCompact ? 20 : 24,
+                      width: s,
+                      height: s,
                       child: CircularProgressIndicator(
                         strokeWidth: 3,
                         valueColor: AlwaysStoppedAnimation<Color>(
@@ -403,17 +403,17 @@ class ServiceView extends GetView<ServiceController> {
                   if (hasError) {
                     return InkWell(
                       onTap: onRetry,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadii.sm),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 8,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: sp.sm,
+                          vertical: sp.xs,
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(Icons.refresh_rounded, size: 16, color: fg),
-                            const SizedBox(width: 8),
+                            SizedBox(width: sp.xs),
                             Text(
                               'Coba lagi',
                               style: tt.labelLarge?.copyWith(
@@ -464,6 +464,8 @@ class ServiceView extends GetView<ServiceController> {
   // MANAGEMENT SECTION
   // =========================
   Widget _buildManagementSection(BuildContext context) {
+    final sp = Theme.of(context).extension<AppSpacing>() ?? const AppSpacing();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -480,7 +482,7 @@ class ServiceView extends GetView<ServiceController> {
           imagePath: 'assets/icons/service.png',
           onTap: controller.navigateToManageServices,
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: sp.sm),
         _buildManagementCard(
           context,
           title: 'Kelola Staf',
@@ -488,7 +490,7 @@ class ServiceView extends GetView<ServiceController> {
           imagePath: 'assets/icons/staff.png',
           onTap: controller.navigateToManageStaff,
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: sp.sm),
         _buildManagementCard(
           context,
           title: 'Kelola Kategori',
@@ -510,27 +512,24 @@ class ServiceView extends GetView<ServiceController> {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final tt = theme.textTheme;
+    final sp = theme.extension<AppSpacing>() ?? const AppSpacing();
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: theme.cardColor,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: cs.outlineVariant.withOpacity(0.65)),
-            boxShadow: [
-              BoxShadow(
-                color: theme.shadowColor.withOpacity(0.06),
-                blurRadius: 16,
-                offset: const Offset(0, 10),
-              ),
-            ],
+            color: cs.surface,
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            border: Border.all(
+              color: cs.outlineVariant.withValues(alpha: 0.65),
+            ),
+            boxShadow: AppShadows.soft(cs.shadow),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(18),
+            padding: EdgeInsets.all(sp.md),
             child: Row(
               children: [
                 _buildLeadingIconImage(
@@ -538,7 +537,7 @@ class ServiceView extends GetView<ServiceController> {
                   title: title,
                   imagePath: imagePath,
                 ),
-                const SizedBox(width: 14),
+                SizedBox(width: sp.sm),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -550,11 +549,11 @@ class ServiceView extends GetView<ServiceController> {
                           letterSpacing: -0.2,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      SizedBox(height: sp.xxs),
                       Text(
                         subtitle,
                         style: tt.bodyMedium?.copyWith(
-                          color: cs.onSurface.withOpacity(0.80),
+                          color: cs.onSurface.withValues(alpha: 0.80),
                           height: 1.35,
                           fontWeight: FontWeight.w600,
                         ),
@@ -564,12 +563,12 @@ class ServiceView extends GetView<ServiceController> {
                     ],
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: sp.sm),
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  padding: EdgeInsets.all(sp.xs),
                   decoration: BoxDecoration(
-                    color: cs.primary.withOpacity(0.10),
-                    borderRadius: BorderRadius.circular(12),
+                    color: cs.primary.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(AppRadii.sm),
                   ),
                   child: Icon(
                     Icons.arrow_forward_ios_rounded,
@@ -590,7 +589,9 @@ class ServiceView extends GetView<ServiceController> {
     required String title,
     required String imagePath,
   }) {
-    final cs = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final sp = theme.extension<AppSpacing>() ?? const AppSpacing();
 
     IconData fallback;
     final t = title.toLowerCase();
@@ -602,19 +603,21 @@ class ServiceView extends GetView<ServiceController> {
       fallback = Icons.category_rounded;
     }
 
+    final size = sp.xxl * 1.2; // ~52-53
+
     return Container(
-      width: 52,
-      height: 52,
-      padding: const EdgeInsets.all(10),
+      width: size,
+      height: size,
+      padding: EdgeInsets.all(sp.xs),
       decoration: BoxDecoration(
-        color: cs.primary.withOpacity(0.10),
-        borderRadius: BorderRadius.circular(16),
+        color: cs.primary.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(AppRadii.md),
       ),
       child: Image.asset(
         imagePath,
         fit: BoxFit.contain,
         errorBuilder: (context, error, stackTrace) {
-          return Icon(fallback, color: cs.primary, size: 24);
+          return Icon(fallback, color: cs.primary, size: sp.lg);
         },
       ),
     );

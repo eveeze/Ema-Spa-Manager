@@ -183,10 +183,10 @@ class _HeaderShell extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.surface,
         borderRadius: BorderRadius.circular(AppRadii.lg),
-        border: Border.all(color: cs.outlineVariant.withOpacity(0.55)),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.55)),
         boxShadow: [
           BoxShadow(
-            color: cs.shadow.withOpacity(0.06),
+            color: cs.shadow.withValues(alpha: 0.06),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -198,9 +198,9 @@ class _HeaderShell extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: cs.primary.withOpacity(0.12),
+              color: cs.primary.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(AppRadii.md),
-              border: Border.all(color: cs.primary.withOpacity(0.18)),
+              border: Border.all(color: cs.primary.withValues(alpha: 0.18)),
             ),
             child: Icon(icon, color: cs.primary, size: 22),
           ),
@@ -220,7 +220,7 @@ class _HeaderShell extends StatelessWidget {
                 Text(
                   subtitle,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: cs.onSurface.withOpacity(0.78),
+                    color: cs.onSurface.withValues(alpha: 0.78),
                     fontWeight: FontWeight.w600,
                     height: 1.35,
                   ),
@@ -261,10 +261,10 @@ class _FormCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.surface,
         borderRadius: BorderRadius.circular(AppRadii.lg),
-        border: Border.all(color: cs.outlineVariant.withOpacity(0.55)),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.55)),
         boxShadow: [
           BoxShadow(
-            color: cs.shadow.withOpacity(0.06),
+            color: cs.shadow.withValues(alpha: 0.06),
             blurRadius: 18,
             offset: const Offset(0, 10),
           ),
@@ -385,7 +385,7 @@ class _LoadingState extends StatelessWidget {
         decoration: BoxDecoration(
           color: cs.surface,
           borderRadius: BorderRadius.circular(AppRadii.lg),
-          border: Border.all(color: cs.outlineVariant.withOpacity(0.55)),
+          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.55)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -403,7 +403,7 @@ class _LoadingState extends StatelessWidget {
               'Memuat data kategori...',
               style: theme.textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w700,
-                color: cs.onSurface.withOpacity(0.82),
+                color: cs.onSurface.withValues(alpha: 0.82),
               ),
             ),
           ],
@@ -437,7 +437,7 @@ class _ErrorState extends StatelessWidget {
         decoration: BoxDecoration(
           color: cs.surface,
           borderRadius: BorderRadius.circular(AppRadii.lg),
-          border: Border.all(color: cs.error.withOpacity(0.20)),
+          border: Border.all(color: cs.error.withValues(alpha: 0.20)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -456,7 +456,7 @@ class _ErrorState extends StatelessWidget {
               message,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: cs.onSurface.withOpacity(0.78),
+                color: cs.onSurface.withValues(alpha: 0.78),
                 fontWeight: FontWeight.w600,
                 height: 1.35,
               ),

@@ -238,14 +238,14 @@ class _HeaderHero extends StatelessWidget {
               borderRadius: BorderRadius.circular(AppRadii.lg),
               gradient: LinearGradient(
                 colors: [
-                  cs.primary.withOpacity(0.22),
-                  cs.primary.withOpacity(0.08),
+                  cs.primary.withValues(alpha: 0.22),
+                  cs.primary.withValues(alpha: 0.08),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               border: Border.all(
-                color: cs.primary.withOpacity(0.22),
+                color: cs.primary.withValues(alpha: 0.22),
                 width: 1.2,
               ),
             ),
@@ -268,7 +268,7 @@ class _HeaderHero extends StatelessWidget {
                 Text(
                   subtitle,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: cs.onBackground.withOpacity(0.72),
+                    color: cs.onBackground.withValues(alpha: 0.72),
                     fontWeight: FontWeight.w700,
                     height: 1.25,
                   ),
@@ -304,8 +304,8 @@ class _CountPill extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadii.lg),
-        color: cs.primary.withOpacity(0.10),
-        border: Border.all(color: cs.primary.withOpacity(0.22), width: 1),
+        color: cs.primary.withValues(alpha: 0.10),
+        border: Border.all(color: cs.primary.withValues(alpha: 0.22), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -315,7 +315,7 @@ class _CountPill extends StatelessWidget {
             height: spacing.xl * 1.1,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(AppRadii.md),
-              color: cs.primary.withOpacity(0.16),
+              color: cs.primary.withValues(alpha: 0.16),
             ),
             child: Icon(
               Icons.category_rounded,
@@ -366,7 +366,7 @@ class _LoadingState extends StatelessWidget {
                 borderRadius: BorderRadius.circular(AppRadii.xl),
                 boxShadow: AppShadows.soft(cs.shadow),
                 border: Border.all(
-                  color: cs.primary.withOpacity(0.18),
+                  color: cs.primary.withValues(alpha: 0.18),
                   width: 1,
                 ),
               ),
@@ -380,7 +380,7 @@ class _LoadingState extends StatelessWidget {
             Text(
               'Sedang memuat kategori...',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: cs.onBackground.withOpacity(0.72),
+                color: cs.onBackground.withValues(alpha: 0.72),
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -416,7 +416,7 @@ class _CategoryCard extends StatelessWidget {
     final cs = theme.colorScheme;
     final spacing = theme.extension<AppSpacing>()!;
 
-    final borderColor = cs.outlineVariant.withOpacity(0.65);
+    final borderColor = cs.outlineVariant.withValues(alpha: 0.65);
 
     return Container(
       decoration: BoxDecoration(
@@ -431,8 +431,8 @@ class _CategoryCard extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(AppRadii.xl),
-          splashColor: cs.primary.withOpacity(0.08),
-          highlightColor: cs.primary.withOpacity(0.04),
+          splashColor: cs.primary.withValues(alpha: 0.08),
+          highlightColor: cs.primary.withValues(alpha: 0.04),
           child: Padding(
             padding: EdgeInsets.all(spacing.lg),
             child: Row(
@@ -444,14 +444,14 @@ class _CategoryCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(AppRadii.lg),
                     gradient: LinearGradient(
                       colors: [
-                        accent.withOpacity(0.18),
-                        accent.withOpacity(0.06),
+                        accent.withValues(alpha: 0.18),
+                        accent.withValues(alpha: 0.06),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     border: Border.all(
-                      color: accent.withOpacity(0.22),
+                      color: accent.withValues(alpha: 0.22),
                       width: 1,
                     ),
                   ),
@@ -491,7 +491,7 @@ class _CategoryCard extends StatelessWidget {
                         Text(
                           'Belum ada deskripsi',
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            color: cs.onSurfaceVariant.withOpacity(0.85),
+                            color: cs.onSurfaceVariant.withValues(alpha: 0.85),
                             height: 1.25,
                             fontWeight: FontWeight.w600,
                           ),
@@ -525,8 +525,8 @@ class _ActionRail extends StatelessWidget {
     final semantic = theme.extension<AppSemanticColors>();
     final spacing = theme.extension<AppSpacing>()!;
 
-    final bg = cs.surfaceVariant.withOpacity(0.35);
-    final border = cs.outlineVariant.withOpacity(0.65);
+    final bg = cs.surfaceVariant.withValues(alpha: 0.35);
+    final border = cs.outlineVariant.withValues(alpha: 0.65);
     final danger = semantic?.danger ?? cs.error;
 
     return Container(

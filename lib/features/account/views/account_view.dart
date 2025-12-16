@@ -53,9 +53,9 @@ class AccountView extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    cs.primary.withOpacity(isDark ? 0.28 : 0.18),
-                    cs.secondary.withOpacity(isDark ? 0.22 : 0.14),
-                    cs.primaryContainer.withOpacity(isDark ? 0.18 : 0.10),
+                    cs.primary.withValues(alpha: isDark ? 0.28 : 0.18),
+                    cs.secondary.withValues(alpha: isDark ? 0.22 : 0.14),
+                    cs.primaryContainer.withValues(alpha: isDark ? 0.18 : 0.10),
                   ],
                 ),
                 child: Column(
@@ -83,7 +83,7 @@ class AccountView extends StatelessWidget {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: cs.onSurface.withOpacity(0.72),
+                                  color: cs.onSurface.withValues(alpha: 0.72),
                                   fontWeight: FontWeight.w600,
                                   height: 1.2,
                                 ),
@@ -108,10 +108,12 @@ class AccountView extends StatelessWidget {
                         vertical: 12,
                       ),
                       decoration: BoxDecoration(
-                        color: cs.surface.withOpacity(isDark ? 0.22 : 0.60),
+                        color: cs.surface.withValues(
+                          alpha: isDark ? 0.22 : 0.60,
+                        ),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: cs.outlineVariant.withOpacity(0.45),
+                          color: cs.outlineVariant.withValues(alpha: 0.45),
                         ),
                       ),
                       child: Row(
@@ -119,7 +121,7 @@ class AccountView extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: cs.primary.withOpacity(0.12),
+                              color: cs.primary.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(14),
                             ),
                             child: Icon(
@@ -133,7 +135,7 @@ class AccountView extends StatelessWidget {
                             child: Text(
                               'Kelola preferensi akun dan tampilan aplikasi.',
                               style: theme.textTheme.bodyMedium?.copyWith(
-                                color: cs.onSurface.withOpacity(0.78),
+                                color: cs.onSurface.withValues(alpha: 0.78),
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -208,7 +210,7 @@ class AccountView extends StatelessWidget {
             Text(
               'Tips: gunakan “Sesuai Sistem” agar warna aplikasi mengikuti pengaturan perangkat.',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: cs.onSurface.withOpacity(0.62),
+                color: cs.onSurface.withValues(alpha: 0.62),
                 height: 1.35,
                 fontWeight: FontWeight.w600,
               ),
@@ -239,7 +241,7 @@ class AccountView extends StatelessWidget {
               topRight: Radius.circular(22),
             ),
             border: Border(
-              top: BorderSide(color: cs.outlineVariant.withOpacity(0.45)),
+              top: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.45)),
             ),
           ),
           child: Column(
@@ -249,7 +251,7 @@ class AccountView extends StatelessWidget {
                 width: 44,
                 height: 5,
                 decoration: BoxDecoration(
-                  color: cs.outlineVariant.withOpacity(0.6),
+                  color: cs.outlineVariant.withValues(alpha: 0.6),
                   borderRadius: BorderRadius.circular(99),
                 ),
               ),
@@ -259,7 +261,7 @@ class AccountView extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: cs.error.withOpacity(0.12),
+                      color: cs.error.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Icon(Icons.logout_rounded, color: cs.error),
@@ -280,7 +282,7 @@ class AccountView extends StatelessWidget {
               Text(
                 'Anda akan perlu login kembali untuk mengakses fitur manajer spa.',
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: cs.onSurface.withOpacity(0.72),
+                  color: cs.onSurface.withValues(alpha: 0.72),
                   height: 1.35,
                   fontWeight: FontWeight.w600,
                 ),
@@ -294,7 +296,7 @@ class AccountView extends StatelessWidget {
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         side: BorderSide(
-                          color: cs.outlineVariant.withOpacity(0.8),
+                          color: cs.outlineVariant.withValues(alpha: 0.8),
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
@@ -360,7 +362,7 @@ class AccountView extends StatelessWidget {
               topRight: Radius.circular(22),
             ),
             border: Border(
-              top: BorderSide(color: cs.outlineVariant.withOpacity(0.45)),
+              top: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.45)),
             ),
           ),
           child: Wrap(
@@ -371,7 +373,7 @@ class AccountView extends StatelessWidget {
                   width: 44,
                   height: 5,
                   decoration: BoxDecoration(
-                    color: cs.outlineVariant.withOpacity(0.6),
+                    color: cs.outlineVariant.withValues(alpha: 0.6),
                     borderRadius: BorderRadius.circular(99),
                   ),
                 ),
@@ -382,7 +384,7 @@ class AccountView extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: cs.primary.withOpacity(0.12),
+                      color: cs.primary.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Icon(Icons.color_lens_outlined, color: cs.primary),
@@ -491,7 +493,7 @@ class _SectionHeader extends StatelessWidget {
               Text(
                 subtitle,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: cs.onSurface.withOpacity(0.78),
+                  color: cs.onSurface.withValues(alpha: 0.78),
                   height: 1.35,
                   fontWeight: FontWeight.w600,
                 ),
@@ -518,10 +520,10 @@ class _SettingsCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: cs.outlineVariant.withOpacity(0.65)),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.65)),
         boxShadow: [
           BoxShadow(
-            color: theme.shadowColor.withOpacity(0.06),
+            color: theme.shadowColor.withValues(alpha: 0.06),
             blurRadius: 16,
             offset: const Offset(0, 10),
           ),
@@ -561,16 +563,18 @@ class _SettingsTile extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           decoration: BoxDecoration(
-            color: cs.surface.withOpacity(0.0),
+            color: cs.surface.withValues(alpha: 0.0),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: cs.outlineVariant.withOpacity(0.45)),
+            border: Border.all(
+              color: cs.outlineVariant.withValues(alpha: 0.45),
+            ),
           ),
           child: Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: cs.primary.withOpacity(0.10),
+                  color: cs.primary.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(icon, color: cs.primary, size: 20),
@@ -592,7 +596,7 @@ class _SettingsTile extends StatelessWidget {
                       Text(
                         subtitle!,
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: cs.onSurface.withOpacity(0.72),
+                          color: cs.onSurface.withValues(alpha: 0.72),
                           fontWeight: FontWeight.w600,
                           height: 1.25,
                         ),
@@ -604,7 +608,7 @@ class _SettingsTile extends StatelessWidget {
               Icon(
                 Icons.arrow_forward_ios_rounded,
                 size: 16,
-                color: cs.onSurface.withOpacity(0.45),
+                color: cs.onSurface.withValues(alpha: 0.45),
               ),
             ],
           ),
@@ -641,12 +645,15 @@ class _DangerButton extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [cs.error.withOpacity(0.95), cs.error.withOpacity(0.78)],
+              colors: [
+                cs.error.withValues(alpha: 0.95),
+                cs.error.withValues(alpha: 0.78),
+              ],
             ),
             borderRadius: BorderRadius.circular(18),
             boxShadow: [
               BoxShadow(
-                color: cs.error.withOpacity(0.18),
+                color: cs.error.withValues(alpha: 0.18),
                 blurRadius: 18,
                 offset: const Offset(0, 10),
               ),
@@ -701,14 +708,16 @@ class _ModeOptionTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: cs.outlineVariant.withOpacity(0.45)),
+            border: Border.all(
+              color: cs.outlineVariant.withValues(alpha: 0.45),
+            ),
           ),
           child: Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: cs.primary.withOpacity(0.10),
+                  color: cs.primary.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(icon, color: cs.primary, size: 20),
@@ -728,7 +737,7 @@ class _ModeOptionTile extends StatelessWidget {
                     Text(
                       subtitle,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: cs.onSurface.withOpacity(0.72),
+                        color: cs.onSurface.withValues(alpha: 0.72),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -737,7 +746,7 @@ class _ModeOptionTile extends StatelessWidget {
               ),
               Icon(
                 Icons.chevron_right_rounded,
-                color: cs.onSurface.withOpacity(0.45),
+                color: cs.onSurface.withValues(alpha: 0.45),
               ),
             ],
           ),
@@ -761,9 +770,9 @@ class _PillBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: cs.surface.withOpacity(0.35),
+        color: cs.surface.withValues(alpha: 0.35),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: cs.outlineVariant.withOpacity(0.45)),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.45)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -803,13 +812,13 @@ class _AvatarWellness extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            cs.primary.withOpacity(0.95),
-            cs.secondary.withOpacity(0.85),
+            cs.primary.withValues(alpha: 0.95),
+            cs.secondary.withValues(alpha: 0.85),
           ],
         ),
         boxShadow: [
           BoxShadow(
-            color: cs.primary.withOpacity(0.22),
+            color: cs.primary.withValues(alpha: 0.22),
             blurRadius: 18,
             offset: const Offset(0, 10),
           ),
@@ -855,12 +864,14 @@ class _GlassCard extends StatelessWidget {
           padding: padding,
           decoration: BoxDecoration(
             gradient: gradient,
-            color: cs.surface.withOpacity(0.55),
+            color: cs.surface.withValues(alpha: 0.55),
             borderRadius: BorderRadius.circular(borderRadius),
-            border: Border.all(color: cs.outlineVariant.withOpacity(0.45)),
+            border: Border.all(
+              color: cs.outlineVariant.withValues(alpha: 0.45),
+            ),
             boxShadow: [
               BoxShadow(
-                color: theme.shadowColor.withOpacity(0.08),
+                color: theme.shadowColor.withValues(alpha: 0.08),
                 blurRadius: 22,
                 offset: const Offset(0, 12),
               ),

@@ -7,23 +7,11 @@ import 'package:emababyspa/features/dashboard/controllers/dashboard_controller.d
 import 'package:emababyspa/data/models/reservation.dart';
 import 'package:emababyspa/utils/timezone_utils.dart';
 
-/// REFACTORED: DashboardView - Soft Spa/Wellness Color Palette
-///
-/// PERUBAHAN UTAMA:
-/// ✅ Warna pastel yang soft & calming (biru muda, mint, lavender, rose)
-/// ✅ Glassmorphism effect dengan gradient subtle
-/// ✅ Konsisten dengan Theme API (tidak ada hardcoded colors untuk text/bg)
-/// ✅ Spacing menggunakan kelipatan 8 (8, 16, 24, 32)
-/// ✅ Modern & cocok untuk Baby Spa
+// ✅ add
+import 'package:emababyspa/common/theme/app_theme.dart';
 
 class DashboardView extends GetView<DashboardController> {
   const DashboardView({super.key});
-
-  // Spa Color Palette - Soft & Calming (untuk accent saja)
-  static const Color _spaLightBlue = Color(0xFF85C1E2);
-  static const Color _spaMint = Color(0xFF8BC9C3);
-  static const Color _spaLavender = Color(0xFFA8B5E8);
-  static const Color _spaRose = Color(0xFFE8A5B8);
 
   String _getFormattedDisplayTime(Reservation? reservation) {
     if (reservation == null) return 'N/A';
@@ -71,6 +59,8 @@ class DashboardView extends GetView<DashboardController> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final sp = theme.extension<AppSpacing>() ?? const AppSpacing();
 
     return MainLayout(
       showBottomNavigation: true,
@@ -78,33 +68,32 @@ class DashboardView extends GetView<DashboardController> {
       onRefresh: controller.refreshCurrentPage,
       child: Obx(() {
         if (controller.isLoading && controller.owner.value == null) {
-          return Center(
-            child: CircularProgressIndicator(color: theme.colorScheme.primary),
-          );
+          return Center(child: CircularProgressIndicator(color: cs.primary));
         }
+
         return SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+          padding: EdgeInsets.all(sp.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildWelcomeHeader(context),
-              const SizedBox(height: 32),
+              SizedBox(height: sp.xl),
               _buildSectionTitle(context, 'Ringkasan Hari Ini'),
-              const SizedBox(height: 16),
+              SizedBox(height: sp.md),
               _buildDailyStats(context),
-              const SizedBox(height: 32),
+              SizedBox(height: sp.xl),
               _buildSectionTitle(context, 'Jadwal Berikutnya'),
-              const SizedBox(height: 16),
+              SizedBox(height: sp.md),
               _buildUpcomingSession(context),
-              const SizedBox(height: 32),
+              SizedBox(height: sp.xl),
               _buildSectionTitle(context, 'Aksi Cepat'),
-              const SizedBox(height: 16),
+              SizedBox(height: sp.md),
               _buildQuickActionsGrid(context),
-              const SizedBox(height: 32),
+              SizedBox(height: sp.xl),
               _buildSectionTitle(context, 'Performa Bulan Ini'),
-              const SizedBox(height: 16),
+              SizedBox(height: sp.md),
               _buildMonthlyAnalytics(context),
-              const SizedBox(height: 24),
+              SizedBox(height: sp.lg),
             ],
           ),
         );
@@ -113,33 +102,32 @@ class DashboardView extends GetView<DashboardController> {
   }
 
   Widget _buildSectionTitle(BuildContext context, String title) {
+    final theme = Theme.of(context);
     return Text(
       title,
-      style: Theme.of(
-        context,
-      ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+      style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
     );
   }
 
   Widget _buildWelcomeHeader(BuildContext context) {
     final notificationController = Get.find<NotificationController>();
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
+    final cs = theme.colorScheme;
+    final sp = theme.extension<AppSpacing>() ?? const AppSpacing();
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(sp.lg),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [colorScheme.primary, colorScheme.primary.withOpacity(0.8)],
+          colors: [cs.primary, cs.primary.withValues(alpha: 0.82)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(AppRadii.xl),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.primary.withOpacity(isDark ? 0.3 : 0.25),
+            color: cs.primary.withValues(alpha: 0.22),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -159,12 +147,12 @@ class DashboardView extends GetView<DashboardController> {
                     Text(
                       'Selamat Datang,',
                       style: theme.textTheme.titleMedium?.copyWith(
-                        color: colorScheme.onPrimary,
+                        color: cs.onPrimary,
                         fontWeight: FontWeight.w600,
-                        letterSpacing: 0.3,
+                        letterSpacing: 0.2,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: sp.xxs),
                     Obx(
                       () => Text(
                         controller.owner.value?.name ?? 'Owner',
@@ -172,33 +160,35 @@ class DashboardView extends GetView<DashboardController> {
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.headlineMedium?.copyWith(
                           fontFamily: 'DeliusSwashCaps',
-                          color: colorScheme.onPrimary,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                          height: 1.2,
+                          color: cs.onPrimary,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.4,
+                          height: 1.15,
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
+
+              // notif button + badge
               Obx(() {
                 return Stack(
                   clipBehavior: Clip.none,
                   children: [
                     Container(
                       decoration: BoxDecoration(
-                        color: colorScheme.onPrimary.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(14),
+                        color: cs.onPrimary.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(AppRadii.md),
                         border: Border.all(
-                          color: colorScheme.onPrimary.withOpacity(0.3),
+                          color: cs.onPrimary.withValues(alpha: 0.28),
                           width: 1,
                         ),
                       ),
                       child: IconButton(
                         icon: Icon(
                           Icons.notifications_outlined,
-                          color: colorScheme.onPrimary,
+                          color: cs.onPrimary,
                           size: 24,
                         ),
                         onPressed: () => Get.toNamed(AppRoutes.notification),
@@ -206,26 +196,23 @@ class DashboardView extends GetView<DashboardController> {
                     ),
                     if (notificationController.unreadCount.value > 0)
                       Positioned(
-                        right: 0,
-                        top: 0,
+                        right: -2,
+                        top: -2,
                         child: Container(
-                          padding: const EdgeInsets.all(6),
+                          padding: EdgeInsets.all(sp.xxs),
                           constraints: const BoxConstraints(
                             minWidth: 20,
                             minHeight: 20,
                           ),
                           decoration: BoxDecoration(
-                            color: colorScheme.error,
+                            color: cs.error,
                             shape: BoxShape.circle,
-                            border: Border.all(
-                              color: colorScheme.primary,
-                              width: 2.5,
-                            ),
+                            border: Border.all(color: cs.primary, width: 2.2),
                             boxShadow: [
                               BoxShadow(
-                                color: colorScheme.error.withOpacity(0.4),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
+                                color: cs.error.withValues(alpha: 0.35),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
                               ),
                             ],
                           ),
@@ -233,8 +220,8 @@ class DashboardView extends GetView<DashboardController> {
                             child: Text(
                               '${notificationController.unreadCount.value}',
                               style: theme.textTheme.labelSmall?.copyWith(
-                                color: colorScheme.onError,
-                                fontWeight: FontWeight.bold,
+                                color: cs.onError,
+                                fontWeight: FontWeight.w800,
                                 fontSize: 11,
                                 height: 1,
                               ),
@@ -247,14 +234,16 @@ class DashboardView extends GetView<DashboardController> {
               }),
             ],
           ),
-          const SizedBox(height: 20),
+
+          SizedBox(height: sp.md),
+
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: EdgeInsets.symmetric(horizontal: sp.md, vertical: sp.xs),
             decoration: BoxDecoration(
-              color: colorScheme.onPrimary.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(100),
+              color: cs.onPrimary.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(999),
               border: Border.all(
-                color: colorScheme.onPrimary.withOpacity(0.3),
+                color: cs.onPrimary.withValues(alpha: 0.28),
                 width: 1,
               ),
             ),
@@ -262,25 +251,25 @@ class DashboardView extends GetView<DashboardController> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(6),
+                  padding: EdgeInsets.all(sp.xxs),
                   decoration: BoxDecoration(
-                    color: colorScheme.onPrimary.withOpacity(0.2),
+                    color: cs.onPrimary.withValues(alpha: 0.18),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.spa_outlined,
                     size: 16,
-                    color: colorScheme.onPrimary,
+                    color: cs.onPrimary,
                   ),
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: sp.sm),
                 Flexible(
                   child: Text(
                     'Siap melayani pelanggan kecil hari ini',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onPrimary,
+                      color: cs.onPrimary,
                       fontWeight: FontWeight.w600,
-                      letterSpacing: 0.2,
+                      letterSpacing: 0.15,
                     ),
                   ),
                 ),
@@ -294,7 +283,8 @@ class DashboardView extends GetView<DashboardController> {
 
   Widget _buildDailyStats(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final cs = theme.colorScheme;
+    final sp = theme.extension<AppSpacing>() ?? const AppSpacing();
 
     return Column(
       children: [
@@ -303,21 +293,12 @@ class DashboardView extends GetView<DashboardController> {
             title: 'Total Pendapatan',
             value: controller.totalRevenueTodayFormatted,
             icon: Icons.monetization_on_outlined,
-            gradientColors:
-                isDark
-                    ? [
-                      _spaLightBlue.withOpacity(0.3),
-                      _spaLightBlue.withOpacity(0.2),
-                    ]
-                    : [
-                      _spaLightBlue.withOpacity(0.15),
-                      _spaLightBlue.withOpacity(0.08),
-                    ],
-            iconColor: _spaLightBlue,
+            // ✅ use scheme: primary
+            accent: cs.primary,
             isPrimary: true,
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: sp.md),
         Row(
           children: [
             Expanded(
@@ -326,38 +307,20 @@ class DashboardView extends GetView<DashboardController> {
                   title: 'Total Reservasi',
                   value: controller.totalAppointmentsToday,
                   icon: Icons.calendar_today_outlined,
-                  gradientColors:
-                      isDark
-                          ? [
-                            _spaMint.withOpacity(0.25),
-                            _spaMint.withOpacity(0.15),
-                          ]
-                          : [
-                            _spaMint.withOpacity(0.12),
-                            _spaMint.withOpacity(0.06),
-                          ],
-                  iconColor: _spaMint,
+                  // ✅ use scheme: secondary
+                  accent: cs.secondary,
                 ),
               ),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: sp.md),
             Expanded(
               child: Obx(
                 () => _SpaStatCard(
                   title: 'Akan Datang',
-                  value: '${controller.upcomingReservationsTodayCount.value}',
+                  value: controller.upcomingReservationsTodayCount.value,
                   icon: Icons.schedule_outlined,
-                  gradientColors:
-                      isDark
-                          ? [
-                            _spaLavender.withOpacity(0.25),
-                            _spaLavender.withOpacity(0.15),
-                          ]
-                          : [
-                            _spaLavender.withOpacity(0.12),
-                            _spaLavender.withOpacity(0.06),
-                          ],
-                  iconColor: _spaLavender,
+                  // ✅ use scheme: tertiary (pink accent kamu sudah ada)
+                  accent: cs.tertiary,
                 ),
               ),
             ),
@@ -369,25 +332,24 @@ class DashboardView extends GetView<DashboardController> {
 
   Widget _buildUpcomingSession(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final cs = theme.colorScheme;
+    final sp = theme.extension<AppSpacing>() ?? const AppSpacing();
 
     return Obx(() {
       if (controller.isLoadingUpcomingCarousel.value &&
           controller.upcomingReservationsTodayList.isEmpty) {
-        return Center(
-          child: CircularProgressIndicator(color: colorScheme.primary),
-        );
+        return Center(child: CircularProgressIndicator(color: cs.primary));
       }
 
       if (controller.upcomingReservationsTodayList.isEmpty) {
         return Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(32),
+          padding: EdgeInsets.all(sp.xl),
           decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
-            borderRadius: BorderRadius.circular(20),
+            color: cs.surfaceContainerHighest.withValues(alpha: 0.35),
+            borderRadius: BorderRadius.circular(AppRadii.lg),
             border: Border.all(
-              color: colorScheme.outlineVariant.withOpacity(0.5),
+              color: cs.outlineVariant.withValues(alpha: 0.55),
             ),
           ),
           child: Column(
@@ -395,20 +357,21 @@ class DashboardView extends GetView<DashboardController> {
               Icon(
                 Icons.event_available_outlined,
                 size: 56,
-                color: colorScheme.outline.withOpacity(0.4),
+                color: cs.outline.withValues(alpha: 0.45),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: sp.md),
               Text(
                 'Tidak ada jadwal lagi hari ini',
                 style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: sp.xxs),
               Text(
                 'Istirahat yang cukup!',
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+                  color: cs.onSurfaceVariant.withValues(alpha: 0.75),
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -424,72 +387,71 @@ class DashboardView extends GetView<DashboardController> {
 
       return Container(
         decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: colorScheme.shadow.withOpacity(0.06),
-              blurRadius: 20,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          color: cs.surface,
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+          boxShadow: AppShadows.soft(cs.shadow),
+          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.55)),
         ),
         child: Column(
           children: [
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(sp.md),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    colorScheme.primaryContainer.withOpacity(0.3),
-                    colorScheme.primaryContainer.withOpacity(0.15),
+                    cs.primaryContainer.withValues(alpha: 0.55),
+                    cs.primaryContainer.withValues(alpha: 0.20),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(20),
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(AppRadii.lg),
                 ),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: sp.sm,
+                      vertical: sp.xxs,
                     ),
                     decoration: BoxDecoration(
-                      color: colorScheme.surface,
-                      borderRadius: BorderRadius.circular(8),
+                      color: cs.surface,
+                      borderRadius: BorderRadius.circular(AppRadii.sm),
                       boxShadow: [
                         BoxShadow(
-                          color: colorScheme.shadow.withOpacity(0.04),
+                          color: cs.shadow.withValues(alpha: 0.04),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
                       ],
+                      border: Border.all(
+                        color: cs.outlineVariant.withValues(alpha: 0.45),
+                      ),
                     ),
                     child: Text(
                       'NEXT SESSION',
                       style: theme.textTheme.labelSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.2,
-                        color: colorScheme.primary,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.1,
+                        color: cs.primary,
                       ),
                     ),
                   ),
                   Text(
                     startTimeDisplay,
                     style: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.4,
                     ),
                   ),
                 ],
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(sp.md),
               child: Column(
                 children: [
                   _TicketRow(
@@ -499,8 +461,8 @@ class DashboardView extends GetView<DashboardController> {
                     icon: Icons.person_outline,
                   ),
                   Divider(
-                    height: 32,
-                    color: colorScheme.outlineVariant.withOpacity(0.5),
+                    height: sp.xl,
+                    color: cs.outlineVariant.withValues(alpha: 0.55),
                   ),
                   _TicketRow(
                     context,
@@ -509,8 +471,8 @@ class DashboardView extends GetView<DashboardController> {
                     icon: Icons.spa_outlined,
                   ),
                   Divider(
-                    height: 32,
-                    color: colorScheme.outlineVariant.withOpacity(0.5),
+                    height: sp.xl,
+                    color: cs.outlineVariant.withValues(alpha: 0.55),
                   ),
                   _TicketRow(
                     context,
@@ -518,7 +480,7 @@ class DashboardView extends GetView<DashboardController> {
                     value: currentRes.staffName ?? '-',
                     icon: Icons.support_agent_outlined,
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: sp.md),
                   if (controller.upcomingReservationsTodayList.length > 1)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -531,13 +493,14 @@ class DashboardView extends GetView<DashboardController> {
                             style: theme.textTheme.labelMedium,
                           ),
                           style: TextButton.styleFrom(
-                            foregroundColor: colorScheme.primary,
+                            foregroundColor: cs.primary,
                           ),
                         ),
                         Text(
                           "${controller.currentUpcomingReservationIndex.value + 1} / ${controller.upcomingReservationsTodayList.length}",
                           style: theme.textTheme.labelSmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
+                            color: cs.onSurfaceVariant,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                         TextButton.icon(
@@ -549,7 +512,7 @@ class DashboardView extends GetView<DashboardController> {
                           ),
                           iconAlignment: IconAlignment.end,
                           style: TextButton.styleFrom(
-                            foregroundColor: colorScheme.primary,
+                            foregroundColor: cs.primary,
                           ),
                         ),
                       ],
@@ -570,19 +533,23 @@ class DashboardView extends GetView<DashboardController> {
     required IconData icon,
   }) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final cs = theme.colorScheme;
+    final sp = theme.extension<AppSpacing>() ?? const AppSpacing();
 
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.all(12),
+          padding: EdgeInsets.all(sp.sm),
           decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
-            borderRadius: BorderRadius.circular(12),
+            color: cs.surfaceContainerHighest.withValues(alpha: 0.55),
+            borderRadius: BorderRadius.circular(AppRadii.md),
+            border: Border.all(
+              color: cs.outlineVariant.withValues(alpha: 0.50),
+            ),
           ),
-          child: Icon(icon, color: colorScheme.primary, size: 22),
+          child: Icon(icon, color: cs.primary, size: 22),
         ),
-        const SizedBox(width: 16),
+        SizedBox(width: sp.md),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -590,14 +557,15 @@ class DashboardView extends GetView<DashboardController> {
               Text(
                 label,
                 style: theme.textTheme.labelMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
+                  color: cs.onSurfaceVariant,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: sp.xxs),
               Text(
                 value,
                 style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ],
@@ -609,70 +577,39 @@ class DashboardView extends GetView<DashboardController> {
 
   Widget _buildQuickActionsGrid(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final cs = theme.colorScheme;
+    final sp = theme.extension<AppSpacing>() ?? const AppSpacing();
 
     return GridView.count(
       crossAxisCount: 2,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
+      crossAxisSpacing: sp.md,
+      mainAxisSpacing: sp.md,
       childAspectRatio: 1.3,
       children: [
         _SpaActionCard(
-          context,
           title: 'Layanan',
           icon: Icons.spa_outlined,
-          gradientColors:
-              isDark
-                  ? [
-                    _spaLavender.withOpacity(0.3),
-                    _spaLavender.withOpacity(0.2),
-                  ]
-                  : [
-                    _spaLavender.withOpacity(0.2),
-                    _spaLavender.withOpacity(0.1),
-                  ],
-          iconColor: _spaLavender,
+          accent: cs.primary,
           onTap: () => Get.toNamed('/services/manage'),
         ),
         _SpaActionCard(
-          context,
           title: 'Statistik',
           icon: Icons.analytics_outlined,
-          gradientColors:
-              isDark
-                  ? [_spaRose.withOpacity(0.3), _spaRose.withOpacity(0.2)]
-                  : [_spaRose.withOpacity(0.2), _spaRose.withOpacity(0.1)],
-          iconColor: _spaRose,
+          accent: cs.secondary,
           onTap: () => Get.toNamed('/analytics'),
         ),
         _SpaActionCard(
-          context,
           title: 'Jadwal',
           icon: Icons.event_note_outlined,
-          gradientColors:
-              isDark
-                  ? [
-                    _spaLightBlue.withOpacity(0.3),
-                    _spaLightBlue.withOpacity(0.2),
-                  ]
-                  : [
-                    _spaLightBlue.withOpacity(0.2),
-                    _spaLightBlue.withOpacity(0.1),
-                  ],
-          iconColor: _spaLightBlue,
+          accent: cs.tertiary,
           onTap: () => Get.toNamed('/schedule'),
         ),
         _SpaActionCard(
-          context,
           title: 'Pengaturan',
           icon: Icons.settings_outlined,
-          gradientColors:
-              isDark
-                  ? [_spaMint.withOpacity(0.3), _spaMint.withOpacity(0.2)]
-                  : [_spaMint.withOpacity(0.2), _spaMint.withOpacity(0.1)],
-          iconColor: _spaMint,
+          accent: cs.primary, // keep brand-blue
           onTap: () => Get.toNamed('/account'),
         ),
       ],
@@ -681,28 +618,22 @@ class DashboardView extends GetView<DashboardController> {
 
   Widget _buildMonthlyAnalytics(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final cs = theme.colorScheme;
+    final sp = theme.extension<AppSpacing>() ?? const AppSpacing();
 
     return Obx(() {
       if (controller.isLoadingAnalytics.value &&
           controller.detailsDataThisMonth.value == null) {
-        return Center(
-          child: CircularProgressIndicator(color: colorScheme.primary),
-        );
+        return Center(child: CircularProgressIndicator(color: cs.primary));
       }
 
       return Container(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(sp.lg),
         decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: colorScheme.shadow.withOpacity(0.06),
-              blurRadius: 20,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          color: cs.surface,
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+          boxShadow: AppShadows.soft(cs.shadow),
+          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.55)),
         ),
         child: Column(
           children: [
@@ -710,11 +641,11 @@ class DashboardView extends GetView<DashboardController> {
               context,
               'Penghasilan Bulan Ini',
               controller.totalRevenueThisMonthFormatted,
-              _spaMint,
+              cs.primary,
             ),
             Divider(
-              height: 32,
-              color: colorScheme.outlineVariant.withOpacity(0.5),
+              height: sp.xl,
+              color: cs.outlineVariant.withValues(alpha: 0.55),
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -723,19 +654,19 @@ class DashboardView extends GetView<DashboardController> {
                   context,
                   'Total',
                   controller.totalReservationsThisMonth,
-                  _spaLightBlue,
+                  cs.secondary,
                 ),
                 _MiniStat(
                   context,
                   'Selesai',
                   controller.completedReservationsThisMonth,
-                  _spaMint,
+                  cs.primary,
                 ),
                 _MiniStat(
                   context,
                   'Batal',
                   controller.cancelledReservationsThisMonth,
-                  _spaRose,
+                  cs.error,
                 ),
               ],
             ),
@@ -752,6 +683,7 @@ class DashboardView extends GetView<DashboardController> {
     Color accentColor,
   ) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -759,15 +691,16 @@ class DashboardView extends GetView<DashboardController> {
         Text(
           label,
           style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w600,
+            color: cs.onSurfaceVariant,
+            fontWeight: FontWeight.w700,
           ),
         ),
         Text(
           value,
           style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w900,
             color: accentColor,
+            letterSpacing: -0.2,
           ),
         ),
       ],
@@ -781,27 +714,30 @@ class DashboardView extends GetView<DashboardController> {
     Color accentColor,
   ) {
     final theme = Theme.of(context);
+    final sp = theme.extension<AppSpacing>() ?? const AppSpacing();
 
     return Column(
       children: [
         Text(
           value,
           style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w900,
           ),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: sp.xxs),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          padding: EdgeInsets.symmetric(horizontal: sp.xs, vertical: sp.xxs),
           decoration: BoxDecoration(
-            color: accentColor.withOpacity(0.15),
-            borderRadius: BorderRadius.circular(6),
+            color: accentColor.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(AppRadii.sm),
+            border: Border.all(color: accentColor.withValues(alpha: 0.20)),
           ),
           child: Text(
             label,
             style: theme.textTheme.labelSmall?.copyWith(
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w900,
               color: accentColor,
+              letterSpacing: 0.2,
             ),
           ),
         ),
@@ -816,79 +752,84 @@ class _SpaStatCard extends StatelessWidget {
   final String title;
   final String value;
   final IconData icon;
-  final List<Color> gradientColors;
-  final Color iconColor;
+
+  /// ✅ single source of truth for accent
+  final Color accent;
+
   final bool isPrimary;
 
   const _SpaStatCard({
     required this.title,
     required this.value,
     required this.icon,
-    required this.gradientColors,
-    required this.iconColor,
+    required this.accent,
     this.isPrimary = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final cs = theme.colorScheme;
+    final sp = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    final pad = isPrimary ? sp.lg : sp.md;
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(isPrimary ? 24 : 20),
+      padding: EdgeInsets.all(pad),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: gradientColors,
+          colors: [
+            accent.withValues(alpha: 0.16),
+            accent.withValues(alpha: 0.08),
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: iconColor.withOpacity(0.2), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: iconColor.withOpacity(0.1),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        border: Border.all(color: accent.withValues(alpha: 0.22), width: 1),
+        boxShadow: AppShadows.soft(cs.shadow),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(sp.sm),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.9),
-              borderRadius: BorderRadius.circular(14),
+              // ✅ remove Colors.white
+              color: cs.surface.withValues(alpha: 0.92),
+              borderRadius: BorderRadius.circular(AppRadii.md),
+              border: Border.all(
+                color: cs.outlineVariant.withValues(alpha: 0.45),
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: iconColor.withOpacity(0.2),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+                  color: accent.withValues(alpha: 0.14),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
                 ),
               ],
             ),
-            child: Icon(icon, color: iconColor, size: isPrimary ? 28 : 24),
+            child: Icon(icon, color: accent, size: isPrimary ? 28 : 24),
           ),
-          SizedBox(height: isPrimary ? 16 : 12),
+          SizedBox(height: isPrimary ? sp.md : sp.sm),
           Text(
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.headlineMedium?.copyWith(
               fontSize: isPrimary ? 28 : 22,
-              fontWeight: FontWeight.w800,
-              color: colorScheme.onSurface,
-              letterSpacing: -0.5,
+              fontWeight: FontWeight.w900,
+              color: cs.onSurface,
+              letterSpacing: -0.6,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: sp.xxs),
           Text(
             title,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w500,
+              color: cs.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -898,73 +839,77 @@ class _SpaStatCard extends StatelessWidget {
 }
 
 class _SpaActionCard extends StatelessWidget {
-  final BuildContext context;
   final String title;
   final IconData icon;
-  final List<Color> gradientColors;
-  final Color iconColor;
+
+  /// ✅ single accent
+  final Color accent;
+
   final VoidCallback onTap;
 
-  const _SpaActionCard(
-    this.context, {
+  const _SpaActionCard({
     required this.title,
     required this.icon,
-    required this.gradientColors,
-    required this.iconColor,
+    required this.accent,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final cs = theme.colorScheme;
+    final sp = theme.extension<AppSpacing>() ?? const AppSpacing();
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
         child: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: gradientColors,
+              colors: [
+                accent.withValues(alpha: 0.16),
+                accent.withValues(alpha: 0.08),
+              ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: iconColor.withOpacity(0.3), width: 1.5),
-            boxShadow: [
-              BoxShadow(
-                color: iconColor.withOpacity(0.15),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            border: Border.all(
+              color: accent.withValues(alpha: 0.26),
+              width: 1.25,
+            ),
+            boxShadow: AppShadows.soft(cs.shadow),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(sp.md),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.9),
+                  // ✅ remove Colors.white
+                  color: cs.surface.withValues(alpha: 0.92),
                   shape: BoxShape.circle,
+                  border: Border.all(
+                    color: cs.outlineVariant.withValues(alpha: 0.45),
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: iconColor.withOpacity(0.25),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
+                      color: accent.withValues(alpha: 0.18),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
                     ),
                   ],
                 ),
-                child: Icon(icon, color: iconColor, size: 28),
+                child: Icon(icon, color: accent, size: 28),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: sp.sm),
               Text(
                 title,
                 style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w800,
+                  color: cs.onSurface,
                 ),
               ),
             ],

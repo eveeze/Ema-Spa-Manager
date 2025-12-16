@@ -27,7 +27,6 @@ class StaffView extends GetView<StaffController> {
     required String message,
     required bool isSuccess,
   }) {
-    final cs = theme.colorScheme;
     final spacing = theme.extension<AppSpacing>()!;
     final tone = _tone(theme: theme, isSuccess: isSuccess);
 
@@ -40,7 +39,7 @@ class StaffView extends GetView<StaffController> {
       duration: const Duration(seconds: 3),
       margin: EdgeInsets.all(spacing.md),
       borderRadius: AppRadii.lg,
-      backgroundColor: tone.withOpacity(0.14),
+      backgroundColor: tone.withValues(alpha: 0.14),
       colorText: tone,
       icon: Icon(
         isSuccess ? Icons.check_circle_rounded : Icons.error_rounded,
@@ -109,9 +108,9 @@ class StaffView extends GetView<StaffController> {
             Container(
               padding: EdgeInsets.all(spacing.md),
               decoration: BoxDecoration(
-                color: danger.withOpacity(0.10),
+                color: danger.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(AppRadii.lg),
-                border: Border.all(color: danger.withOpacity(0.18)),
+                border: Border.all(color: danger.withValues(alpha: 0.18)),
               ),
               child: Icon(
                 Icons.warning_amber_rounded,
@@ -395,13 +394,16 @@ class _HeaderHero extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppRadii.xl),
             gradient: LinearGradient(
               colors: [
-                cs.primary.withOpacity(0.22),
-                cs.primary.withOpacity(0.08),
+                cs.primary.withValues(alpha: 0.22),
+                cs.primary.withValues(alpha: 0.08),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            border: Border.all(color: cs.primary.withOpacity(0.22), width: 1.2),
+            border: Border.all(
+              color: cs.primary.withValues(alpha: 0.22),
+              width: 1.2,
+            ),
           ),
           child: Icon(
             Icons.groups_rounded,
@@ -444,8 +446,8 @@ class _HeaderHero extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppRadii.xl),
-            color: cs.primary.withOpacity(0.10),
-            border: Border.all(color: cs.primary.withOpacity(0.22)),
+            color: cs.primary.withValues(alpha: 0.10),
+            border: Border.all(color: cs.primary.withValues(alpha: 0.22)),
           ),
           child: Text(
             '$count',
@@ -527,7 +529,7 @@ class _StaffCard extends StatelessWidget {
     final spacing = theme.extension<AppSpacing>()!;
     final semantic = theme.extension<AppSemanticColors>();
 
-    final borderColor = cs.outlineVariant.withOpacity(0.70);
+    final borderColor = cs.outlineVariant.withValues(alpha: 0.70);
 
     return Container(
       decoration: BoxDecoration(
@@ -542,8 +544,8 @@ class _StaffCard extends StatelessWidget {
         child: InkWell(
           onTap: () async => onTap(),
           borderRadius: BorderRadius.circular(AppRadii.xl),
-          splashColor: cs.primary.withOpacity(0.10),
-          highlightColor: cs.primary.withOpacity(0.05),
+          splashColor: cs.primary.withValues(alpha: 0.10),
+          highlightColor: cs.primary.withValues(alpha: 0.05),
           child: Padding(
             padding: EdgeInsets.all(spacing.lg),
             child: Column(
@@ -605,7 +607,7 @@ class _AvatarWithStatus extends StatelessWidget {
           height: size,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(999),
-            color: cs.primary.withOpacity(0.10),
+            color: cs.primary.withValues(alpha: 0.10),
             border: Border.all(color: ringColor, width: 3),
           ),
           child: ClipRRect(
@@ -662,7 +664,6 @@ class _StaffInfo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs = theme.colorScheme;
     final spacing = theme.extension<AppSpacing>()!;
 
     return Column(
@@ -710,14 +711,14 @@ class _StatusPill extends StatelessWidget {
             ? (semantic?.success ?? cs.primary)
             : (semantic?.danger ?? cs.error);
 
-    final bg = fg.withOpacity(0.14);
+    final bg = fg.withValues(alpha: 0.14);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: fg.withOpacity(0.85), width: 1),
+        border: Border.all(color: fg.withValues(alpha: 0.85), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -758,7 +759,7 @@ class _ContactRow extends StatelessWidget {
         Container(
           padding: EdgeInsets.all(spacing.xs),
           decoration: BoxDecoration(
-            color: cs.primary.withOpacity(0.10),
+            color: cs.primary.withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(AppRadii.lg),
           ),
           child: Icon(icon, size: spacing.md, color: cs.primary),
@@ -769,7 +770,7 @@ class _ContactRow extends StatelessWidget {
             text,
             style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w700,
-              color: cs.onSurface.withOpacity(0.82),
+              color: cs.onSurface.withValues(alpha: 0.82),
             ),
             overflow: TextOverflow.ellipsis,
           ),
@@ -799,8 +800,8 @@ class _ActionRow extends StatelessWidget {
     final spacing = theme.extension<AppSpacing>()!;
     final semantic = theme.extension<AppSemanticColors>();
 
-    final bg = cs.surfaceVariant.withOpacity(0.35);
-    final border = cs.outlineVariant.withOpacity(0.70);
+    final bg = cs.surfaceVariant.withValues(alpha: 0.35);
+    final border = cs.outlineVariant.withValues(alpha: 0.70);
 
     final info = semantic?.info ?? cs.secondary;
     final warn = semantic?.warning ?? Colors.orange;
@@ -865,13 +866,13 @@ class _ActionButton extends StatelessWidget {
       child: Container(
         margin: EdgeInsets.symmetric(horizontal: spacing.xxs),
         child: Material(
-          color: tone.withOpacity(0.12),
+          color: tone.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(AppRadii.lg),
           child: InkWell(
             onTap: onTap,
             borderRadius: BorderRadius.circular(AppRadii.lg),
-            splashColor: tone.withOpacity(0.20),
-            highlightColor: tone.withOpacity(0.10),
+            splashColor: tone.withValues(alpha: 0.20),
+            highlightColor: tone.withValues(alpha: 0.10),
             child: Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: spacing.md,
