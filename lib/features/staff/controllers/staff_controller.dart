@@ -1,18 +1,18 @@
-// lib/features/staff/controllers/staff_controller.dart
-import 'package:get/get.dart';
 import 'dart:io';
+
 import 'package:emababyspa/data/models/staff.dart';
 import 'package:emababyspa/data/repository/staff_repository.dart';
 import 'package:emababyspa/utils/app_routes.dart';
-import 'package:emababyspa/common/theme/color_theme.dart';
 import 'package:emababyspa/utils/logger_utils.dart';
+import 'package:get/get.dart';
 
 class StaffController extends GetxController {
   final StaffRepository _staffRepository;
   final LoggerUtils _logger = LoggerUtils();
+
   StaffController({required StaffRepository staffRepository})
     : _staffRepository = staffRepository;
-  // Observable state
+
   final RxList<Staff> staffList = <Staff>[].obs;
   final RxBool isLoading = false.obs;
   final RxBool isFormSubmitting = false.obs;
@@ -24,7 +24,6 @@ class StaffController extends GetxController {
     fetchAllStaffs();
   }
 
-  // Fetch all staff members
   Future<void> fetchAllStaffs() async {
     try {
       isLoading.value = true;
@@ -40,23 +39,20 @@ class StaffController extends GetxController {
     }
   }
 
-  // Refresh data
-  void refreshData() {
-    fetchAllStaffs();
+  void refreshData() => fetchAllStaffs();
+
+  /// ✅ DIUBAH: kembalikan result supaya StaffView bisa show snackbar
+  Future<bool> navigateToAddStaff() async {
+    final result = await Get.toNamed(AppRoutes.staffForm);
+    return result == true;
   }
 
-  // Navigate to add staff screen
-  void navigateToAddStaff() {
-    Get.toNamed(AppRoutes.staffForm);
-  }
-
-  // Navigate to edit staff screen
   void navigateToEditStaff(String id) {
     Get.toNamed('/staffs/edit/$id');
   }
 
-  // Add new staff member
-  Future<void> addStaff({
+  /// Controller tidak show snackbar / tidak Get.back().
+  Future<Staff> addStaff({
     required String name,
     required String email,
     required String phoneNumber,
@@ -74,37 +70,21 @@ class StaffController extends GetxController {
         profilePicture: profilePicture,
       );
 
-      if (staff != null) {
-        // Add to list if successful
-        staffList.add(staff);
-
-        // Show success message
-        Get.snackbar(
-          'Success',
-          'Staff member added successfully',
-          backgroundColor: ColorTheme.success.withValues(alpha: 0.1),
-          colorText: ColorTheme.success,
-        );
-
-        // Navigate back
-        Get.back();
+      if (staff == null) {
+        throw Exception('Create staff returned null');
       }
+
+      staffList.add(staff);
+      return staff;
     } catch (e) {
-      // Show error message
-      Get.snackbar(
-        'Error',
-        'Failed to add staff member',
-        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
-        colorText: ColorTheme.error,
-      );
       _logger.error('Error adding staff: $e');
+      rethrow;
     } finally {
       isFormSubmitting.value = false;
     }
   }
 
-  // Update staff member
-  Future<void> updateStaff({
+  Future<Staff> updateStaff({
     required String id,
     required String name,
     required String email,
@@ -126,40 +106,25 @@ class StaffController extends GetxController {
         profilePicture: profilePicture,
       );
 
-      if (staff != null) {
-        // Update list item if successful
-        final index = staffList.indexWhere((s) => s.id == id);
-        if (index != -1) {
-          staffList[index] = staff;
-          staffList.refresh();
-        }
-
-        // Show success message
-        Get.snackbar(
-          'Success',
-          'Staff member updated successfully',
-          backgroundColor: ColorTheme.success.withValues(alpha: 0.1),
-          colorText: ColorTheme.success,
-        );
-
-        // Navigate back
-        Get.back();
+      if (staff == null) {
+        throw Exception('Update staff returned null');
       }
+
+      final index = staffList.indexWhere((s) => s.id == id);
+      if (index != -1) {
+        staffList[index] = staff;
+        staffList.refresh();
+      }
+
+      return staff;
     } catch (e) {
-      // Show error message
-      Get.snackbar(
-        'Error',
-        'Failed to update staff member',
-        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
-        colorText: ColorTheme.error,
-      );
       _logger.error('Error updating staff: $e');
+      rethrow;
     } finally {
       isFormSubmitting.value = false;
     }
   }
 
-  // Toggle staff active status
   Future<void> toggleStaffStatus(Staff staff) async {
     try {
       final updatedStaff = await _staffRepository.updateStaffStatus(
@@ -168,59 +133,27 @@ class StaffController extends GetxController {
       );
 
       if (updatedStaff != null) {
-        // Update list item if successful
         final index = staffList.indexWhere((s) => s.id == staff.id);
         if (index != -1) {
           staffList[index] = updatedStaff;
           staffList.refresh();
         }
-
-        // Show success message
-        Get.snackbar(
-          'Success',
-          'Staff status updated successfully',
-          backgroundColor: ColorTheme.success.withValues(alpha: 0.1),
-          colorText: ColorTheme.success,
-        );
       }
     } catch (e) {
-      // Show error message
-      Get.snackbar(
-        'Error',
-        'Failed to update staff status',
-        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
-        colorText: ColorTheme.error,
-      );
       _logger.error('Error toggling staff status: $e');
+      rethrow;
     }
   }
 
-  // Delete staff member
   Future<void> deleteStaff(String id) async {
     try {
       final isDeleted = await _staffRepository.deleteStaff(id);
-
       if (isDeleted) {
-        // Remove from list if successful
         staffList.removeWhere((staff) => staff.id == id);
-
-        // Show success message
-        Get.snackbar(
-          'Success',
-          'Staff member deleted successfully',
-          backgroundColor: ColorTheme.success.withValues(alpha: 0.1),
-          colorText: ColorTheme.success,
-        );
       }
     } catch (e) {
-      // Show error message
-      Get.snackbar(
-        'Error',
-        'Failed to delete staff member',
-        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
-        colorText: ColorTheme.error,
-      );
       _logger.error('Error deleting staff: $e');
+      rethrow;
     }
   }
 
@@ -228,14 +161,11 @@ class StaffController extends GetxController {
     try {
       isLoading.value = true;
 
-      // Validate id
       if (id.isEmpty) {
         throw Exception("Staff ID is required");
       }
 
-      // Example API call to fetch staff by ID
       final response = await _staffRepository.getStaffById(id);
-
       return response;
     } catch (e) {
       errorMessage.value = 'Failed to fetch staff: ${e.toString()}';

@@ -1,373 +1,271 @@
-// lib/features/staff/views/staff_form_view.dart
-import 'package:device_info_plus/device_info_plus.dart';
-import 'package:emababyspa/common/theme/color_theme.dart'; // Import ColorTheme
-import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'dart:io';
-import 'package:image_picker/image_picker.dart';
-import 'package:emababyspa/common/widgets/custom_appbar.dart';
+
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:emababyspa/common/layouts/main_layout.dart';
+import 'package:emababyspa/common/theme/app_theme.dart';
 import 'package:emababyspa/common/widgets/app_button.dart';
 import 'package:emababyspa/common/widgets/app_text_field.dart';
-import 'package:emababyspa/common/layouts/main_layout.dart';
+import 'package:emababyspa/common/widgets/custom_appbar.dart';
 import 'package:emababyspa/features/staff/controllers/staff_controller.dart';
-import 'package:emababyspa/utils/permission_utils.dart'; // Import PermissionUtils
+import 'package:emababyspa/utils/permission_utils.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:emababyspa/features/theme/controllers/theme_controller.dart'; // Import ThemeController
 
-class StaffFormView extends GetView<StaffController> {
+class StaffFormView extends StatefulWidget {
   const StaffFormView({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final ThemeController themeController =
-        Get.find(); // Get ThemeController instance
-    // No longer need ThemeData or ColorScheme here, will use themeController directly for consistency
-    // final ThemeData theme = Theme.of(context);
-    // final ColorScheme colorScheme = theme.colorScheme;
+  State<StaffFormView> createState() => _StaffFormViewState();
+}
 
-    // Form controllers
-    final nameController = TextEditingController();
-    final emailController = TextEditingController();
-    final phoneController = TextEditingController();
-    final addressController = TextEditingController();
+class _StaffFormViewState extends State<StaffFormView> {
+  final StaffController controller = Get.find<StaffController>();
+  final PermissionUtils permissionUtils = PermissionUtils();
 
-    // Form key for validation
-    final formKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
-    // Observable for profile picture
-    final Rx<File?> profilePicture = Rx<File?>(null);
+  late final TextEditingController nameController;
+  late final TextEditingController emailController;
+  late final TextEditingController phoneController;
+  late final TextEditingController addressController;
 
-    // Field validators
-    final nameError = RxString('');
-    final emailError = RxString('');
-    final phoneError = RxString('');
+  final Rx<File?> profilePicture = Rx<File?>(null);
 
-    // Create instance of PermissionUtils
-    final permissionUtils = PermissionUtils();
+  final RxString nameError = RxString('');
+  final RxString emailError = RxString('');
+  final RxString phoneError = RxString('');
 
-    // Function to validate the form
-    bool validateForm() {
-      bool isValid = true;
-      nameError.value = '';
-      emailError.value = '';
-      phoneError.value = '';
+  @override
+  void initState() {
+    super.initState();
+    nameController = TextEditingController();
+    emailController = TextEditingController();
+    phoneController = TextEditingController();
+    addressController = TextEditingController();
+  }
 
-      if (nameController.text.trim().isEmpty) {
-        nameError.value = 'Name is required';
-        isValid = false;
-      }
-      if (emailController.text.trim().isEmpty) {
-        emailError.value = 'Email is required';
-        isValid = false;
-      } else if (!GetUtils.isEmail(emailController.text.trim())) {
-        emailError.value = 'Enter a valid email address';
-        isValid = false;
-      }
-      if (phoneController.text.trim().isEmpty) {
-        phoneError.value = 'Phone number is required';
-        isValid = false;
-      }
-      return isValid;
+  @override
+  void dispose() {
+    nameController.dispose();
+    emailController.dispose();
+    phoneController.dispose();
+    addressController.dispose();
+    super.dispose();
+  }
+
+  bool _isValidName(String value) {
+    final regex = RegExp(r'^[a-zA-Z\s]+$');
+    return regex.hasMatch(value);
+  }
+
+  bool _isValidPhone(String value) {
+    final regex = RegExp(r'^08\d{8,11}$'); // 10-13 digit total
+    return regex.hasMatch(value);
+  }
+
+  bool validateForm() {
+    bool isValid = true;
+
+    nameError.value = '';
+    emailError.value = '';
+    phoneError.value = '';
+
+    final name = nameController.text.trim();
+    final email = emailController.text.trim();
+    final phone = phoneController.text.trim();
+
+    if (name.isEmpty) {
+      nameError.value = 'Nama wajib diisi';
+      isValid = false;
+    } else if (name.length < 3) {
+      nameError.value = 'Nama minimal 3 karakter';
+      isValid = false;
+    } else if (!_isValidName(name)) {
+      nameError.value = 'Nama hanya boleh huruf dan spasi';
+      isValid = false;
     }
 
-    const double fieldSpacing = 18.0;
-    const double sectionSpacing = 28.0;
-    final EdgeInsets inputErrorPadding = const EdgeInsets.only(
-      top: 6.0,
-      left: 12.0,
-      bottom: 6.0,
-    ); // Added bottom padding
+    if (email.isEmpty) {
+      emailError.value = 'Email wajib diisi';
+      isValid = false;
+    } else if (!GetUtils.isEmail(email)) {
+      emailError.value = 'Format email tidak valid';
+      isValid = false;
+    }
+
+    if (phone.isEmpty) {
+      phoneError.value = 'Nomor HP wajib diisi';
+      isValid = false;
+    } else if (!_isValidPhone(phone)) {
+      phoneError.value = 'Nomor HP harus diawali 08 dan 10–13 digit';
+      isValid = false;
+    }
+
+    return isValid;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final spacing = theme.extension<AppSpacing>()!;
+
+    Widget errorText(RxString error) {
+      return Obx(() {
+        if (error.value.isEmpty) return SizedBox(height: spacing.sm);
+        return Padding(
+          padding: EdgeInsets.only(
+            top: spacing.xxs,
+            left: spacing.sm,
+            bottom: spacing.xxs,
+          ),
+          child: Text(
+            error.value,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: cs.error,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        );
+      });
+    }
 
     return MainLayout(
-      child: Obx(
-        () => Scaffold(
-          backgroundColor:
-              themeController.isDarkMode
-                  ? ColorTheme.backgroundDark
-                  : ColorTheme.background,
-          appBar: const CustomAppBar(
-            title: 'Add New Staff',
-            showBackButton: true,
-          ),
-          body: SafeArea(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Form(
-                  key: formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Form title
-                      Text(
-                        'Staff Information',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color:
-                              themeController.isDarkMode
-                                  ? ColorTheme.textPrimaryDark
-                                  : ColorTheme.textPrimary,
-                          fontFamily: 'JosefinSans',
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Enter the details for the new staff member below.',
-                        style: TextStyle(
-                          fontSize: 15,
-                          color:
-                              themeController.isDarkMode
-                                  ? ColorTheme.textSecondaryDark
-                                  : ColorTheme.textSecondary,
-                          fontFamily: 'JosefinSans',
-                        ),
-                      ),
-                      const SizedBox(height: sectionSpacing),
+      child: Scaffold(
+        backgroundColor: cs.background,
+        appBar: const CustomAppBar(title: 'Tambah Staff', showBackButton: true),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: EdgeInsets.fromLTRB(
+              spacing.md,
+              spacing.lg,
+              spacing.md,
+              spacing.xxl,
+            ),
+            child: Form(
+              key: formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _HeroHeader(
+                    title: 'Data Staff',
+                    subtitle:
+                        'Lengkapi informasi staff agar operasional dan komunikasi berjalan lebih rapi.',
+                  ),
+                  SizedBox(height: spacing.xl),
 
-                      // Profile Picture Selection
-                      Center(
-                        child: Column(
-                          children: [
-                            Obx(
-                              () => GestureDetector(
-                                onTap:
-                                    () => _selectImage(
-                                      profilePicture,
-                                      permissionUtils,
-                                      context,
-                                      themeController,
-                                    ),
-                                child: Container(
-                                  width: 120,
-                                  height: 120,
-                                  decoration: BoxDecoration(
-                                    color:
-                                        themeController.isDarkMode
-                                            ? ColorTheme.surfaceDark
-                                            : ColorTheme.surface,
-                                    borderRadius: BorderRadius.circular(60),
-                                    border: Border.all(
-                                      color: (themeController.isDarkMode
-                                              ? ColorTheme.primaryLightDark
-                                              : ColorTheme.primary)
-                                          .withOpacity(0.5),
-                                      width: 2.5,
-                                    ),
-                                    image:
-                                        profilePicture.value != null
-                                            ? DecorationImage(
-                                              image: FileImage(
-                                                profilePicture.value!,
-                                              ),
-                                              fit: BoxFit.cover,
-                                            )
-                                            : null,
-                                  ),
-                                  child:
-                                      profilePicture.value == null
-                                          ? Icon(
-                                            Icons.person_add_alt_1_rounded,
-                                            size: 50,
-                                            color:
-                                                themeController.isDarkMode
-                                                    ? ColorTheme
-                                                        .textTertiaryDark
-                                                    : ColorTheme.textTertiary,
-                                          )
-                                          : null,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            TextButton.icon(
-                              onPressed:
-                                  () => _selectImage(
-                                    profilePicture,
-                                    permissionUtils,
-                                    context,
-                                    themeController,
-                                  ),
-                              icon: Obx(
-                                () => Icon(
-                                  profilePicture.value != null
-                                      ? Icons.edit_outlined
-                                      : Icons.add_a_photo_outlined,
-                                  color:
-                                      themeController.isDarkMode
-                                          ? ColorTheme.primaryLightDark
-                                          : ColorTheme.primary,
-                                  size: 20,
-                                ),
-                              ),
-                              label: Obx(
-                                () => Text(
-                                  profilePicture.value != null
-                                      ? 'Change Picture'
-                                      : 'Add Profile Picture',
-                                  style: TextStyle(
-                                    color:
-                                        themeController.isDarkMode
-                                            ? ColorTheme.primaryLightDark
-                                            : ColorTheme.primary,
-                                    fontWeight: FontWeight.w600,
-                                    fontFamily: 'JosefinSans',
-                                    fontSize: 15,
-                                  ),
-                                ),
-                              ),
-                            ),
+                  _ProfilePickerCard(
+                    profilePicture: profilePicture,
+                    onPick: () => _selectImage(context),
+                  ),
+
+                  SizedBox(height: spacing.xl),
+
+                  _SectionCard(
+                    child: Column(
+                      children: [
+                        AppTextField(
+                          controller: nameController,
+                          label: 'Nama Lengkap',
+                          placeholder: 'Contoh: Siti Nur Aisyah',
+                          prefix: const Icon(Icons.person_outline_rounded),
+                          isRequired: true,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.deny(RegExp(r'[0-9]')),
                           ],
-                        ),
-                      ),
-                      const SizedBox(height: sectionSpacing),
-
-                      // Name field with validation
-                      AppTextField(
-                        controller: nameController,
-                        label: 'Full Name',
-                        placeholder: 'Enter staff full name',
-                        prefix: const Icon(Icons.person_outline_rounded),
-                        isRequired: true,
-                        onChanged: (value) {
-                          if (nameError.value.isNotEmpty &&
-                              value.trim().isNotEmpty) {
-                            nameError.value = '';
-                          }
-                        },
-                      ),
-                      Obx(
-                        () =>
-                            nameError.value.isNotEmpty
-                                ? Padding(
-                                  padding: inputErrorPadding,
-                                  child: Text(
-                                    nameError.value,
-                                    style: TextStyle(
-                                      color:
-                                          themeController.isDarkMode
-                                              ? ColorTheme.errorDark
-                                              : ColorTheme.error,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                )
-                                : const SizedBox(height: fieldSpacing - 6),
-                      ),
-
-                      // Email field with validation
-                      AppTextField(
-                        controller: emailController,
-                        label: 'Email Address',
-                        placeholder: 'Enter staff email',
-                        prefix: const Icon(Icons.email_outlined),
-                        keyboardType: TextInputType.emailAddress,
-                        isRequired: true,
-                        onChanged: (value) {
-                          if (emailError.value.isNotEmpty &&
-                              value.trim().isNotEmpty &&
-                              GetUtils.isEmail(value.trim())) {
-                            emailError.value = '';
-                          }
-                        },
-                      ),
-                      Obx(
-                        () =>
-                            emailError.value.isNotEmpty
-                                ? Padding(
-                                  padding: inputErrorPadding,
-                                  child: Text(
-                                    emailError.value,
-                                    style: TextStyle(
-                                      color:
-                                          themeController.isDarkMode
-                                              ? ColorTheme.errorDark
-                                              : ColorTheme.error,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                )
-                                : const SizedBox(height: fieldSpacing - 6),
-                      ),
-
-                      // Phone number field with validation
-                      AppTextField(
-                        controller: phoneController,
-                        label: 'Phone Number',
-                        placeholder: 'Enter staff phone number',
-                        prefix: const Icon(Icons.phone_outlined),
-                        keyboardType: TextInputType.phone,
-                        isRequired: true,
-                        onChanged: (value) {
-                          if (phoneError.value.isNotEmpty &&
-                              value.trim().isNotEmpty) {
-                            phoneError.value = '';
-                          }
-                        },
-                      ),
-                      Obx(
-                        () =>
-                            phoneError.value.isNotEmpty
-                                ? Padding(
-                                  padding: inputErrorPadding,
-                                  child: Text(
-                                    phoneError.value,
-                                    style: TextStyle(
-                                      color:
-                                          themeController.isDarkMode
-                                              ? ColorTheme.errorDark
-                                              : ColorTheme.error,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                )
-                                : const SizedBox(height: fieldSpacing - 6),
-                      ),
-
-                      // Address field
-                      AppTextField(
-                        controller: addressController,
-                        label: 'Address (Optional)',
-                        placeholder: 'Enter staff address',
-                        prefix: const Icon(Icons.location_on_outlined),
-                        maxLines: 3,
-                      ),
-                      const SizedBox(height: sectionSpacing * 1.5),
-
-                      // Submit button
-                      Obx(
-                        () => AppButton(
-                          text: 'Save Staff Member',
-                          isLoading: controller.isFormSubmitting.value,
-                          type: AppButtonType.primary,
-                          size: AppButtonSize.large,
-                          isFullWidth: true,
-                          icon: Icons.save_alt_outlined,
-                          onPressed: () async {
-                            if (validateForm()) {
-                              try {
-                                await controller.addStaff(
-                                  name: nameController.text.trim(),
-                                  email: emailController.text.trim(),
-                                  phoneNumber: phoneController.text.trim(),
-                                  address:
-                                      addressController.text.trim().isNotEmpty
-                                          ? addressController.text.trim()
-                                          : null,
-                                  profilePicture: profilePicture.value,
-                                );
-                                Get.back();
-                              } catch (e) {
-                                // Error is already handled in controller
-                              }
+                          onChanged: (value) {
+                            final v = value.trim();
+                            if (v.isNotEmpty &&
+                                v.length >= 3 &&
+                                _isValidName(v)) {
+                              nameError.value = '';
                             }
                           },
                         ),
-                      ),
-                      const SizedBox(height: fieldSpacing),
-                    ],
+                        errorText(nameError),
+
+                        AppTextField(
+                          controller: emailController,
+                          label: 'Email',
+                          placeholder: 'staff@email.com',
+                          prefix: const Icon(Icons.email_outlined),
+                          keyboardType: TextInputType.emailAddress,
+                          isRequired: true,
+                          onChanged: (value) {
+                            final v = value.trim();
+                            if (GetUtils.isEmail(v)) emailError.value = '';
+                          },
+                        ),
+                        errorText(emailError),
+
+                        AppTextField(
+                          controller: phoneController,
+                          label: 'Nomor HP',
+                          placeholder: '08xxxxxxxxxx',
+                          prefix: const Icon(Icons.phone_outlined),
+                          keyboardType: TextInputType.phone,
+                          isRequired: true,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          onChanged: (value) {
+                            final v = value.trim();
+                            if (_isValidPhone(v)) phoneError.value = '';
+                          },
+                        ),
+                        errorText(phoneError),
+
+                        AppTextField(
+                          controller: addressController,
+                          label: 'Alamat (Opsional)',
+                          placeholder: 'Tambahkan alamat jika diperlukan',
+                          prefix: const Icon(Icons.location_on_outlined),
+                          maxLines: 3,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+
+                  SizedBox(height: spacing.xl),
+
+                  Obx(
+                    () => AppButton(
+                      text: 'Simpan Staff',
+                      isLoading: controller.isFormSubmitting.value,
+                      type: AppButtonType.primary,
+                      size: AppButtonSize.large,
+                      isFullWidth: true,
+                      icon: Icons.save_alt_outlined,
+                      onPressed: () async {
+                        FocusScope.of(context).unfocus();
+                        if (!validateForm()) return;
+
+                        try {
+                          await controller.addStaff(
+                            name: nameController.text.trim(),
+                            email: emailController.text.trim(),
+                            phoneNumber: phoneController.text.trim(),
+                            address:
+                                addressController.text.trim().isNotEmpty
+                                    ? addressController.text.trim()
+                                    : null,
+                            profilePicture: profilePicture.value,
+                          );
+
+                          // ✅ balik ke StaffView + kirim sinyal sukses
+                          if (mounted) Get.back(result: true);
+                        } catch (_) {
+                          // error toast aman
+                          permissionUtils.showToast('Gagal menambahkan staff');
+                        }
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -376,172 +274,160 @@ class StaffFormView extends GetView<StaffController> {
     );
   }
 
-  // ... rest of the functions (_selectImage, _isAndroid13OrAbove, etc.) remain the same
-  // But I will update _selectImage to use the more modern design from StaffEditView for consistency
+  // ===================== PHOTO PICKER (BOTTOM SHEET) =====================
 
-  Future<void> _selectImage(
-    Rx<File?> profilePicture,
-    PermissionUtils permissionUtils,
-    BuildContext context,
-    ThemeController themeController,
-  ) async {
+  Future<void> _selectImage(BuildContext context) async {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final spacing = theme.extension<AppSpacing>()!;
+
     try {
       await Get.bottomSheet(
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color:
-                themeController.isDarkMode
-                    ? ColorTheme.surfaceDark
-                    : Colors.white,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(24),
-              topRight: Radius.circular(24),
+        SafeArea(
+          child: Container(
+            padding: EdgeInsets.fromLTRB(
+              spacing.lg,
+              spacing.sm,
+              spacing.lg,
+              spacing.lg,
             ),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 15),
-                decoration: BoxDecoration(
-                  color: Colors.grey[400],
-                  borderRadius: BorderRadius.circular(10),
-                ),
+            decoration: BoxDecoration(
+              color: cs.surface,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(AppRadii.xl),
+                topRight: Radius.circular(AppRadii.xl),
               ),
-              Text(
-                'Choose Profile Picture',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color:
-                      themeController.isDarkMode
-                          ? ColorTheme.textPrimaryDark
-                          : ColorTheme.textPrimary,
-                  fontFamily: 'JosefinSans',
-                ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildImageSourceOption(
-                    icon: Icons.camera_alt_outlined,
-                    label: 'Camera',
-                    themeController: themeController,
-                    color:
-                        themeController.isDarkMode
-                            ? ColorTheme.primaryLightDark
-                            : ColorTheme.primary,
-                    onTap: () async {
-                      Get.back();
-                      final status = await Permission.camera.request();
-                      if (status.isGranted) {
-                        _takePicture(profilePicture, permissionUtils);
-                      } else if (status.isPermanentlyDenied) {
-                        permissionUtils.showPermissionDialog(
-                          title: 'Camera Permission Required',
-                          message:
-                              'Camera permission is required to take photos. Please enable it in app settings.',
-                        );
-                      } else {
-                        permissionUtils.showToast('Camera permission denied');
-                      }
-                    },
+              boxShadow: AppShadows.soft(cs.shadow),
+              border: Border.all(color: cs.outlineVariant.withOpacity(0.65)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: spacing.xxl,
+                  height: spacing.xxs,
+                  decoration: BoxDecoration(
+                    color: cs.outlineVariant.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(AppRadii.lg),
                   ),
-                  _buildImageSourceOption(
-                    icon: Icons.photo_library_outlined,
-                    label: 'Gallery',
-                    themeController: themeController,
-                    color:
-                        themeController.isDarkMode
-                            ? ColorTheme.infoDark
-                            : ColorTheme.info,
-                    onTap: () async {
-                      Get.back();
-                      Permission permission;
-                      if (Platform.isAndroid) {
-                        permission =
-                            await _isAndroid13OrAbove()
-                                ? Permission.photos
-                                : Permission.storage;
-                      } else {
-                        permission = Permission.photos;
-                      }
-                      final status = await permission.request();
-                      if (status.isGranted) {
-                        _pickFromGallery(profilePicture, permissionUtils);
-                      } else if (status.isPermanentlyDenied) {
-                        permissionUtils.showPermissionDialog(
-                          title: 'Storage Permission Required',
-                          message:
-                              'Storage permission is required to select photos. Please enable it in app settings.',
-                        );
-                      } else {
-                        permissionUtils.showToast('Storage permission denied');
-                      }
-                    },
+                ),
+                SizedBox(height: spacing.md),
+                Text(
+                  'Pilih Foto Profil',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
                   ),
-                ],
-              ),
-              const SizedBox(height: 20),
-            ],
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: spacing.xxs),
+                Text(
+                  'Ambil dari kamera atau pilih dari galeri.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: cs.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: spacing.lg),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _PickOptionCard(
+                        icon: Icons.camera_alt_outlined,
+                        title: 'Kamera',
+                        subtitle: 'Ambil foto baru',
+                        onTap: () async {
+                          Get.back();
+                          final status = await Permission.camera.request();
+                          if (status.isGranted) {
+                            await _takePicture();
+                          } else if (status.isPermanentlyDenied) {
+                            permissionUtils.showPermissionDialog(
+                              title: 'Izin Kamera Diperlukan',
+                              message:
+                                  'Aktifkan izin kamera di pengaturan aplikasi.',
+                            );
+                          } else {
+                            permissionUtils.showToast('Izin kamera ditolak');
+                          }
+                        },
+                      ),
+                    ),
+                    SizedBox(width: spacing.md),
+                    Expanded(
+                      child: _PickOptionCard(
+                        icon: Icons.photo_library_outlined,
+                        title: 'Galeri',
+                        subtitle: 'Pilih dari album',
+                        onTap: () async {
+                          Get.back();
+                          Permission permission;
+                          if (Platform.isAndroid) {
+                            permission =
+                                await _isAndroid13OrAbove()
+                                    ? Permission.photos
+                                    : Permission.storage;
+                          } else {
+                            permission = Permission.photos;
+                          }
+                          final status = await permission.request();
+                          if (status.isGranted) {
+                            await _pickFromGallery();
+                          } else if (status.isPermanentlyDenied) {
+                            permissionUtils.showPermissionDialog(
+                              title: 'Izin Penyimpanan Diperlukan',
+                              message:
+                                  'Aktifkan izin penyimpanan/foto di pengaturan aplikasi.',
+                            );
+                          } else {
+                            permissionUtils.showToast('Izin galeri ditolak');
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: spacing.md),
+              ],
+            ),
           ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
       );
-    } catch (e) {
-      permissionUtils.showToast('Error selecting image: ${e.toString()}');
+    } catch (_) {
+      permissionUtils.showToast('Gagal membuka pemilih foto');
     }
   }
 
-  Widget _buildImageSourceOption({
-    required IconData icon,
-    required String label,
-    required ThemeController themeController,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(100),
-                border: Border.all(color: color.withOpacity(0.3)),
-              ),
-              child: Icon(icon, color: color, size: 32),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              label,
-              style: TextStyle(
-                color:
-                    themeController.isDarkMode
-                        ? ColorTheme.textSecondaryDark
-                        : ColorTheme.textSecondary,
-                fontFamily: 'JosefinSans',
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  Future<void> _takePicture() async {
+    try {
+      final picker = ImagePicker();
+      final XFile? photo = await picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 80,
+        maxWidth: 1024,
+        maxHeight: 1024,
+      );
+      if (photo != null) profilePicture.value = File(photo.path);
+    } catch (_) {
+      permissionUtils.showToast('Gagal mengambil foto');
+    }
+  }
+
+  Future<void> _pickFromGallery() async {
+    try {
+      final picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80,
+        maxWidth: 1024,
+        maxHeight: 1024,
+      );
+      if (image != null) profilePicture.value = File(image.path);
+    } catch (_) {
+      permissionUtils.showToast('Gagal memilih foto');
+    }
   }
 
   Future<bool> _isAndroid13OrAbove() async {
@@ -552,44 +438,262 @@ class StaffFormView extends GetView<StaffController> {
     }
     return false;
   }
+}
 
-  Future<void> _takePicture(
-    Rx<File?> profilePicture,
-    PermissionUtils permissionUtils,
-  ) async {
-    try {
-      final ImagePicker picker = ImagePicker();
-      final XFile? photo = await picker.pickImage(
-        source: ImageSource.camera,
-        imageQuality: 80,
-        maxWidth: 1024,
-        maxHeight: 1024,
-      );
-      if (photo != null) {
-        profilePicture.value = File(photo.path);
-      }
-    } catch (e) {
-      permissionUtils.showToast('Failed to capture image: $e');
-    }
+// ===================== UI PARTS =====================
+
+class _HeroHeader extends StatelessWidget {
+  final String title;
+  final String subtitle;
+
+  const _HeroHeader({required this.title, required this.subtitle});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final spacing = theme.extension<AppSpacing>()!;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(spacing.lg),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+        border: Border.all(color: cs.outlineVariant.withOpacity(0.65)),
+        boxShadow: AppShadows.soft(cs.shadow),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          SizedBox(height: spacing.xxs),
+          Text(
+            subtitle,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: cs.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
   }
+}
 
-  Future<void> _pickFromGallery(
-    Rx<File?> profilePicture,
-    PermissionUtils permissionUtils,
-  ) async {
-    try {
-      final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 80,
-        maxWidth: 1024,
-        maxHeight: 1024,
-      );
-      if (image != null) {
-        profilePicture.value = File(image.path);
-      }
-    } catch (e) {
-      permissionUtils.showToast('Failed to select image: $e');
-    }
+class _SectionCard extends StatelessWidget {
+  final Widget child;
+
+  const _SectionCard({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final spacing = Theme.of(context).extension<AppSpacing>()!;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(spacing.lg),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+        border: Border.all(color: cs.outlineVariant.withOpacity(0.65)),
+        boxShadow: AppShadows.soft(cs.shadow),
+      ),
+      child: child,
+    );
+  }
+}
+
+class _ProfilePickerCard extends StatelessWidget {
+  final Rx<File?> profilePicture;
+  final VoidCallback onPick;
+
+  const _ProfilePickerCard({
+    required this.profilePicture,
+    required this.onPick,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final spacing = theme.extension<AppSpacing>()!;
+
+    final double avatar = spacing.xxl * 2.1;
+    final double ringPad = spacing.xs;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(spacing.lg),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+        border: Border.all(color: cs.outlineVariant.withOpacity(0.65)),
+        boxShadow: AppShadows.soft(cs.shadow),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Obx(() {
+            final file = profilePicture.value;
+
+            return Material(
+              color: Colors.transparent,
+              shape: const CircleBorder(),
+              child: InkWell(
+                onTap: onPick,
+                customBorder: const CircleBorder(),
+                child: Container(
+                  padding: EdgeInsets.all(ringPad),
+                  decoration: ShapeDecoration(
+                    shape: CircleBorder(
+                      side: BorderSide(color: cs.primary.withOpacity(0.24)),
+                    ),
+                    gradient: LinearGradient(
+                      colors: [
+                        cs.primary.withOpacity(0.16),
+                        cs.secondary.withOpacity(0.06),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    shadows: AppShadows.soft(cs.shadow),
+                  ),
+                  child: Container(
+                    width: avatar,
+                    height: avatar,
+                    decoration: ShapeDecoration(
+                      shape: const CircleBorder(),
+                      color: cs.surfaceVariant.withOpacity(0.35),
+                      image:
+                          file != null
+                              ? DecorationImage(
+                                image: FileImage(file),
+                                fit: BoxFit.cover,
+                              )
+                              : null,
+                    ),
+                    child:
+                        file == null
+                            ? Icon(
+                              Icons.person_add_alt_1_rounded,
+                              color: cs.primary,
+                              size: spacing.xl,
+                            )
+                            : null,
+                  ),
+                ),
+              ),
+            );
+          }),
+          SizedBox(height: spacing.md),
+          Text(
+            'Foto Profil',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w900,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: spacing.xxs),
+          ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: avatar * 2.1),
+            child: Text(
+              'Tap avatar untuk memilih foto dari kamera atau galeri.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: cs.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          SizedBox(height: spacing.md),
+          TextButton.icon(
+            onPressed: onPick,
+            icon: Icon(Icons.add_a_photo_outlined, color: cs.primary),
+            label: Text(
+              'Pilih Foto',
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: cs.primary,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PickOptionCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _PickOptionCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final spacing = theme.extension<AppSpacing>()!;
+
+    return Material(
+      color: cs.surface,
+      borderRadius: BorderRadius.circular(AppRadii.xl),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+        child: Container(
+          padding: EdgeInsets.all(spacing.lg),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadii.xl),
+            border: Border.all(color: cs.outlineVariant.withOpacity(0.65)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: EdgeInsets.all(spacing.md),
+                decoration: BoxDecoration(
+                  color: cs.primary.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(AppRadii.xl),
+                  border: Border.all(color: cs.primary.withOpacity(0.18)),
+                ),
+                child: Icon(icon, color: cs.primary, size: spacing.xl),
+              ),
+              SizedBox(height: spacing.md),
+              Text(
+                title,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: spacing.xxs),
+              Text(
+                subtitle,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: cs.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

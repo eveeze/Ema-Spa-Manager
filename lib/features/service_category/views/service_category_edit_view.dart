@@ -27,8 +27,7 @@ class _ServiceCategoryEditViewState extends State<ServiceCategoryEditView> {
   late final TextEditingController _descriptionController;
 
   String _categoryId = '';
-  bool _prefilled =
-      false; // penting: supaya tidak overwrite input user saat rebuild
+  bool _prefilled = false; // biar tidak overwrite input user saat rebuild
 
   @override
   void initState() {
@@ -38,7 +37,6 @@ class _ServiceCategoryEditViewState extends State<ServiceCategoryEditView> {
 
     _categoryId = Get.parameters['id'] ?? '';
 
-    // ✅ PENTING: panggil load setelah frame pertama supaya tidak "markNeedsBuild during build"
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadCategory();
     });
@@ -57,13 +55,11 @@ class _ServiceCategoryEditViewState extends State<ServiceCategoryEditView> {
       return;
     }
 
-    // aman karena sudah di postFrameCallback
     controller.isLoading.value = true;
     controller.errorMessage.value = '';
 
     try {
       final category = await controller.getCategoryById(_categoryId);
-
       if (!mounted) return;
 
       if (category == null) {
@@ -71,7 +67,6 @@ class _ServiceCategoryEditViewState extends State<ServiceCategoryEditView> {
         return;
       }
 
-      // ✅ prefill sekali saja
       if (!_prefilled) {
         _nameController.text = category.name;
         _descriptionController.text = category.description ?? '';
@@ -82,6 +77,19 @@ class _ServiceCategoryEditViewState extends State<ServiceCategoryEditView> {
     } finally {
       controller.isLoading.value = false;
     }
+  }
+
+  void _handleSubmit() {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final name = _nameController.text.trim();
+    final desc = _descriptionController.text.trim();
+
+    controller.updateServiceCategory(
+      id: _categoryId,
+      name: name,
+      description: desc.isEmpty ? null : desc,
+    );
   }
 
   @override
@@ -95,27 +103,26 @@ class _ServiceCategoryEditViewState extends State<ServiceCategoryEditView> {
       customAppBar: CustomAppBar(
         title: 'Edit Kategori Layanan',
         showBackButton: true,
-        onBackPressed: () => controller.navigateBackToServiceCategories(),
+        onBackPressed: () => controller.popPage(),
       ),
       child: PopScope(
         onPopInvokedWithResult: (didPop, result) {
-          if (!didPop) controller.navigateBackToServiceCategories();
+          if (!didPop) controller.popPage();
         },
         child: Container(
-          color: cs.surface,
+          color: cs.background,
           child: SafeArea(
             child: Padding(
               padding: EdgeInsets.fromLTRB(sp.lg, sp.md, sp.lg, sp.lg),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _HeaderShell(
+                  const _HeaderShell(
                     title: 'Edit Kategori',
                     subtitle: 'Perbarui nama dan deskripsi kategori layanan.',
                     icon: Icons.edit_outlined,
                   ),
                   SizedBox(height: sp.lg),
-
                   Expanded(
                     child: Obx(() {
                       final loading = controller.isLoading.value;
@@ -133,14 +140,12 @@ class _ServiceCategoryEditViewState extends State<ServiceCategoryEditView> {
                         );
                       }
 
-                      // ✅ Tidak bergantung ke selectedCategory (biar ga infinite loading)
                       return _FormCard(
                         formKey: _formKey,
                         nameController: _nameController,
                         descriptionController: _descriptionController,
                         onSubmit: _handleSubmit,
-                        onDelete: _handleDelete,
-                        onCancel: controller.navigateBackToServiceCategories,
+                        onCancel: () => controller.popPage(),
                       );
                     }),
                   ),
@@ -150,33 +155,6 @@ class _ServiceCategoryEditViewState extends State<ServiceCategoryEditView> {
           ),
         ),
       ),
-    );
-  }
-
-  void _handleSubmit() {
-    final name = _nameController.text.trim();
-    final desc = _descriptionController.text.trim();
-
-    if (name.isEmpty) {
-      _formKey.currentState?.validate();
-      return;
-    }
-
-    controller.updateServiceCategory(
-      id: _categoryId,
-      name: name,
-      description: desc,
-    );
-  }
-
-  void _handleDelete() {
-    // kalau controller kamu butuh id+name, ambil dari textfield biar tetap jalan
-    final name = _nameController.text.trim();
-    if (_categoryId.isEmpty) return;
-
-    controller.showDeleteConfirmation(
-      _categoryId,
-      name.isEmpty ? 'Category' : name,
     );
   }
 }
@@ -205,10 +183,10 @@ class _HeaderShell extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.surface,
         borderRadius: BorderRadius.circular(AppRadii.lg),
-        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.55)),
+        border: Border.all(color: cs.outlineVariant.withOpacity(0.55)),
         boxShadow: [
           BoxShadow(
-            color: cs.shadow.withValues(alpha: 0.06),
+            color: cs.shadow.withOpacity(0.06),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -220,9 +198,9 @@ class _HeaderShell extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: cs.primary.withValues(alpha: 0.12),
+              color: cs.primary.withOpacity(0.12),
               borderRadius: BorderRadius.circular(AppRadii.md),
-              border: Border.all(color: cs.primary.withValues(alpha: 0.18)),
+              border: Border.all(color: cs.primary.withOpacity(0.18)),
             ),
             child: Icon(icon, color: cs.primary, size: 22),
           ),
@@ -242,7 +220,7 @@ class _HeaderShell extends StatelessWidget {
                 Text(
                   subtitle,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: cs.onSurface.withValues(alpha: 0.78),
+                    color: cs.onSurface.withOpacity(0.78),
                     fontWeight: FontWeight.w600,
                     height: 1.35,
                   ),
@@ -262,7 +240,6 @@ class _FormCard extends StatelessWidget {
   final TextEditingController descriptionController;
 
   final VoidCallback onSubmit;
-  final VoidCallback onDelete;
   final VoidCallback onCancel;
 
   const _FormCard({
@@ -270,7 +247,6 @@ class _FormCard extends StatelessWidget {
     required this.nameController,
     required this.descriptionController,
     required this.onSubmit,
-    required this.onDelete,
     required this.onCancel,
   });
 
@@ -285,10 +261,10 @@ class _FormCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.surface,
         borderRadius: BorderRadius.circular(AppRadii.lg),
-        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.55)),
+        border: Border.all(color: cs.outlineVariant.withOpacity(0.55)),
         boxShadow: [
           BoxShadow(
-            color: cs.shadow.withValues(alpha: 0.06),
+            color: cs.shadow.withOpacity(0.06),
             blurRadius: 18,
             offset: const Offset(0, 10),
           ),
@@ -299,17 +275,22 @@ class _FormCard extends StatelessWidget {
         child: ListView(
           physics: const BouncingScrollPhysics(),
           children: [
-            _FieldLabel(label: 'Nama Kategori', requiredMark: true),
+            const _FieldLabel(label: 'Nama Kategori', requiredMark: true),
             SizedBox(height: sp.sm),
             AppTextField(
               controller: nameController,
               placeholder: 'Contoh: Baby Spa Premium',
               prefix: Icon(Icons.category_outlined, color: cs.primary),
               isRequired: true,
-              errorText: null,
+              validator: (v) {
+                final value = (v ?? '').trim();
+                if (value.isEmpty) return 'Nama kategori wajib diisi';
+                if (value.length < 3) return 'Minimal 3 karakter';
+                return null;
+              },
             ),
             SizedBox(height: sp.lg),
-            _FieldLabel(label: 'Deskripsi', requiredMark: false),
+            const _FieldLabel(label: 'Deskripsi', requiredMark: false),
             SizedBox(height: sp.sm),
             AppTextField(
               controller: descriptionController,
@@ -326,7 +307,7 @@ class _FormCard extends StatelessWidget {
               return Column(
                 children: [
                   AppButton(
-                    text: 'Update Category',
+                    text: 'Update Kategori',
                     icon: Icons.check_circle_outline,
                     isLoading: submitting,
                     onPressed: submitting ? null : onSubmit,
@@ -335,30 +316,13 @@ class _FormCard extends StatelessWidget {
                     isFullWidth: true,
                   ),
                   SizedBox(height: sp.md),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: AppButton(
-                          text: 'Delete',
-                          icon: Icons.delete_outline,
-                          onPressed: submitting ? null : onDelete,
-                          type: AppButtonType.secondary,
-                          size: AppButtonSize.medium,
-                          isFullWidth: true,
-                        ),
-                      ),
-                      SizedBox(width: sp.sm),
-                      Expanded(
-                        child: AppButton(
-                          text: 'Cancel',
-                          icon: Icons.close_outlined,
-                          onPressed: submitting ? null : onCancel,
-                          type: AppButtonType.outline,
-                          size: AppButtonSize.medium,
-                          isFullWidth: true,
-                        ),
-                      ),
-                    ],
+                  AppButton(
+                    text: 'Batal',
+                    icon: Icons.close_outlined,
+                    onPressed: submitting ? null : onCancel,
+                    type: AppButtonType.outline,
+                    size: AppButtonSize.large,
+                    isFullWidth: true,
                   ),
                 ],
               );
@@ -421,7 +385,7 @@ class _LoadingState extends StatelessWidget {
         decoration: BoxDecoration(
           color: cs.surface,
           borderRadius: BorderRadius.circular(AppRadii.lg),
-          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.55)),
+          border: Border.all(color: cs.outlineVariant.withOpacity(0.55)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -439,7 +403,7 @@ class _LoadingState extends StatelessWidget {
               'Memuat data kategori...',
               style: theme.textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w700,
-                color: cs.onSurface.withValues(alpha: 0.82),
+                color: cs.onSurface.withOpacity(0.82),
               ),
             ),
           ],
@@ -473,7 +437,7 @@ class _ErrorState extends StatelessWidget {
         decoration: BoxDecoration(
           color: cs.surface,
           borderRadius: BorderRadius.circular(AppRadii.lg),
-          border: Border.all(color: cs.error.withValues(alpha: 0.20)),
+          border: Border.all(color: cs.error.withOpacity(0.20)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -492,7 +456,7 @@ class _ErrorState extends StatelessWidget {
               message,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: cs.onSurface.withValues(alpha: 0.78),
+                color: cs.onSurface.withOpacity(0.78),
                 fontWeight: FontWeight.w600,
                 height: 1.35,
               ),

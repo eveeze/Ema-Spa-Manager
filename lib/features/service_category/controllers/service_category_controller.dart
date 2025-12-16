@@ -24,6 +24,9 @@ class ServiceCategoryController extends GetxController {
   final RxString errorMessage = ''.obs;
   final Rx<ServiceCategory?> selectedCategory = Rx<ServiceCategory?>(null);
 
+  // lock biar dialog confirm tidak bisa spam tap (dan mengurangi glitch overlay)
+  final RxBool _isDeleting = false.obs;
+
   @override
   void onInit() {
     super.onInit();
@@ -37,12 +40,12 @@ class ServiceCategoryController extends GetxController {
       errorMessage.value = '';
 
       final categories = await _serviceCategoryRepository.getAllCategories();
-      serviceCategories.value = categories;
+      serviceCategories.assignAll(categories);
     } catch (e) {
-      _showErrorSnackbar("Failed to load service categories");
       errorMessage.value =
           'Failed to load service categories. Please try again.';
       _logger.error('Error fetching service categories: $e');
+      _showErrorSnackbar("Failed to load service categories");
     } finally {
       isLoading.value = false;
     }
@@ -55,46 +58,66 @@ class ServiceCategoryController extends GetxController {
       errorMessage.value = '';
 
       final category = await _serviceCategoryRepository.getCategoryById(id);
-      if (category != null) {
-        selectedCategory.value = category;
-      }
+      selectedCategory.value = category;
       return category;
     } catch (e) {
-      _showErrorSnackbar("Failed to load service category");
       errorMessage.value = 'Failed to load service category. Please try again.';
       _logger.error('Error fetching service category: $e');
+      _showErrorSnackbar("Failed to load service category");
       return null;
     } finally {
       isLoading.value = false;
     }
   }
 
-  // Function to refresh data
-  void refreshData() {
-    fetchAllServiceCategories();
+  // Refresh
+  Future<void> refreshData() async {
+    await fetchAllServiceCategories();
   }
 
-  // Navigate to add service category screen
-  void navigateToAddServiceCategory() {
-    Get.toNamed(AppRoutes.serviceCategoryForm);
+  // Back helper: pop 1 page (page saja, bukan untuk dialog)
+  void popPage({dynamic result}) {
+    Get.back(result: result);
   }
 
-  // Navigate to edit service category screen
-  void navigateToEditServiceCategory(String id) {
-    Get.toNamed('/service-categories/edit/$id');
+  // =========================
+  // NAVIGATION (snackbar result ditangani di LIST) ✅
+  // =========================
+
+  Future<void> navigateToAddServiceCategory() async {
+    final result = await Get.toNamed(AppRoutes.serviceCategoryForm);
+
+    if (result is Map && result['success'] == true) {
+      final msg = result['message']?.toString() ?? 'Berhasil';
+
+      // ✅ tampilkan snackbar setelah route pop settle
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showSuccessSnackbar(msg);
+      });
+    }
   }
 
-  // Navigate to view service category details
-  void navigateToViewServiceCategory(String id) {
-    Get.toNamed('${AppRoutes.serviceCategoryEdit}/$id');
+  Future<void> navigateToEditServiceCategory(String id) async {
+    final result = await Get.toNamed('/service-categories/edit/$id');
+
+    if (result is Map && result['success'] == true) {
+      final msg = result['message']?.toString() ?? 'Berhasil';
+
+      // ✅ tampilkan snackbar setelah route pop settle
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showSuccessSnackbar(msg);
+      });
+    }
   }
 
-  // Navigate back to service categories list
-  void navigateBackToServiceCategories() {
-    Get.until((route) => route.settings.name == AppRoutes.serviceCategoryList);
+  Future<dynamic> navigateToViewServiceCategory(String id) async {
+    return Get.toNamed('${AppRoutes.serviceCategoryEdit}/$id');
   }
 
-  // Add a new service category
+  // =========================
+  // CRUD
+  // =========================
+
   Future<void> addServiceCategory({
     required String name,
     String? description,
@@ -109,20 +132,24 @@ class ServiceCategoryController extends GetxController {
       );
 
       if (category != null) {
+        // update list lokal biar list langsung update
         serviceCategories.add(category);
-        _showSuccessSnackbar("Service category added successfully");
-        // Use navigateBackToServiceCategories instead of Get.back()
-        navigateBackToServiceCategories();
+
+        // snackbar jangan di sini, biar tidak hilang karena pop
+        popPage(
+          result: {'success': true, 'message': 'Kategori berhasil ditambahkan'},
+        );
+      } else {
+        _showErrorSnackbar("Failed to add service category");
       }
     } catch (e) {
-      _showErrorSnackbar("Failed to add service category");
       _logger.error('Error adding service category: $e');
+      _showErrorSnackbar("Failed to add service category");
     } finally {
       isFormSubmitting.value = false;
     }
   }
 
-  // Update an existing service category
   Future<void> updateServiceCategory({
     required String id,
     required String name,
@@ -142,26 +169,32 @@ class ServiceCategoryController extends GetxController {
         final index = serviceCategories.indexWhere((cat) => cat.id == id);
         if (index != -1) {
           serviceCategories[index] = category;
+          serviceCategories.refresh();
         }
-        _showSuccessSnackbar("Service category updated successfully");
-        // Use navigateBackToServiceCategories instead of Get.back()
-        navigateBackToServiceCategories();
+
+        popPage(
+          result: {'success': true, 'message': 'Kategori berhasil diperbarui'},
+        );
+      } else {
+        _showErrorSnackbar("Failed to update service category");
       }
     } catch (e) {
-      _showErrorSnackbar("Failed to update service category");
       _logger.error('Error updating service category: $e');
+      _showErrorSnackbar("Failed to update service category");
     } finally {
       isFormSubmitting.value = false;
     }
   }
 
-  // Delete a service category
   Future<void> deleteServiceCategory(String id) async {
+    // anti spam delete
+    if (_isDeleting.value) return;
+
     try {
+      _isDeleting.value = true;
       isLoading.value = true;
       errorMessage.value = '';
 
-      // Check if category has services before deleting
       final hasServices = await _serviceCategoryRepository.categoryHasServices(
         id,
       );
@@ -175,66 +208,99 @@ class ServiceCategoryController extends GetxController {
 
       final success = await _serviceCategoryRepository.deleteCategory(id);
       if (success) {
-        // Remove from the list if deleted successfully
         serviceCategories.removeWhere((category) => category.id == id);
-        _showSuccessSnackbar("Service category deleted successfully");
-        // Navigate back to service categories after deletion
-        navigateBackToServiceCategories();
+
+        // delete dari list/dialog -> snackbar aman
+        _showSuccessSnackbar("Kategori berhasil dihapus");
       } else {
         _showErrorSnackbar("Failed to delete service category");
       }
     } catch (e) {
-      _showErrorSnackbar("Failed to delete service category");
       _logger.error('Error deleting service category: $e');
+      _showErrorSnackbar("Failed to delete service category");
     } finally {
       isLoading.value = false;
+      _isDeleting.value = false;
     }
   }
 
-  // Show custom delete confirmation dialog
+  // =========================
+  // DIALOG DELETE ✅ FIX: selalu tutup dialog dulu
+  // =========================
+
   void showDeleteConfirmation(String id, String categoryName) {
     DeleteConfirmationDialog.show(
-      title: "Delete Category",
+      title: "Hapus Kategori",
       itemName: categoryName,
       message:
-          "Are you sure you want to delete the category ? This action cannot be undone.",
-      confirmText: "Delete",
-      cancelText: "Cancel",
+          "Yakin ingin menghapus kategori ini? Tindakan ini tidak dapat dibatalkan.",
+      confirmText: "Hapus",
+      cancelText: "Batal",
       icon: Icons.category_outlined,
-      onConfirm: () {
-        deleteServiceCategory(id);
+      onConfirm: () async {
+        // ✅ tutup dialog konfirmasi secara pasti
+        if (Get.isOverlaysOpen) Get.back();
+
+        // ✅ delay kecil biar overlay settle, mengurangi glitch “kadang ketutup kadang tidak”
+        await Future.delayed(const Duration(milliseconds: 80));
+
+        await deleteServiceCategory(id);
       },
     );
   }
 
-  // Helper methods for showing snackbars
+  // =========================
+  // SNACKBAR HELPERS
+  // =========================
+
   void _showSuccessSnackbar(String message, {Duration? duration}) {
+    if (Get.isSnackbarOpen) Get.closeAllSnackbars();
+
     Get.snackbar(
-      "Success",
+      "Berhasil",
       message,
-      backgroundColor: ColorTheme.success,
-      colorText: ColorTheme.primary,
+      snackPosition: SnackPosition.TOP,
+      backgroundColor: ColorTheme.success.withValues(alpha: 0.14),
+      colorText: ColorTheme.success,
       duration: duration ?? const Duration(seconds: 3),
+      margin: const EdgeInsets.all(14),
+      borderRadius: 16,
+      icon: const Icon(Icons.check_circle_rounded, color: ColorTheme.success),
+      shouldIconPulse: false,
     );
   }
 
   void _showErrorSnackbar(String message, {Duration? duration}) {
+    if (Get.isSnackbarOpen) Get.closeAllSnackbars();
+
     Get.snackbar(
-      "Error",
+      "Gagal",
       message,
-      backgroundColor: ColorTheme.error,
-      colorText: ColorTheme.primary,
+      snackPosition: SnackPosition.TOP,
+      backgroundColor: ColorTheme.error.withValues(alpha: 0.14),
+      colorText: ColorTheme.error,
       duration: duration ?? const Duration(seconds: 3),
+      margin: const EdgeInsets.all(14),
+      borderRadius: 16,
+      icon: const Icon(Icons.error_rounded, color: ColorTheme.error),
+      shouldIconPulse: false,
     );
   }
 
   void _showWarningSnackbar(String message, {Duration? duration}) {
+    if (Get.isSnackbarOpen) Get.closeAllSnackbars();
+
     Get.snackbar(
-      "Warning",
+      "Peringatan",
       message,
-      backgroundColor: ColorTheme.warning,
-      colorText: ColorTheme.primary,
+      snackPosition: SnackPosition.TOP,
+      backgroundColor: ColorTheme.warning.withValues(alpha: 0.14),
+      colorText: ColorTheme.warning,
       duration: duration ?? const Duration(seconds: 3),
+      margin: const EdgeInsets.all(14),
+      borderRadius: 16,
+      icon: const Icon(Icons.warning_amber_rounded, color: ColorTheme.warning),
+      shouldIconPulse: false,
     );
   }
 }

@@ -38,7 +38,7 @@ class AccountView extends StatelessWidget {
               final isDark = themeController.isDarkMode;
 
               final name =
-                  owner?.name?.trim().isNotEmpty == true
+                  owner?.name.trim().isNotEmpty == true
                       ? owner!.name.trim()
                       : 'Owner';
               final email = owner?.email ?? '—';

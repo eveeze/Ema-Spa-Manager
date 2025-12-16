@@ -2,13 +2,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:emababyspa/common/theme/color_theme.dart';
+import 'package:emababyspa/common/layouts/main_layout.dart';
+import 'package:emababyspa/common/theme/app_theme.dart';
+import 'package:emababyspa/common/theme/semantic_colors.dart';
 import 'package:emababyspa/common/widgets/custom_appbar.dart';
 import 'package:emababyspa/common/widgets/empty_state_widget.dart';
-import 'package:emababyspa/common/layouts/main_layout.dart';
-import 'package:emababyspa/features/service_category/controllers/service_category_controller.dart';
-import 'package:emababyspa/features/theme/controllers/theme_controller.dart';
 import 'package:emababyspa/data/models/service_category.dart';
+import 'package:emababyspa/features/service_category/controllers/service_category_controller.dart';
 import 'package:emababyspa/utils/app_routes.dart';
 
 class ServiceCategoryView extends GetView<ServiceCategoryController> {
@@ -16,7 +16,8 @@ class ServiceCategoryView extends GetView<ServiceCategoryController> {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeController themeController = Get.find<ThemeController>();
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
 
     return MainLayout(
       parentRoute: AppRoutes.services,
@@ -25,64 +26,42 @@ class ServiceCategoryView extends GetView<ServiceCategoryController> {
         showBackButton: true,
       ),
 
-      // ✅ FAB
-      floatingActionButton: Obx(() {
-        final isDarkMode = themeController.isDarkMode;
-        final primary =
-            isDarkMode ? ColorTheme.primaryLightDark : ColorTheme.primary;
+      // ✅ FAB: theme sudah reactive, TIDAK perlu Obx
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: controller.navigateToAddServiceCategory,
+        backgroundColor: cs.primary,
+        elevation: 10,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadii.xl),
+        ),
+        icon: Icon(Icons.add_rounded, color: cs.onPrimary, size: 20),
+        label: Text(
+          'Tambah Kategori',
+          style: theme.textTheme.labelLarge?.copyWith(
+            color: cs.onPrimary,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.1,
+          ),
+        ),
+      ),
 
-        return FloatingActionButton.extended(
-          onPressed: controller.navigateToAddServiceCategory,
-          backgroundColor: primary,
-          elevation: 10,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-          ),
-          icon: Icon(
-            Icons.add_rounded,
-            color: isDarkMode ? Colors.black : Colors.white,
-            size: 20,
-          ),
-          label: Text(
-            'Tambah Kategori',
-            style: TextStyle(
-              color: isDarkMode ? Colors.black : Colors.white,
-              fontWeight: FontWeight.w800,
-              fontFamily: 'JosefinSans',
-              fontSize: 15,
-              letterSpacing: 0.1,
-            ),
-          ),
-        );
-      }),
-
+      // ✅ Obx cuma untuk Rx controller
       child: Obx(() {
-        final isDarkMode = themeController.isDarkMode;
-
-        final bg =
-            isDarkMode ? ColorTheme.backgroundDark : ColorTheme.background;
-        final surface = isDarkMode ? ColorTheme.surfaceDark : Colors.white;
-
-        final textPrimary =
-            isDarkMode ? ColorTheme.textPrimaryDark : ColorTheme.textPrimary;
-        final textSecondary =
-            isDarkMode
-                ? ColorTheme.textSecondaryDark
-                : ColorTheme.textSecondary;
-
-        final primary =
-            isDarkMode ? ColorTheme.primaryLightDark : ColorTheme.primary;
+        final theme = Theme.of(context);
+        final cs = theme.colorScheme;
+        final spacing = theme.extension<AppSpacing>()!;
+        final semantic = theme.extension<AppSemanticColors>();
 
         final isLoading = controller.isLoading.value;
         final error = controller.errorMessage.value;
         final items = controller.serviceCategories;
 
         return Container(
-          color: bg,
+          color: cs.background,
           child: RefreshIndicator(
             onRefresh: () async => controller.refreshData(),
-            color: primary,
-            backgroundColor: surface,
+            color: cs.primary,
+            backgroundColor: cs.surface,
             strokeWidth: 2.5,
             child: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(
@@ -90,13 +69,18 @@ class ServiceCategoryView extends GetView<ServiceCategoryController> {
               ),
               slivers: [
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(24, 18, 24, 14),
+                  padding: EdgeInsets.fromLTRB(
+                    spacing.lg,
+                    spacing.lg,
+                    spacing.lg,
+                    spacing.md,
+                  ),
                   sliver: SliverToBoxAdapter(
                     child: _HeaderHero(
-                      isDarkMode: isDarkMode,
-                      primaryColor: primary,
-                      textPrimaryColor: textPrimary,
-                      textSecondaryColor: textSecondary,
+                      title: 'Kategori Layanan',
+                      subtitle:
+                          'Kelola kategori agar layanan lebih tertata dan mudah dicari',
+                      icon: Icons.spa_rounded,
                     ),
                   ),
                 ),
@@ -104,31 +88,33 @@ class ServiceCategoryView extends GetView<ServiceCategoryController> {
                 // Count pill
                 if (!isLoading && error.isEmpty && items.isNotEmpty)
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 14),
+                    padding: EdgeInsets.fromLTRB(
+                      spacing.lg,
+                      0,
+                      spacing.lg,
+                      spacing.md,
+                    ),
                     sliver: SliverToBoxAdapter(
-                      child: _CountPill(
-                        count: items.length,
-                        primaryColor: primary,
-                        isDarkMode: isDarkMode,
-                      ),
+                      child: _CountPill(count: items.length),
                     ),
                   ),
 
                 // Loading
                 if (isLoading)
-                  SliverFillRemaining(
+                  const SliverFillRemaining(
                     hasScrollBody: false,
-                    child: _LoadingState(
-                      surfaceColor: surface,
-                      primaryColor: primary,
-                      textSecondaryColor: textSecondary,
-                    ),
+                    child: _LoadingState(),
                   ),
 
                 // Error
                 if (!isLoading && error.isNotEmpty)
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 120),
+                    padding: EdgeInsets.fromLTRB(
+                      spacing.lg,
+                      0,
+                      spacing.lg,
+                      spacing.xxl * 2,
+                    ),
                     sliver: SliverToBoxAdapter(
                       child: EmptyStateWidget(
                         title: 'Terjadi Kendala',
@@ -144,7 +130,12 @@ class ServiceCategoryView extends GetView<ServiceCategoryController> {
                 // Empty
                 if (!isLoading && error.isEmpty && items.isEmpty)
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 120),
+                    padding: EdgeInsets.fromLTRB(
+                      spacing.lg,
+                      0,
+                      spacing.lg,
+                      spacing.xxl * 2,
+                    ),
                     sliver: SliverToBoxAdapter(
                       child: EmptyStateWidget(
                         title: 'Belum Ada Kategori',
@@ -162,23 +153,32 @@ class ServiceCategoryView extends GetView<ServiceCategoryController> {
                 // List
                 if (!isLoading && error.isEmpty && items.isNotEmpty)
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 120),
+                    padding: EdgeInsets.fromLTRB(
+                      spacing.lg,
+                      0,
+                      spacing.lg,
+                      spacing.xxl * 2,
+                    ),
                     sliver: SliverList.separated(
                       itemCount: items.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 16),
+                      separatorBuilder: (_, __) => SizedBox(height: spacing.md),
                       itemBuilder: (context, index) {
                         final category = items[index];
+
+                        // accents dari semantic + colorScheme (konsisten light/dark)
+                        final accents = <Color>[
+                          cs.primary,
+                          semantic?.info ?? cs.secondary,
+                          semantic?.success ?? cs.tertiary,
+                          semantic?.warning ?? cs.secondaryContainer,
+                        ];
+                        final accent = accents[index % accents.length];
 
                         return _AppearIn(
                           delayMs: (index * 35).clamp(0, 240),
                           child: _CategoryCard(
                             category: category,
-                            index: index,
-                            isDarkMode: isDarkMode,
-                            surfaceColor: surface,
-                            textPrimaryColor: textPrimary,
-                            textSecondaryColor: textSecondary,
-                            primaryColor: primary,
+                            accent: accent,
                             onTap:
                                 () => controller.navigateToEditServiceCategory(
                                   category.id.toString(),
@@ -207,72 +207,69 @@ class ServiceCategoryView extends GetView<ServiceCategoryController> {
 }
 
 // =========================================================
-// Header
+// Header (pakai tokens)
 // =========================================================
 
 class _HeaderHero extends StatelessWidget {
-  final bool isDarkMode;
-  final Color primaryColor;
-  final Color textPrimaryColor;
-  final Color textSecondaryColor;
+  final String title;
+  final String subtitle;
+  final IconData icon;
 
   const _HeaderHero({
-    required this.isDarkMode,
-    required this.primaryColor,
-    required this.textPrimaryColor,
-    required this.textSecondaryColor,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
   });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final spacing = theme.extension<AppSpacing>()!;
+
     return _AppearIn(
       delayMs: 0,
       child: Row(
         children: [
           Container(
-            width: 54,
-            height: 54,
+            width: spacing.xxl * 1.8, // ~54
+            height: spacing.xxl * 1.8,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadii.lg),
               gradient: LinearGradient(
                 colors: [
-                  primaryColor.withValues(alpha: 0.22),
-                  primaryColor.withValues(alpha: 0.08),
+                  cs.primary.withOpacity(0.22),
+                  cs.primary.withOpacity(0.08),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               border: Border.all(
-                color: primaryColor.withValues(alpha: 0.22),
+                color: cs.primary.withOpacity(0.22),
                 width: 1.2,
               ),
             ),
-            child: Icon(Icons.spa_rounded, color: primaryColor, size: 28),
+            child: Icon(icon, color: cs.primary, size: spacing.xl),
           ),
-          const SizedBox(width: 14),
+          SizedBox(width: spacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Kategori Layanan',
-                  style: TextStyle(
-                    fontSize: 26,
+                  title,
+                  style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w900,
-                    fontFamily: 'JosefinSans',
-                    color: textPrimaryColor,
                     letterSpacing: 0.2,
                     height: 1.1,
                   ),
                 ),
-                const SizedBox(height: 5),
+                SizedBox(height: spacing.xxs),
                 Text(
-                  'Kelola kategori agar layanan lebih tertata dan mudah dicari',
-                  style: TextStyle(
-                    fontSize: 15.5,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: 'JosefinSans',
-                    color: textSecondaryColor,
+                  subtitle,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: cs.onBackground.withOpacity(0.72),
+                    fontWeight: FontWeight.w700,
                     height: 1.25,
                   ),
                 ),
@@ -291,47 +288,47 @@ class _HeaderHero extends StatelessWidget {
 
 class _CountPill extends StatelessWidget {
   final int count;
-  final Color primaryColor;
-  final bool isDarkMode;
 
-  const _CountPill({
-    required this.count,
-    required this.primaryColor,
-    required this.isDarkMode,
-  });
+  const _CountPill({required this.count});
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final spacing = theme.extension<AppSpacing>()!;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: EdgeInsets.symmetric(
+        horizontal: spacing.lg,
+        vertical: spacing.md,
+      ),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: primaryColor.withValues(alpha: isDarkMode ? 0.16 : 0.10),
-        border: Border.all(
-          color: primaryColor.withValues(alpha: 0.22),
-          width: 1,
-        ),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        color: cs.primary.withOpacity(0.10),
+        border: Border.all(color: cs.primary.withOpacity(0.22), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 28,
-            height: 28,
+            width: spacing.xl * 1.1,
+            height: spacing.xl * 1.1,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              color: primaryColor.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(AppRadii.md),
+              color: cs.primary.withOpacity(0.16),
             ),
-            child: Icon(Icons.category_rounded, size: 16, color: primaryColor),
+            child: Icon(
+              Icons.category_rounded,
+              size: spacing.md,
+              color: cs.primary,
+            ),
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: spacing.md),
           Text(
             '$count kategori tersedia',
-            style: TextStyle(
-              fontFamily: 'JosefinSans',
-              fontSize: 14.8,
+            style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w900,
-              color: primaryColor,
+              color: cs.primary,
               letterSpacing: 0.1,
             ),
           ),
@@ -346,18 +343,14 @@ class _CountPill extends StatelessWidget {
 // =========================================================
 
 class _LoadingState extends StatelessWidget {
-  final Color surfaceColor;
-  final Color primaryColor;
-  final Color textSecondaryColor;
-
-  const _LoadingState({
-    required this.surfaceColor,
-    required this.primaryColor,
-    required this.textSecondaryColor,
-  });
+  const _LoadingState();
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final spacing = theme.extension<AppSpacing>()!;
+
     return Center(
       child: _AppearIn(
         delayMs: 0,
@@ -365,37 +358,30 @@ class _LoadingState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 78,
-              height: 78,
-              padding: const EdgeInsets.all(14),
+              width: spacing.xxl * 2.6,
+              height: spacing.xxl * 2.6,
+              padding: EdgeInsets.all(spacing.lg),
               decoration: BoxDecoration(
-                color: surfaceColor,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: primaryColor.withValues(alpha: 0.12),
-                    blurRadius: 18,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
+                color: cs.surface,
+                borderRadius: BorderRadius.circular(AppRadii.xl),
+                boxShadow: AppShadows.soft(cs.shadow),
                 border: Border.all(
-                  color: primaryColor.withValues(alpha: 0.18),
+                  color: cs.primary.withOpacity(0.18),
                   width: 1,
                 ),
               ),
               child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+                valueColor: AlwaysStoppedAnimation<Color>(cs.primary),
                 strokeWidth: 3,
+                strokeCap: StrokeCap.round,
               ),
             ),
-            const SizedBox(height: 18),
+            SizedBox(height: spacing.lg),
             Text(
               'Sedang memuat kategori...',
-              style: TextStyle(
-                color: textSecondaryColor,
-                fontFamily: 'JosefinSans',
-                fontSize: 15.5,
-                fontWeight: FontWeight.w700,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: cs.onBackground.withOpacity(0.72),
+                fontWeight: FontWeight.w800,
               ),
             ),
           ],
@@ -411,24 +397,14 @@ class _LoadingState extends StatelessWidget {
 
 class _CategoryCard extends StatelessWidget {
   final ServiceCategory category;
-  final int index;
-  final bool isDarkMode;
-  final Color surfaceColor;
-  final Color textPrimaryColor;
-  final Color textSecondaryColor;
-  final Color primaryColor;
+  final Color accent;
   final VoidCallback onTap;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   const _CategoryCard({
     required this.category,
-    required this.index,
-    required this.isDarkMode,
-    required this.surfaceColor,
-    required this.textPrimaryColor,
-    required this.textSecondaryColor,
-    required this.primaryColor,
+    required this.accent,
     required this.onTap,
     required this.onEdit,
     required this.onDelete,
@@ -436,65 +412,56 @@ class _CategoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accents = <Color>[
-      primaryColor,
-      ColorTheme.info,
-      ColorTheme.success,
-      ColorTheme.warning,
-    ];
-    final accent = accents[index % accents.length];
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final spacing = theme.extension<AppSpacing>()!;
 
-    final borderColor =
-        isDarkMode
-            ? Colors.white.withValues(alpha: 0.08)
-            : Colors.black.withValues(alpha: 0.06);
+    final borderColor = cs.outlineVariant.withOpacity(0.65);
 
     return Container(
       decoration: BoxDecoration(
-        color: surfaceColor,
-        borderRadius: BorderRadius.circular(20),
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(AppRadii.xl),
         border: Border.all(color: borderColor, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDarkMode ? 0.35 : 0.08),
-            blurRadius: 18,
-            offset: const Offset(0, 10),
-          ),
-        ],
+        boxShadow: AppShadows.soft(cs.shadow),
       ),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadii.xl),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
-          splashColor: primaryColor.withValues(alpha: 0.08),
-          highlightColor: primaryColor.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(AppRadii.xl),
+          splashColor: cs.primary.withOpacity(0.08),
+          highlightColor: cs.primary.withOpacity(0.04),
           child: Padding(
-            padding: const EdgeInsets.all(18),
+            padding: EdgeInsets.all(spacing.lg),
             child: Row(
               children: [
                 Container(
-                  width: 56,
-                  height: 56,
+                  width: spacing.xxl * 1.9,
+                  height: spacing.xxl * 1.9,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(AppRadii.lg),
                     gradient: LinearGradient(
                       colors: [
-                        accent.withValues(alpha: isDarkMode ? 0.22 : 0.16),
-                        accent.withValues(alpha: isDarkMode ? 0.10 : 0.06),
+                        accent.withOpacity(0.18),
+                        accent.withOpacity(0.06),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     border: Border.all(
-                      color: accent.withValues(alpha: 0.22),
+                      color: accent.withOpacity(0.22),
                       width: 1,
                     ),
                   ),
-                  child: Icon(Icons.spa_rounded, color: accent, size: 26),
+                  child: Icon(
+                    Icons.spa_rounded,
+                    color: accent,
+                    size: spacing.xl,
+                  ),
                 ),
-                const SizedBox(width: 14),
+                SizedBox(width: spacing.md),
 
                 Expanded(
                   child: Column(
@@ -502,23 +469,18 @@ class _CategoryCard extends StatelessWidget {
                     children: [
                       Text(
                         category.name,
-                        style: TextStyle(
-                          fontSize: 18.5,
+                        style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w900,
-                          color: textPrimaryColor,
-                          fontFamily: 'JosefinSans',
                           letterSpacing: 0.1,
                           height: 1.15,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      SizedBox(height: spacing.xxs),
                       if ((category.description ?? '').trim().isNotEmpty)
                         Text(
                           category.description!.trim(),
-                          style: TextStyle(
-                            fontSize: 14.5,
-                            color: textSecondaryColor,
-                            fontFamily: 'JosefinSans',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: cs.onSurfaceVariant,
                             height: 1.35,
                             fontWeight: FontWeight.w600,
                           ),
@@ -528,10 +490,8 @@ class _CategoryCard extends StatelessWidget {
                       else
                         Text(
                           'Belum ada deskripsi',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: textSecondaryColor.withValues(alpha: 0.85),
-                            fontFamily: 'JosefinSans',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: cs.onSurfaceVariant.withOpacity(0.85),
                             height: 1.25,
                             fontWeight: FontWeight.w600,
                           ),
@@ -539,13 +499,10 @@ class _CategoryCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: 10),
 
-                _ActionRail(
-                  isDarkMode: isDarkMode,
-                  onEdit: onEdit,
-                  onDelete: onDelete,
-                ),
+                SizedBox(width: spacing.sm),
+
+                _ActionRail(onEdit: onEdit, onDelete: onDelete),
               ],
             ),
           ),
@@ -556,32 +513,26 @@ class _CategoryCard extends StatelessWidget {
 }
 
 class _ActionRail extends StatelessWidget {
-  final bool isDarkMode;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
-  const _ActionRail({
-    required this.isDarkMode,
-    required this.onEdit,
-    required this.onDelete,
-  });
+  const _ActionRail({required this.onEdit, required this.onDelete});
 
   @override
   Widget build(BuildContext context) {
-    final bg =
-        isDarkMode
-            ? Colors.white.withValues(alpha: 0.06)
-            : Colors.black.withValues(alpha: 0.03);
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final semantic = theme.extension<AppSemanticColors>();
+    final spacing = theme.extension<AppSpacing>()!;
 
-    final border =
-        isDarkMode
-            ? Colors.white.withValues(alpha: 0.12)
-            : Colors.black.withValues(alpha: 0.07);
+    final bg = cs.surfaceVariant.withOpacity(0.35);
+    final border = cs.outlineVariant.withOpacity(0.65);
+    final danger = semantic?.danger ?? cs.error;
 
     return Container(
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
         border: Border.all(color: border, width: 1),
       ),
       child: Column(
@@ -590,27 +541,31 @@ class _ActionRail extends StatelessWidget {
           InkWell(
             onTap: onEdit,
             borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(14),
-              topRight: Radius.circular(14),
+              topLeft: Radius.circular(AppRadii.lg),
+              topRight: Radius.circular(AppRadii.lg),
             ),
-            child: const Padding(
-              padding: EdgeInsets.all(12),
-              child: Icon(Icons.edit_outlined, size: 20),
+            child: Padding(
+              padding: EdgeInsets.all(spacing.md),
+              child: Icon(
+                Icons.edit_outlined,
+                size: spacing.lg,
+                color: cs.onSurface,
+              ),
             ),
           ),
-          Container(height: 1, width: 26, color: border),
+          Container(height: 1, width: spacing.xl * 1.4, color: border),
           InkWell(
             onTap: onDelete,
             borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(14),
-              bottomRight: Radius.circular(14),
+              bottomLeft: Radius.circular(AppRadii.lg),
+              bottomRight: Radius.circular(AppRadii.lg),
             ),
             child: Padding(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(spacing.md),
               child: Icon(
                 Icons.delete_outline_rounded,
-                size: 20,
-                color: isDarkMode ? ColorTheme.errorDark : ColorTheme.error,
+                size: spacing.lg,
+                color: danger,
               ),
             ),
           ),
