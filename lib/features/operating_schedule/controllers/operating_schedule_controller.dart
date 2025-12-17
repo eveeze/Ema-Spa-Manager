@@ -1,6 +1,6 @@
-// lib/features/operating_schedule/controllers/operating_schedule_controller.dart
-// lib/features/operating_schedule/controllers/operating_schedule_controller.dart
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
+
 import 'package:emababyspa/data/models/operating_schedule.dart';
 import 'package:emababyspa/data/repository/operating_schedule_repository.dart';
 import 'package:emababyspa/utils/app_routes.dart';
@@ -25,18 +25,87 @@ class OperatingScheduleController extends GetxController {
   // Currently viewed schedule
   final Rx<OperatingSchedule?> currentSchedule = Rx<OperatingSchedule?>(null);
 
+  // ============
+  // Calendar range cache (biar gak fetch berulang untuk range yang sama)
+  // ============
+  String? _lastRangeKey;
+
   @override
   void onInit() {
     super.onInit();
-    fetchAllSchedules();
+    // ❗ BEST PRACTICE:
+    // Jangan fetchAllSchedules() di sini (bisa narik data banyak).
+    // Biarkan ScheduleController yang memanggil fetchForCalendarRange().
   }
 
-  // Fetch all operating schedules with comprehensive filtering options
+  // =========================
+  // Calendar API (Best practice)
+  // =========================
+
+  /// Fetch khusus untuk kebutuhan kalender (marker/holiday status),
+  /// WAJIB pakai startDate & endDate.
+  ///
+  /// - Ada cache rangeKey supaya kalau range sama, gak fetch ulang.
+  /// - Tidak menampilkan snackbar ketika hanya refresh marker (biar UX bersih).
+  Future<void> fetchForCalendarRange({
+    required DateTime start,
+    required DateTime end,
+    bool silent = true,
+  }) async {
+    final startIso = _fmt(start);
+    final endIso = _fmt(end);
+
+    final rangeKey = '$startIso|$endIso';
+    if (_lastRangeKey == rangeKey && schedulesList.isNotEmpty) return;
+
+    _lastRangeKey = rangeKey;
+
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      final schedules = await _operatingScheduleRepository
+          .getAllOperatingSchedules(startDate: startIso, endDate: endIso);
+
+      schedulesList.value = schedules;
+    } catch (e) {
+      final message =
+          e is ApiException
+              ? e.message
+              : 'Gagal memuat jadwal operasional. Silakan coba lagi.';
+
+      errorMessage.value = message;
+      _logger.error('Error fetchForCalendarRange ($startIso-$endIso): $e');
+
+      if (!silent) {
+        Get.snackbar(
+          'Error',
+          message,
+          backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
+          colorText: ColorTheme.error,
+        );
+      }
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /// Kalau kamu butuh paksa refresh range yang sama (misalnya setelah add/delete),
+  /// panggil ini sebelum fetchForCalendarRange().
+  void invalidateCalendarCache() {
+    _lastRangeKey = null;
+  }
+
+  // =========================
+  // Existing API (tetap dipertahankan biar tidak merusak file lain)
+  // =========================
+
   Future<void> fetchAllSchedules({
     String? date,
     bool? isHoliday,
     String? startDate,
     String? endDate,
+    bool showSnackbarOnError = true,
   }) async {
     try {
       isLoading.value = true;
@@ -52,7 +121,7 @@ class OperatingScheduleController extends GetxController {
 
       schedulesList.value = schedules;
     } catch (e) {
-      String message =
+      final message =
           e is ApiException
               ? e.message
               : 'Gagal memuat jadwal operasional. Silakan coba lagi.';
@@ -60,68 +129,32 @@ class OperatingScheduleController extends GetxController {
       errorMessage.value = message;
       _logger.error('Error fetching operating schedules: $e');
 
-      // Show error snackbar for better UX
-      Get.snackbar(
-        'Error',
-        message,
-        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
-        colorText: ColorTheme.error,
-      );
+      if (showSnackbarOnError) {
+        Get.snackbar(
+          'Error',
+          message,
+          backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
+          colorText: ColorTheme.error,
+        );
+      }
     } finally {
       isLoading.value = false;
     }
   }
 
-  // Fetch schedules for a specific date range
-  Future<void> fetchSchedulesForRange(DateTime start, DateTime end) async {
-    try {
-      isLoading.value = true;
-      errorMessage.value = '';
-
-      // Format dates to ISO string and take only the date part
-      final startIso = start.toIso8601String().split('T')[0];
-      final endIso = end.toIso8601String().split('T')[0];
-
-      final schedules = await _operatingScheduleRepository
-          .getAllOperatingSchedules(startDate: startIso, endDate: endIso);
-
-      schedulesList.value = schedules;
-    } catch (e) {
-      String message =
-          e is ApiException
-              ? e.message
-              : 'Gagal memuat jadwal untuk rentang tanggal yang dipilih.';
-
-      errorMessage.value = message;
-      _logger.error('Error fetching schedules for date range: $e');
-
-      Get.snackbar(
-        'Error',
-        message,
-        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
-        colorText: ColorTheme.error,
-      );
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
-  // Refresh data
+  // Refresh data (hindari memanggil ini dari kalender kecuali memang mau fetch tanpa filter)
   void refreshData() {
     fetchAllSchedules();
   }
 
-  // Navigate to add schedule screen
   void navigateToAddSchedule() {
     Get.toNamed(AppRoutes.operatingScheduleForm);
   }
 
-  // Navigate to edit schedule screen
   void navigateToEditSchedule(String id) {
     Get.toNamed('${AppRoutes.operatingScheduleForm}/$id');
   }
 
-  // Add new operating schedule
   Future<bool> addOperatingSchedule({
     required String date,
     bool isHoliday = false,
@@ -137,11 +170,13 @@ class OperatingScheduleController extends GetxController {
             notes: notes,
           );
 
-      // Add to list if successful
+      // Update list lokal
       schedulesList.add(schedule);
-      schedulesList.refresh(); // Ensure UI updates
+      schedulesList.refresh();
 
-      // Show success message
+      // invalidate marker cache (biar range calendar nanti bisa refetch)
+      invalidateCalendarCache();
+
       Get.snackbar(
         'Success',
         'Jadwal operasional berhasil ditambahkan',
@@ -149,12 +184,10 @@ class OperatingScheduleController extends GetxController {
         colorText: ColorTheme.success,
       );
 
-      // Navigate back
       Get.back();
       return true;
     } catch (e) {
-      // Show error message
-      String message =
+      final message =
           e is ApiException
               ? e.message
               : 'Gagal menambahkan jadwal operasional';
@@ -172,7 +205,6 @@ class OperatingScheduleController extends GetxController {
     }
   }
 
-  // Update operating schedule
   Future<bool> updateOperatingSchedule({
     required String id,
     String? date,
@@ -190,19 +222,18 @@ class OperatingScheduleController extends GetxController {
             notes: notes,
           );
 
-      // Update list item if successful
       final index = schedulesList.indexWhere((s) => s.id == id);
       if (index != -1) {
         schedulesList[index] = schedule;
         schedulesList.refresh();
       }
 
-      // Update current schedule if it's the one being edited
       if (currentSchedule.value?.id == id) {
         currentSchedule.value = schedule;
       }
 
-      // Show success message
+      invalidateCalendarCache();
+
       Get.snackbar(
         'Success',
         'Jadwal operasional berhasil diperbarui',
@@ -210,12 +241,10 @@ class OperatingScheduleController extends GetxController {
         colorText: ColorTheme.success,
       );
 
-      // Navigate back
       Get.back();
       return true;
     } catch (e) {
-      // Show error message
-      String message =
+      final message =
           e is ApiException
               ? e.message
               : 'Gagal memperbarui jadwal operasional';
@@ -233,25 +262,23 @@ class OperatingScheduleController extends GetxController {
     }
   }
 
-  // Toggle holiday status
   Future<bool> toggleHolidayStatus(OperatingSchedule schedule) async {
     try {
       final updatedSchedule = await _operatingScheduleRepository
           .toggleHolidayStatus(schedule.id, !schedule.isHoliday);
 
-      // Update list item if successful
       final index = schedulesList.indexWhere((s) => s.id == schedule.id);
       if (index != -1) {
         schedulesList[index] = updatedSchedule;
         schedulesList.refresh();
       }
 
-      // Update current schedule if it's the one being modified
       if (currentSchedule.value?.id == schedule.id) {
         currentSchedule.value = updatedSchedule;
       }
 
-      // Show success message
+      invalidateCalendarCache();
+
       Get.snackbar(
         'Success',
         schedule.isHoliday
@@ -263,8 +290,7 @@ class OperatingScheduleController extends GetxController {
 
       return true;
     } catch (e) {
-      // Show error message
-      String message =
+      final message =
           e is ApiException ? e.message : 'Gagal mengubah status hari libur';
 
       Get.snackbar(
@@ -278,22 +304,20 @@ class OperatingScheduleController extends GetxController {
     }
   }
 
-  // Delete operating schedule
   Future<bool> deleteOperatingSchedule(String id) async {
     try {
       final isDeleted = await _operatingScheduleRepository
           .deleteOperatingSchedule(id);
 
       if (isDeleted) {
-        // Remove from list if successful
         schedulesList.removeWhere((schedule) => schedule.id == id);
 
-        // Clear current schedule if it's the one being deleted
         if (currentSchedule.value?.id == id) {
           currentSchedule.value = null;
         }
 
-        // Show success message
+        invalidateCalendarCache();
+
         Get.snackbar(
           'Success',
           'Jadwal operasional berhasil dihapus',
@@ -305,8 +329,7 @@ class OperatingScheduleController extends GetxController {
       }
       return false;
     } catch (e) {
-      // Show error message
-      String message =
+      final message =
           e is ApiException ? e.message : 'Gagal menghapus jadwal operasional';
 
       Get.snackbar(
@@ -320,13 +343,11 @@ class OperatingScheduleController extends GetxController {
     }
   }
 
-  // Fetch operating schedule by ID
   Future<OperatingSchedule?> fetchScheduleById(String id) async {
     try {
       isLoading.value = true;
       errorMessage.value = '';
 
-      // Validate id
       if (id.isEmpty) {
         throw ApiException(message: "ID jadwal operasional diperlukan");
       }
@@ -336,7 +357,7 @@ class OperatingScheduleController extends GetxController {
       currentSchedule.value = schedule;
       return schedule;
     } catch (e) {
-      String message =
+      final message =
           e is ApiException ? e.message : 'Gagal mengambil jadwal operasional';
 
       errorMessage.value = message;
@@ -355,13 +376,11 @@ class OperatingScheduleController extends GetxController {
     }
   }
 
-  // Fetch operating schedule by date
   Future<OperatingSchedule?> fetchScheduleByDate(String date) async {
     try {
       isLoading.value = true;
       errorMessage.value = '';
 
-      // Validate date
       if (date.isEmpty) {
         throw ApiException(message: "Tanggal diperlukan");
       }
@@ -371,7 +390,7 @@ class OperatingScheduleController extends GetxController {
       currentSchedule.value = schedule;
       return schedule;
     } catch (e) {
-      String message =
+      final message =
           e is ApiException
               ? e.message
               : 'Gagal mengambil jadwal operasional untuk tanggal tersebut';
@@ -379,7 +398,7 @@ class OperatingScheduleController extends GetxController {
       errorMessage.value = message;
       _logger.error('Error fetching operating schedule by date: $e');
 
-      // Don't show snackbar for 404 errors when checking for schedule existence
+      // sesuai pattern kamu: jangan snackbar untuk kasus "tidak ditemukan"
       if (!(e is ApiException && message.contains('tidak ditemukan'))) {
         Get.snackbar(
           'Error',
@@ -395,23 +414,26 @@ class OperatingScheduleController extends GetxController {
     }
   }
 
-  // Check if a date has an operating schedule
   Future<bool> hasScheduleForDate(String date) async {
     try {
       await _operatingScheduleRepository.getOperatingScheduleByDate(date);
       return true;
-    } catch (e) {
+    } catch (_) {
       return false;
     }
   }
 
-  // Get holiday schedules
   Future<void> fetchHolidaySchedules() async {
     return fetchAllSchedules(isHoliday: true);
   }
 
-  // Get non-holiday schedules
   Future<void> fetchNonHolidaySchedules() async {
     return fetchAllSchedules(isHoliday: false);
   }
+
+  // =========================
+  // Helpers
+  // =========================
+
+  String _fmt(DateTime d) => DateFormat('yyyy-MM-dd').format(d);
 }

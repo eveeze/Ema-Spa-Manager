@@ -656,20 +656,28 @@ class _TimeSlotViewState extends State<TimeSlotView> {
               text: 'Delete Permanently',
               onPressed: () async {
                 Navigator.of(context).pop();
+
                 final timeSlotId = timeSlot.id;
                 final success = await controller.deleteTimeSlot(timeSlotId);
                 if (!mounted) return;
 
                 if (success) {
                   controller.clearSelectedTimeSlot();
+
+                  // ✅ FIX: refresh schedule memakai method baru
                   final scheduleController = Get.find<ScheduleController>();
-                  await scheduleController.fetchScheduleData();
+                  await scheduleController.refreshScheduleData(
+                    scheduleController.selectedDate.value,
+                  );
+
+                  // balik dari halaman detail time slot
                   Get.back();
+
                   Get.snackbar(
                     'Success',
                     'Time slot deleted successfully',
-                    backgroundColor: ColorTheme.success,
-                    colorText: Colors.white,
+                    backgroundColor: ColorTheme.success.withValues(alpha: 0.12),
+                    colorText: ColorTheme.success,
                   );
                 } else {
                   Get.snackbar(
@@ -677,8 +685,10 @@ class _TimeSlotViewState extends State<TimeSlotView> {
                     controller.errorMessage.value.isNotEmpty
                         ? controller.errorMessage.value
                         : 'Failed to delete time slot',
-                    backgroundColor: Theme.of(context).colorScheme.error,
-                    colorText: Theme.of(context).colorScheme.onError,
+                    backgroundColor: Theme.of(
+                      context,
+                    ).colorScheme.error.withValues(alpha: 0.12),
+                    colorText: Theme.of(context).colorScheme.error,
                   );
                 }
               },

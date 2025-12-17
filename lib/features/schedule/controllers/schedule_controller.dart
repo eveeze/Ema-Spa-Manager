@@ -1,23 +1,24 @@
 // lib/features/schedule/controllers/schedule_controller.dart
 import 'package:get/get.dart';
-import 'package:emababyspa/data/models/scheduler.dart';
-import 'package:emababyspa/data/models/operating_schedule.dart';
-import 'package:emababyspa/data/repository/scheduler_repository.dart';
-import 'package:emababyspa/data/repository/operating_schedule_repository.dart';
-import 'package:emababyspa/common/theme/color_theme.dart';
-import 'package:emababyspa/utils/logger_utils.dart';
-import 'package:emababyspa/features/operating_schedule/controllers/operating_schedule_controller.dart';
-import 'package:emababyspa/features/time_slot/controllers/time_slot_controller.dart';
-import 'package:emababyspa/features/session/controllers/session_controller.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
+
+import 'package:emababyspa/common/theme/color_theme.dart';
+import 'package:emababyspa/data/models/operating_schedule.dart';
+import 'package:emababyspa/data/models/scheduler.dart';
+import 'package:emababyspa/data/repository/operating_schedule_repository.dart';
+import 'package:emababyspa/data/repository/scheduler_repository.dart';
+import 'package:emababyspa/features/operating_schedule/controllers/operating_schedule_controller.dart';
+import 'package:emababyspa/features/session/controllers/session_controller.dart';
+import 'package:emababyspa/features/time_slot/controllers/time_slot_controller.dart';
+import 'package:emababyspa/utils/logger_utils.dart';
 
 class ScheduleController extends GetxController {
   final SchedulerRepository _schedulerRepository;
   final OperatingScheduleRepository _operatingScheduleRepository;
   final LoggerUtils _logger = LoggerUtils();
 
-  // Controllers for integrated functionality
+  // Integrated controllers
   final OperatingScheduleController operatingScheduleController;
   final TimeSlotController timeSlotController;
   final SessionController sessionController;
@@ -25,14 +26,19 @@ class ScheduleController extends GetxController {
   // Observable state
   final RxBool isLoading = false.obs;
   final RxBool isGenerating = false.obs;
+
   final RxString errorMessage = ''.obs;
   final Rx<ScheduleGenerationResult?> lastGenerationResult =
       Rx<ScheduleGenerationResult?>(null);
+
   final Rx<DateTime> selectedDate = DateTime.now().obs;
   final Rx<DateTime> focusedDate = DateTime.now().obs;
   final Rx<CalendarFormat> calendarFormat = CalendarFormat.week.obs;
+
+  /// Flag khusus untuk section detail harian (list time slot/sessions)
   final RxBool isDataLoaded = false.obs;
-  // Add observable state for operating schedules
+
+  /// Optional: list operating schedule via repository langsung (kalau masih dipakai di tempat lain)
   final RxList<OperatingSchedule> operatingSchedules =
       <OperatingSchedule>[].obs;
   final RxBool isLoadingOperatingSchedules = false.obs;
@@ -49,17 +55,124 @@ class ScheduleController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    fetchOperatingSchedules();
+    // Jangan langsung refresh detail di sini biar tidak double-call dari view.
+    // View panggil bootstrap() sekali di initState.
   }
 
-  void resetScheduleState() {
-    isDataLoaded.value = false;
-    selectedDate.value = DateTime.now();
-    focusedDate.value = DateTime.now();
+  // =========================
+  // Public API (dipanggil view)
+  // =========================
+
+  /// Panggil SEKALI saat page baru dibuka (initState)
+  Future<void> bootstrap() async {
+    await refreshScheduleData(selectedDate.value);
+  }
+
+  /// Handler TableCalendar
+  void onDateSelected(DateTime selectedDay, DateTime focusedDay) {
+    if (isSameDay(selectedDate.value, selectedDay)) return;
+
+    selectedDate.value = selectedDay;
+    focusedDate.value = focusedDay;
+
+    refreshScheduleData(selectedDay);
+  }
+
+  void onFormatChanged(CalendarFormat format) {
+    if (calendarFormat.value == format) return;
+    calendarFormat.value = format;
+  }
+
+  /// Saat user swipe page (bulan/minggu) di kalender
+  void onPageChanged(DateTime newFocusedDay) {
+    focusedDate.value = newFocusedDay;
+    // Refresh marker bulan itu, dan detail tetap untuk selectedDate saat ini
     refreshScheduleData(selectedDate.value);
   }
 
-  /// Fetch operating schedules directly using the repository
+  /// Refresh marker kalender (range focused month) + refresh detail untuk 1 hari yang dipilih
+  Future<void> refreshScheduleData(DateTime dateToRefreshDetailsFor) async {
+    isDataLoaded.value = false;
+
+    // Sinkronkan selectedDate
+    selectedDate.value = dateToRefreshDetailsFor;
+
+    // Kalau selectedDate pindah bulan, selaraskan focusedDate juga (biar marker match)
+    if (focusedDate.value.year != dateToRefreshDetailsFor.year ||
+        focusedDate.value.month != dateToRefreshDetailsFor.month) {
+      focusedDate.value = dateToRefreshDetailsFor;
+    }
+
+    // 1) Fetch operating schedules untuk marker (range 1 bulan dari focusedDate)
+    final firstDayOfMonth = DateTime(
+      focusedDate.value.year,
+      focusedDate.value.month,
+      1,
+    );
+    final lastDayOfMonth = DateTime(
+      focusedDate.value.year,
+      focusedDate.value.month + 1,
+      0,
+    );
+
+    await operatingScheduleController.fetchAllSchedules(
+      startDate: _fmt(firstDayOfMonth),
+      endDate: _fmt(lastDayOfMonth),
+    );
+
+    // 2) Fetch detail harian (schedule -> time slots -> sessions)
+    final formattedDate = _fmt(dateToRefreshDetailsFor);
+
+    final scheduleForSelectedDate = operatingScheduleController.schedulesList
+        .firstWhereOrNull(
+          (s) => isSameDate(s.date.toIso8601String(), formattedDate),
+        );
+
+    // Clear detail sebelumnya biar UI tidak campur data
+    timeSlotController.timeSlots.clear();
+    sessionController.sessions.clear();
+
+    if (scheduleForSelectedDate != null) {
+      await timeSlotController.fetchTimeSlotsByScheduleId(
+        scheduleForSelectedDate.id,
+      );
+      await sessionController.fetchSessionsByDate(dateToRefreshDetailsFor);
+    } else {
+      _logger.info("No operating schedule found for date: $formattedDate");
+    }
+
+    isDataLoaded.value = true;
+  }
+
+  /// Util date compare aman untuk: "yyyy-MM-dd" dan ISO "yyyy-MM-ddT..."
+  bool isSameDate(String? apiDate, String targetDate) {
+    if (apiDate == null) return false;
+    return apiDate.startsWith(targetDate);
+  }
+
+  /// Reset state saat butuh “hard reset”
+  Future<void> resetScheduleState() async {
+    isDataLoaded.value = false;
+    selectedDate.value = DateTime.now();
+    focusedDate.value = DateTime.now();
+    calendarFormat.value = CalendarFormat.week;
+
+    await refreshScheduleData(selectedDate.value);
+  }
+
+  /// Toggle holiday (dipakai dari view)
+  Future<void> toggleHolidayStatus(dynamic scheduleId, bool isHoliday) async {
+    await operatingScheduleController.updateOperatingSchedule(
+      id: scheduleId,
+      isHoliday: isHoliday,
+    );
+    await refreshScheduleData(selectedDate.value);
+  }
+
+  // =========================
+  // Optional: Repository direct CRUD (kalau masih kamu pakai)
+  // =========================
+
   Future<void> fetchOperatingSchedules({
     String? date,
     bool? isHoliday,
@@ -84,11 +197,10 @@ class ScheduleController extends GetxController {
           'Failed to load operating schedules. Please try again.';
       _logger.error('Error fetching operating schedules: $e');
 
-      // Show error message
       Get.snackbar(
         'Error',
         'Failed to load operating schedules',
-        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
+        backgroundColor: ColorTheme.error.withValues(alpha: 0.10),
         colorText: ColorTheme.error,
       );
     } finally {
@@ -96,7 +208,6 @@ class ScheduleController extends GetxController {
     }
   }
 
-  /// Get operating schedule by ID directly
   Future<OperatingSchedule?> getOperatingScheduleById(String id) async {
     try {
       return await _operatingScheduleRepository.getOperatingScheduleById(id);
@@ -106,7 +217,6 @@ class ScheduleController extends GetxController {
     }
   }
 
-  /// Get operating schedule by date directly
   Future<OperatingSchedule?> getOperatingScheduleByDate(String date) async {
     try {
       return await _operatingScheduleRepository.getOperatingScheduleByDate(
@@ -118,80 +228,6 @@ class ScheduleController extends GetxController {
     }
   }
 
-  Future<void> refreshScheduleData(DateTime dateToRefreshDetailsFor) async {
-    isDataLoaded.value = false; // Indicate loading for details section
-
-    // 1. Update selectedDate (important for TableCalendar's selectedDayPredicate)
-    selectedDate.value = dateToRefreshDetailsFor;
-    // focusedDate is typically handled by calendar interactions or explicit setting.
-    // If not, ensure it's aligned with dateToRefreshDetailsFor or the relevant view.
-    if (focusedDate.value.month != dateToRefreshDetailsFor.month ||
-        focusedDate.value.year != dateToRefreshDetailsFor.year) {
-      focusedDate.value = dateToRefreshDetailsFor;
-    }
-
-    // 2. Fetch OperatingSchedules for the current calendar view (e.g., month of focusedDate)
-    //    This data is for the TableCalendar markers.
-    DateTime firstDayOfMonth = DateTime(
-      focusedDate.value.year,
-      focusedDate.value.month,
-      1,
-    );
-    DateTime lastDayOfMonth = DateTime(
-      focusedDate.value.year,
-      focusedDate.value.month + 1,
-      0,
-    );
-
-    // Let OperatingScheduleController manage the list used by its view components
-    // Ensure OperatingScheduleController.fetchAllSchedules can handle a date range.
-    await operatingScheduleController.fetchAllSchedules(
-      startDate: DateFormat('yyyy-MM-dd').format(firstDayOfMonth),
-      endDate: DateFormat('yyyy-MM-dd').format(lastDayOfMonth),
-    );
-    // Now operatingScheduleController.schedulesList contains schedules for the current month.
-
-    // 3. Fetch specific details for the 'dateToRefreshDetailsFor'.
-    final formattedDate = DateFormat(
-      'yyyy-MM-dd',
-    ).format(dateToRefreshDetailsFor);
-    // Find the schedule from the list populated in OperatingScheduleController
-    final scheduleForSelectedDate = operatingScheduleController.schedulesList
-        .firstWhereOrNull(
-          (s) => _isSameDate(s.date.toIso8601String(), formattedDate),
-        );
-
-    // Clear previous details from respective controllers
-    timeSlotController.timeSlots.clear();
-    sessionController.sessions.clear();
-
-    if (scheduleForSelectedDate != null) {
-      // Load time slots for the selected date's schedule
-      await timeSlotController.fetchTimeSlotsByScheduleId(
-        scheduleForSelectedDate.id,
-      );
-      // Load sessions for the selected date
-      await sessionController.fetchSessionsByDate(dateToRefreshDetailsFor);
-    } else {
-      _logger.info(
-        "No operating schedule found for date: $formattedDate. Time slots and sessions will be empty for this date.",
-      );
-    }
-
-    isDataLoaded.value =
-        true; // Indicate details are loaded for the selected date
-  }
-
-  void resetInternalStatesForNewDateSelection() {
-    isDataLoaded.value = false;
-    // Do not reset selectedDate or focusedDate here if they are meant to be preserved
-    // from a previous state or set explicitly before calling refresh.
-    operatingScheduleController.schedulesList.clear();
-    timeSlotController.timeSlots.clear();
-    sessionController.sessions.clear();
-  }
-
-  /// Create a new operating schedule directly
   Future<OperatingSchedule?> createOperatingSchedule({
     required String date,
     bool? isHoliday,
@@ -208,30 +244,25 @@ class ScheduleController extends GetxController {
             notes: notes,
           );
 
-      // Refresh the list
       await fetchOperatingSchedules();
-
-      // Also refresh the operating schedule controller
       await operatingScheduleController.fetchAllSchedules();
 
       Get.snackbar(
         'Success',
-        'Operating schedule created successfully',
-        backgroundColor: ColorTheme.success.withValues(alpha: 0.1),
+        'Operating day created.',
+        backgroundColor: ColorTheme.success.withValues(alpha: 0.10),
         colorText: ColorTheme.success,
       );
 
       return schedule;
     } catch (e) {
-      errorMessage.value =
-          'Failed to create operating schedule. Please try again.';
+      errorMessage.value = 'Failed to create operating schedule.';
       _logger.error('Error creating operating schedule: $e');
 
-      // Show error message
       Get.snackbar(
         'Error',
         'Failed to create operating schedule',
-        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
+        backgroundColor: ColorTheme.error.withValues(alpha: 0.10),
         colorText: ColorTheme.error,
       );
 
@@ -241,7 +272,6 @@ class ScheduleController extends GetxController {
     }
   }
 
-  /// Update an operating schedule directly
   Future<OperatingSchedule?> updateOperatingSchedule({
     required String id,
     String? date,
@@ -260,30 +290,25 @@ class ScheduleController extends GetxController {
             notes: notes,
           );
 
-      // Refresh the list
       await fetchOperatingSchedules();
-
-      // Also refresh the operating schedule controller
       await operatingScheduleController.fetchAllSchedules();
 
       Get.snackbar(
         'Success',
-        'Operating schedule updated successfully',
-        backgroundColor: ColorTheme.success.withValues(alpha: 0.1),
+        'Operating day updated.',
+        backgroundColor: ColorTheme.success.withValues(alpha: 0.10),
         colorText: ColorTheme.success,
       );
 
       return schedule;
     } catch (e) {
-      errorMessage.value =
-          'Failed to update operating schedule. Please try again.';
+      errorMessage.value = 'Failed to update operating schedule.';
       _logger.error('Error updating operating schedule: $e');
 
-      // Show error message
       Get.snackbar(
         'Error',
         'Failed to update operating schedule',
-        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
+        backgroundColor: ColorTheme.error.withValues(alpha: 0.10),
         colorText: ColorTheme.error,
       );
 
@@ -293,8 +318,7 @@ class ScheduleController extends GetxController {
     }
   }
 
-  /// Toggle the holiday status of an operating schedule directly
-  Future<OperatingSchedule?> toggleHolidayStatus(
+  Future<OperatingSchedule?> toggleHolidayStatusDirect(
     String id,
     bool isHoliday,
   ) async {
@@ -307,29 +331,25 @@ class ScheduleController extends GetxController {
         isHoliday,
       );
 
-      // Refresh the list
       await fetchOperatingSchedules();
-
-      // Also refresh the operating schedule controller
       await operatingScheduleController.fetchAllSchedules();
 
       Get.snackbar(
         'Success',
-        'Holiday status updated successfully',
-        backgroundColor: ColorTheme.success.withValues(alpha: 0.1),
+        'Holiday status updated.',
+        backgroundColor: ColorTheme.success.withValues(alpha: 0.10),
         colorText: ColorTheme.success,
       );
 
       return schedule;
     } catch (e) {
-      errorMessage.value = 'Failed to update holiday status. Please try again.';
+      errorMessage.value = 'Failed to update holiday status.';
       _logger.error('Error toggling holiday status: $e');
 
-      // Show error message
       Get.snackbar(
         'Error',
         'Failed to update holiday status',
-        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
+        backgroundColor: ColorTheme.error.withValues(alpha: 0.10),
         colorText: ColorTheme.error,
       );
 
@@ -339,7 +359,6 @@ class ScheduleController extends GetxController {
     }
   }
 
-  /// Delete an operating schedule directly
   Future<bool> deleteOperatingSchedule(String id) async {
     try {
       isLoading.value = true;
@@ -349,30 +368,25 @@ class ScheduleController extends GetxController {
         id,
       );
 
-      // Refresh the list
       await fetchOperatingSchedules();
-
-      // Also refresh the operating schedule controller
       await operatingScheduleController.fetchAllSchedules();
 
       Get.snackbar(
         'Success',
-        'Operating schedule deleted successfully',
-        backgroundColor: ColorTheme.success.withValues(alpha: 0.1),
+        'Operating day deleted.',
+        backgroundColor: ColorTheme.success.withValues(alpha: 0.10),
         colorText: ColorTheme.success,
       );
 
       return result;
     } catch (e) {
-      errorMessage.value =
-          'Failed to delete operating schedule. Please try again.';
+      errorMessage.value = 'Failed to delete operating schedule.';
       _logger.error('Error deleting operating schedule: $e');
 
-      // Show error message
       Get.snackbar(
         'Error',
         'Failed to delete operating schedule',
-        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
+        backgroundColor: ColorTheme.error.withValues(alpha: 0.10),
         colorText: ColorTheme.error,
       );
 
@@ -382,9 +396,10 @@ class ScheduleController extends GetxController {
     }
   }
 
-  // Original scheduler methods
+  // =========================
+  // Scheduler generation (tetap kamu pakai)
+  // =========================
 
-  // Generate full schedule
   Future<void> generateFullSchedule({
     String? startDate,
     int? days,
@@ -406,11 +421,8 @@ class ScheduleController extends GetxController {
 
       lastGenerationResult.value = result;
 
-      // If successful, refresh data in all controllers
       if (result.success) {
         await _refreshAllControllers(startDate, days);
-
-        // Also refresh our direct operating schedules
         await fetchOperatingSchedules(
           startDate: startDate,
           endDate: days != null ? _calculateEndDate(startDate, days) : null,
@@ -419,26 +431,28 @@ class ScheduleController extends GetxController {
         Get.snackbar(
           'Success',
           'Schedule generated successfully',
-          backgroundColor: ColorTheme.success.withValues(alpha: 0.1),
+          backgroundColor: ColorTheme.success.withValues(alpha: 0.10),
           colorText: ColorTheme.success,
         );
+
+        // refresh UI detail hari yang sedang dipilih
+        await refreshScheduleData(selectedDate.value);
       } else {
         Get.snackbar(
           'Warning',
           result.message,
-          backgroundColor: ColorTheme.warning.withValues(alpha: 0.1),
+          backgroundColor: ColorTheme.warning.withValues(alpha: 0.10),
           colorText: ColorTheme.warning,
         );
       }
     } catch (e) {
-      errorMessage.value = 'Failed to generate schedule. Please try again.';
+      errorMessage.value = 'Failed to generate schedule.';
       _logger.error('Error generating schedule: $e');
 
-      // Show error message
       Get.snackbar(
         'Error',
         'Failed to generate schedule',
-        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
+        backgroundColor: ColorTheme.error.withValues(alpha: 0.10),
         colorText: ColorTheme.error,
       );
     } finally {
@@ -446,7 +460,6 @@ class ScheduleController extends GetxController {
     }
   }
 
-  // Generate operating schedules only
   Future<ComponentGenerationResult?> generateOperatingSchedules({
     String? startDate,
     int? days,
@@ -462,14 +475,12 @@ class ScheduleController extends GetxController {
         holidayDates: holidayDates,
       );
 
-      // If successful, refresh operating schedules data
       if (result.success) {
         await operatingScheduleController.fetchAllSchedules(
           startDate: startDate,
           endDate: _calculateEndDate(startDate, days),
         );
 
-        // Also refresh our direct operating schedules
         await fetchOperatingSchedules(
           startDate: startDate,
           endDate: days != null ? _calculateEndDate(startDate, days) : null,
@@ -478,29 +489,29 @@ class ScheduleController extends GetxController {
         Get.snackbar(
           'Success',
           'Operating schedules generated successfully',
-          backgroundColor: ColorTheme.success.withValues(alpha: 0.1),
+          backgroundColor: ColorTheme.success.withValues(alpha: 0.10),
           colorText: ColorTheme.success,
         );
+
+        await refreshScheduleData(selectedDate.value);
       } else {
         Get.snackbar(
           'Warning',
           result.message,
-          backgroundColor: ColorTheme.warning.withValues(alpha: 0.1),
+          backgroundColor: ColorTheme.warning.withValues(alpha: 0.10),
           colorText: ColorTheme.warning,
         );
       }
 
       return result;
     } catch (e) {
-      errorMessage.value =
-          'Failed to generate operating schedules. Please try again.';
+      errorMessage.value = 'Failed to generate operating schedules.';
       _logger.error('Error generating operating schedules: $e');
 
-      // Show error message
       Get.snackbar(
         'Error',
         'Failed to generate operating schedules',
-        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
+        backgroundColor: ColorTheme.error.withValues(alpha: 0.10),
         colorText: ColorTheme.error,
       );
 
@@ -510,7 +521,6 @@ class ScheduleController extends GetxController {
     }
   }
 
-  // Generate time slots for specific operating schedules
   Future<ComponentGenerationResult?> generateTimeSlots({
     required List<String> scheduleIds,
     TimeConfig? timeConfig,
@@ -526,9 +536,7 @@ class ScheduleController extends GetxController {
         timeZoneOffset: timeZoneOffset,
       );
 
-      // If successful, refresh time slots data for each schedule
       if (result.success) {
-        // Refresh time slots for each schedule ID
         for (final scheduleId in scheduleIds) {
           await timeSlotController.fetchTimeSlotsByScheduleId(scheduleId);
         }
@@ -536,28 +544,29 @@ class ScheduleController extends GetxController {
         Get.snackbar(
           'Success',
           'Time slots generated successfully',
-          backgroundColor: ColorTheme.success.withValues(alpha: 0.1),
+          backgroundColor: ColorTheme.success.withValues(alpha: 0.10),
           colorText: ColorTheme.success,
         );
+
+        await refreshScheduleData(selectedDate.value);
       } else {
         Get.snackbar(
           'Warning',
           result.message,
-          backgroundColor: ColorTheme.warning.withValues(alpha: 0.1),
+          backgroundColor: ColorTheme.warning.withValues(alpha: 0.10),
           colorText: ColorTheme.warning,
         );
       }
 
       return result;
     } catch (e) {
-      errorMessage.value = 'Failed to generate time slots. Please try again.';
+      errorMessage.value = 'Failed to generate time slots.';
       _logger.error('Error generating time slots: $e');
 
-      // Show error message
       Get.snackbar(
         'Error',
         'Failed to generate time slots',
-        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
+        backgroundColor: ColorTheme.error.withValues(alpha: 0.10),
         colorText: ColorTheme.error,
       );
 
@@ -567,7 +576,6 @@ class ScheduleController extends GetxController {
     }
   }
 
-  // Generate sessions for specified time slots
   Future<ComponentGenerationResult?> generateSessions({
     required Map<String, List<String>> timeSlotsBySchedule,
   }) async {
@@ -579,18 +587,13 @@ class ScheduleController extends GetxController {
         timeSlotsBySchedule: timeSlotsBySchedule,
       );
 
-      // If successful, refresh session data
       if (result.success) {
-        // Get all schedules with generated sessions
         final scheduleIds = timeSlotsBySchedule.keys.toList();
         if (scheduleIds.isNotEmpty) {
-          // Fetch operating schedules to get their dates
           await operatingScheduleController.fetchAllSchedules();
 
-          // Get the date range for these schedules
           final dates = _getDateRangeFromSchedules(scheduleIds);
           if (dates.isNotEmpty) {
-            // Refresh sessions data
             await sessionController.fetchSessions(date: dates.join(','));
           }
         }
@@ -598,28 +601,29 @@ class ScheduleController extends GetxController {
         Get.snackbar(
           'Success',
           'Sessions generated successfully',
-          backgroundColor: ColorTheme.success.withValues(alpha: 0.1),
+          backgroundColor: ColorTheme.success.withValues(alpha: 0.10),
           colorText: ColorTheme.success,
         );
+
+        await refreshScheduleData(selectedDate.value);
       } else {
         Get.snackbar(
           'Warning',
           result.message,
-          backgroundColor: ColorTheme.warning.withValues(alpha: 0.1),
+          backgroundColor: ColorTheme.warning.withValues(alpha: 0.10),
           colorText: ColorTheme.warning,
         );
       }
 
       return result;
     } catch (e) {
-      errorMessage.value = 'Failed to generate sessions. Please try again.';
+      errorMessage.value = 'Failed to generate sessions.';
       _logger.error('Error generating sessions: $e');
 
-      // Show error message
       Get.snackbar(
         'Error',
         'Failed to generate sessions',
-        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
+        backgroundColor: ColorTheme.error.withValues(alpha: 0.10),
         colorText: ColorTheme.error,
       );
 
@@ -629,7 +633,6 @@ class ScheduleController extends GetxController {
     }
   }
 
-  // Run scheduled generation manually
   Future<void> runScheduledGeneration() async {
     try {
       isGenerating.value = true;
@@ -638,37 +641,34 @@ class ScheduleController extends GetxController {
       final result = await _schedulerRepository.runScheduledGeneration();
       lastGenerationResult.value = result;
 
-      // If successful, refresh data in all controllers
       if (result.success) {
         await _refreshAllControllers();
-
-        // Also refresh our direct operating schedules
         await fetchOperatingSchedules();
 
         Get.snackbar(
           'Success',
           'Scheduled generation completed successfully',
-          backgroundColor: ColorTheme.success.withValues(alpha: 0.1),
+          backgroundColor: ColorTheme.success.withValues(alpha: 0.10),
           colorText: ColorTheme.success,
         );
+
+        await refreshScheduleData(selectedDate.value);
       } else {
         Get.snackbar(
           'Warning',
           result.message,
-          backgroundColor: ColorTheme.warning.withValues(alpha: 0.1),
+          backgroundColor: ColorTheme.warning.withValues(alpha: 0.10),
           colorText: ColorTheme.warning,
         );
       }
     } catch (e) {
-      errorMessage.value =
-          'Failed to run scheduled generation. Please try again.';
+      errorMessage.value = 'Failed to run scheduled generation.';
       _logger.error('Error running scheduled generation: $e');
 
-      // Show error message
       Get.snackbar(
         'Error',
         'Failed to run scheduled generation',
-        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
+        backgroundColor: ColorTheme.error.withValues(alpha: 0.10),
         colorText: ColorTheme.error,
       );
     } finally {
@@ -676,7 +676,6 @@ class ScheduleController extends GetxController {
     }
   }
 
-  // Generate schedule for next day
   Future<void> generateNextDaySchedule() async {
     try {
       isGenerating.value = true;
@@ -685,42 +684,37 @@ class ScheduleController extends GetxController {
       final result = await _schedulerRepository.generateNextDaySchedule();
       lastGenerationResult.value = result;
 
-      // If successful, refresh data in all controllers
       if (result.success) {
-        // Get tomorrow's date
-        final tomorrow = DateTime.now().add(Duration(days: 1));
-        final formattedDate =
-            "${tomorrow.year}-${tomorrow.month.toString().padLeft(2, '0')}-${tomorrow.day.toString().padLeft(2, '0')}";
+        final tomorrow = DateTime.now().add(const Duration(days: 1));
+        final formattedDate = _fmt(tomorrow);
 
         await _refreshControllersForDate(formattedDate);
-
-        // Also refresh our direct operating schedules
         await fetchOperatingSchedules(date: formattedDate);
 
         Get.snackbar(
           'Success',
           'Next day schedule generated successfully',
-          backgroundColor: ColorTheme.success.withValues(alpha: 0.1),
+          backgroundColor: ColorTheme.success.withValues(alpha: 0.10),
           colorText: ColorTheme.success,
         );
+
+        await refreshScheduleData(selectedDate.value);
       } else {
         Get.snackbar(
           'Warning',
           result.message,
-          backgroundColor: ColorTheme.warning.withValues(alpha: 0.1),
+          backgroundColor: ColorTheme.warning.withValues(alpha: 0.10),
           colorText: ColorTheme.warning,
         );
       }
     } catch (e) {
-      errorMessage.value =
-          'Failed to generate next day schedule. Please try again.';
+      errorMessage.value = 'Failed to generate next day schedule.';
       _logger.error('Error generating next day schedule: $e');
 
-      // Show error message
       Get.snackbar(
         'Error',
         'Failed to generate next day schedule',
-        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
+        backgroundColor: ColorTheme.error.withValues(alpha: 0.10),
         colorText: ColorTheme.error,
       );
     } finally {
@@ -728,7 +722,6 @@ class ScheduleController extends GetxController {
     }
   }
 
-  // Generate schedule for next week
   Future<void> generateNextWeekSchedule() async {
     try {
       isGenerating.value = true;
@@ -737,17 +730,11 @@ class ScheduleController extends GetxController {
       final result = await _schedulerRepository.generateNextWeekSchedule();
       lastGenerationResult.value = result;
 
-      // If successful, refresh data in all controllers
       if (result.success) {
-        // Get tomorrow's date as the start date
-        final tomorrow = DateTime.now().add(Duration(days: 1));
-        final startDate =
-            "${tomorrow.year}-${tomorrow.month.toString().padLeft(2, '0')}-${tomorrow.day.toString().padLeft(2, '0')}";
+        final tomorrow = DateTime.now().add(const Duration(days: 1));
+        final startDate = _fmt(tomorrow);
 
-        // Refresh for a week period
         await _refreshAllControllers(startDate, 7);
-
-        // Also refresh our direct operating schedules
         await fetchOperatingSchedules(
           startDate: startDate,
           endDate: _calculateEndDate(startDate, 7),
@@ -756,27 +743,27 @@ class ScheduleController extends GetxController {
         Get.snackbar(
           'Success',
           'Next week schedule generated successfully',
-          backgroundColor: ColorTheme.success.withValues(alpha: 0.1),
+          backgroundColor: ColorTheme.success.withValues(alpha: 0.10),
           colorText: ColorTheme.success,
         );
+
+        await refreshScheduleData(selectedDate.value);
       } else {
         Get.snackbar(
           'Warning',
           result.message,
-          backgroundColor: ColorTheme.warning.withValues(alpha: 0.1),
+          backgroundColor: ColorTheme.warning.withValues(alpha: 0.10),
           colorText: ColorTheme.warning,
         );
       }
     } catch (e) {
-      errorMessage.value =
-          'Failed to generate next week schedule. Please try again.';
+      errorMessage.value = 'Failed to generate next week schedule.';
       _logger.error('Error generating next week schedule: $e');
 
-      // Show error message
       Get.snackbar(
         'Error',
         'Failed to generate next week schedule',
-        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
+        backgroundColor: ColorTheme.error.withValues(alpha: 0.10),
         colorText: ColorTheme.error,
       );
     } finally {
@@ -784,7 +771,6 @@ class ScheduleController extends GetxController {
     }
   }
 
-  // Generate custom schedule
   Future<void> generateCustomSchedule({
     required String startDate,
     required int days,
@@ -806,11 +792,8 @@ class ScheduleController extends GetxController {
 
       lastGenerationResult.value = result;
 
-      // If successful, refresh data in all controllers
       if (result.success) {
         await _refreshAllControllers(startDate, days);
-
-        // Also refresh our direct operating schedules
         await fetchOperatingSchedules(
           startDate: startDate,
           endDate: _calculateEndDate(startDate, days),
@@ -819,27 +802,27 @@ class ScheduleController extends GetxController {
         Get.snackbar(
           'Success',
           'Custom schedule generated successfully',
-          backgroundColor: ColorTheme.success.withValues(alpha: 0.1),
+          backgroundColor: ColorTheme.success.withValues(alpha: 0.10),
           colorText: ColorTheme.success,
         );
+
+        await refreshScheduleData(selectedDate.value);
       } else {
         Get.snackbar(
           'Warning',
           result.message,
-          backgroundColor: ColorTheme.warning.withValues(alpha: 0.1),
+          backgroundColor: ColorTheme.warning.withValues(alpha: 0.10),
           colorText: ColorTheme.warning,
         );
       }
     } catch (e) {
-      errorMessage.value =
-          'Failed to generate custom schedule. Please try again.';
+      errorMessage.value = 'Failed to generate custom schedule.';
       _logger.error('Error generating custom schedule: $e');
 
-      // Show error message
       Get.snackbar(
         'Error',
         'Failed to generate custom schedule',
-        backgroundColor: ColorTheme.error.withValues(alpha: 0.1),
+        backgroundColor: ColorTheme.error.withValues(alpha: 0.10),
         colorText: ColorTheme.error,
       );
     } finally {
@@ -847,33 +830,32 @@ class ScheduleController extends GetxController {
     }
   }
 
-  // Helper methods to refresh controller data
+  // =========================
+  // Helpers
+  // =========================
 
-  // Refresh all controllers with latest data
+  String _fmt(DateTime d) => DateFormat('yyyy-MM-dd').format(d);
+
   Future<void> _refreshAllControllers([String? startDate, int? days]) async {
     try {
       final startDateToUse = startDate ?? _getTodayFormatted();
       final endDate =
           days != null ? _calculateEndDate(startDateToUse, days) : null;
 
-      // Refresh operating schedules
       await operatingScheduleController.fetchAllSchedules(
         startDate: startDateToUse,
         endDate: endDate,
       );
 
-      // Get schedule IDs for the date range
       final scheduleIds =
           operatingScheduleController.schedulesList
               .map((schedule) => schedule.id)
               .toList();
 
-      // Refresh time slots for these schedules
       for (final scheduleId in scheduleIds) {
         await timeSlotController.fetchTimeSlotsByScheduleId(scheduleId);
       }
 
-      // Refresh sessions
       await sessionController.fetchSessions(
         date: endDate != null ? '$startDateToUse,$endDate' : startDateToUse,
       );
@@ -882,79 +864,21 @@ class ScheduleController extends GetxController {
     }
   }
 
-  Future<void> fetchScheduleData() async {
-    try {
-      isLoading.value = true;
-
-      // 1. Refresh operating schedules
-      await fetchOperatingSchedules();
-
-      // 2. Refresh time slots untuk semua operating schedules
-      final allTimeSlotIds = <String>[];
-
-      for (final schedule in operatingSchedules) {
-        await timeSlotController.fetchTimeSlotsByScheduleId(schedule.id);
-
-        // Get the time slots from the controller's observable list
-        // Filter time slots that belong to this specific schedule
-        final scheduleTimeSlots =
-            timeSlotController.timeSlots
-                .where((ts) => ts.operatingScheduleId == schedule.id)
-                .toList();
-
-        allTimeSlotIds.addAll(scheduleTimeSlots.map((ts) => ts.id));
-      }
-
-      // 3. Refresh sessions untuk semua time slots yang ada
-      if (allTimeSlotIds.isNotEmpty) {
-        for (final timeSlotId in allTimeSlotIds) {
-          await sessionController.fetchSessions(timeSlotId: timeSlotId);
-        }
-      }
-    } catch (e) {
-      _logger.error('Error fetching schedule data: $e');
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
-  Future<void> refreshData({String? specificTimeSlotId}) async {
-    try {
-      // Refresh operating schedules
-      await operatingScheduleController.fetchAllSchedules();
-
-      // Refresh time slots
-      if (specificTimeSlotId != null) {
-        await timeSlotController.fetchTimeSlotsByScheduleId(specificTimeSlotId);
-      }
-
-      // Refresh sessions
-      await sessionController.fetchSessionsByDate(DateTime.now());
-
-      update();
-    } catch (e) {
-      _logger.error('Error refreshing data: $e');
-    }
-  }
-
-  // Refresh controllers for a specific date
   Future<void> _refreshControllersForDate(String date) async {
     try {
-      // Refresh operating schedules for this date
       await operatingScheduleController.fetchAllSchedules(date: date);
 
-      // Get schedule ID for this date
       final schedule = operatingScheduleController.schedulesList
-      // ignore: unrelated_type_equality_checks
-      .firstWhereOrNull((schedule) => schedule.date == date);
+          .firstWhereOrNull((s) {
+            // date param di sini string, sedangkan s.date DateTime.
+            final scheduleDate = _fmt(s.date);
+            return scheduleDate == date;
+          });
 
       final scheduleId = schedule?.id;
 
       if (scheduleId != null) {
-        // Refresh time slots for this schedule
         await timeSlotController.fetchTimeSlotsByScheduleId(scheduleId);
-
-        // Refresh sessions for this date
         await sessionController.fetchSessions(date: date);
       }
     } catch (e) {
@@ -962,7 +886,6 @@ class ScheduleController extends GetxController {
     }
   }
 
-  // Helper to calculate end date string based on start date and number of days
   String _calculateEndDate(String? startDateStr, int? days) {
     if (startDateStr == null || days == null || days <= 0) {
       return _getTodayFormatted();
@@ -979,25 +902,15 @@ class ScheduleController extends GetxController {
       );
 
       final endDate = startDate.add(Duration(days: days - 1));
-      return "${endDate.year}-${endDate.month.toString().padLeft(2, '0')}-${endDate.day.toString().padLeft(2, '0')}";
+      return _fmt(endDate);
     } catch (e) {
       _logger.error('Error calculating end date: $e');
       return _getTodayFormatted();
     }
   }
 
-  // Get today's date formatted as yyyy-MM-dd
-  String _getTodayFormatted() {
-    final now = DateTime.now();
-    return "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
-  }
+  String _getTodayFormatted() => _fmt(DateTime.now());
 
-  bool _isSameDate(String? apiDate, String targetDate) {
-    if (apiDate == null) return false;
-    return apiDate.contains(targetDate);
-  }
-
-  // Get dates from a list of schedule IDs by looking them up in the controller
   List<String> _getDateRangeFromSchedules(List<String> scheduleIds) {
     final dates = <String>[];
 
@@ -1006,25 +919,15 @@ class ScheduleController extends GetxController {
           .firstWhereOrNull((s) => s.id == scheduleId);
 
       if (schedule != null) {
-        final date = schedule.date;
-        final formattedDate =
-            "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
-        if (!dates.contains(formattedDate)) {
-          dates.add(formattedDate);
-        }
+        final formattedDate = _fmt(schedule.date);
+        if (!dates.contains(formattedDate)) dates.add(formattedDate);
       }
     }
 
     return dates;
   }
 
-  // Reset error message
-  void resetError() {
-    errorMessage.value = '';
-  }
+  void resetError() => errorMessage.value = '';
 
-  // Reset generation result
-  void resetGenerationResult() {
-    lastGenerationResult.value = null;
-  }
+  void resetGenerationResult() => lastGenerationResult.value = null;
 }

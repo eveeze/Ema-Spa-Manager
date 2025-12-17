@@ -1,25 +1,32 @@
 // lib/features/session/controllers/session_controller.dart
-import 'package:get/get.dart';
-import 'package:emababyspa/data/repository/session_repository.dart';
-import 'package:emababyspa/data/models/session.dart';
-import 'package:emababyspa/data/api/api_exception.dart';
-import 'package:emababyspa/utils/logger_utils.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+
 import 'package:emababyspa/common/theme/color_theme.dart';
+import 'package:emababyspa/data/api/api_exception.dart';
+import 'package:emababyspa/data/models/session.dart';
+import 'package:emababyspa/data/repository/session_repository.dart';
+import 'package:emababyspa/utils/logger_utils.dart';
+
+enum _SessionContext { idle, schedule, timeslot, staff }
 
 class SessionController extends GetxController {
   final SessionRepository repository;
   final LoggerUtils _logger = LoggerUtils();
 
-  // Observable variables
+  // Observable state
   final RxBool isLoading = false.obs;
   final RxBool isSubmitting = false.obs;
   final RxString errorMessage = ''.obs;
+
   final RxList<Session> sessions = <Session>[].obs;
   final Rx<Session?> currentSession = Rx<Session?>(null);
   final RxList<Session> availableSessions = <Session>[].obs;
+
+  // Operation tracking
   final RxString _lastOperationDetails = ''.obs;
+  String get lastOperationDetails => _lastOperationDetails.value;
 
   // Date selection
   final Rx<DateTime> selectedDate = DateTime.now().obs;
@@ -30,18 +37,21 @@ class SessionController extends GetxController {
   // Staff filter
   final RxString selectedStaffId = ''.obs;
 
-  // Booking status filter - use Rx<bool?> for nullable boolean
+  // Booking status filter
   final Rx<bool?> filterIsBooked = Rx<bool?>(null);
 
-  // Current context tracking - untuk mengetahui data mana yang sedang aktif
+  // Current context tracking
   String? _currentTimeSlotId;
-  String? _currentContext; // 'schedule', 'timeslot', 'staff', etc.
-  Map<String, dynamic> _lastFetchParams = {};
-  String get lastOperationDetails => _lastOperationDetails.value;
+  _SessionContext _context = _SessionContext.idle;
 
-  // Data change listeners - untuk notifikasi antar views
+  // Store last fetch parameters for smart refresh
+  Map<String, dynamic> _lastFetchParams = {};
+
+  // Data change listeners (untuk notifikasi antar views)
   final RxBool dataChanged = false.obs;
   final RxString lastChangedOperation = ''.obs;
+
+  // (Legacy) masih ada di kode kamu, tetap disediakan agar tidak breaking
   final sessionsMap = <String, List<Session>>{}.obs;
 
   SessionController({required this.repository});
@@ -49,20 +59,46 @@ class SessionController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // Initial data load
-    _setContext('schedule');
-    fetchSessions();
+    // Best practice: jangan auto-fetch di sini.
+    // Fetch dipanggil explicit dari ScheduleController/TimeSlotView.
+    _setContext(_SessionContext.idle);
   }
+
+  // =========================
+  // Public helpers
+  // =========================
 
   void resetSessionState() {
     sessions.clear();
     currentSession.value = null;
     availableSessions.clear();
+    errorMessage.value = '';
   }
 
-  // Set current context for better data management
-  void _setContext(String context, {String? timeSlotId}) {
-    _currentContext = context;
+  // Getter untuk kompatibilitas UI lama (kalau ada yang baca string)
+  String? get currentContext {
+    switch (_context) {
+      case _SessionContext.idle:
+        return 'idle';
+      case _SessionContext.schedule:
+        return 'schedule';
+      case _SessionContext.timeslot:
+        return 'timeslot';
+      case _SessionContext.staff:
+        return 'staff';
+    }
+  }
+
+  String? get currentTimeSlotId => _currentTimeSlotId;
+
+  bool get hasDataChanged => dataChanged.value;
+
+  // =========================
+  // Internal utils
+  // =========================
+
+  void _setContext(_SessionContext context, {String? timeSlotId}) {
+    _context = context;
     _currentTimeSlotId = timeSlotId;
   }
 
@@ -70,77 +106,60 @@ class SessionController extends GetxController {
     _lastOperationDetails.value = '$operation:$timeSlotId';
   }
 
-  // Format date to ISO string (YYYY-MM-DD)
-  String _formatDate(DateTime date) {
-    return DateFormat('yyyy-MM-dd').format(date);
-  }
+  String _formatDate(DateTime date) => DateFormat('yyyy-MM-dd').format(date);
 
-  // Notify data change untuk reactive updates
+  void clearError() => errorMessage.value = '';
+
   void _notifyDataChange(String operation) {
-    dataChanged.value = !dataChanged.value; // Toggle untuk trigger reaktif
+    // Toggle untuk trigger reaktif
+    dataChanged.value = !dataChanged.value;
     lastChangedOperation.value = operation;
-    update(['sessions', 'schedule', 'timeslot']); // Update specific widgets
   }
 
-  // Set selected date
-  void setDate(DateTime date) {
-    selectedDate.value = date;
-    // Refresh data based on current context
-    _refreshCurrentContext();
+  void _showErrorSnackbar(String message) {
+    final ctx = Get.context;
+    final bg =
+        ctx != null
+            ? Theme.of(ctx).colorScheme.error
+            : ColorTheme.error; // fallback
+    final fg =
+        ctx != null
+            ? Theme.of(ctx).colorScheme.onError
+            : Colors.white; // fallback
+
+    Get.snackbar(
+      'Gagal',
+      message,
+      backgroundColor: bg,
+      colorText: fg,
+      snackPosition: SnackPosition.BOTTOM,
+    );
   }
 
-  // Set service duration
-  void setServiceDuration(int duration) {
-    serviceDuration.value = duration;
-    // Refresh available sessions with new duration
-    fetchAvailableSessions();
+  void _showSuccessSnackbar(String message) {
+    // konsisten dengan ColorTheme (kamu sudah pakai di tempat lain)
+    Get.snackbar(
+      'Berhasil',
+      message,
+      backgroundColor: ColorTheme.success.withValues(alpha: 0.10),
+      colorText: ColorTheme.success,
+      snackPosition: SnackPosition.BOTTOM,
+    );
   }
 
-  // Set staff filter
-  void setStaffFilter(String staffId) {
-    selectedStaffId.value = staffId;
-    // Reload sessions with staff filter
-    _refreshCurrentContext();
-  }
-
-  // Set booking status filter
-  void setBookingStatusFilter(bool? isBooked) {
-    filterIsBooked.value = isBooked;
-    // Reload sessions with booking status filter
-    _refreshCurrentContext();
-  }
-
-  // Clear error message
-  void clearError() {
-    errorMessage.value = '';
-  }
-
-  // Error handling helper
   void _handleError(dynamic error, String defaultMessage) {
     if (error is ApiException) {
       errorMessage.value = error.message;
       _logger.error('$defaultMessage: ${error.message}');
-      Get.snackbar(
-        'Gagal',
-        error.message,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
-      );
-    } else {
-      errorMessage.value = defaultMessage;
-      _logger.error('Unexpected error: $error');
-      Get.snackbar(
-        'Gagal',
-        defaultMessage,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      _showErrorSnackbar(error.message);
+      return;
     }
+
+    errorMessage.value = defaultMessage;
+    _logger.error('Unexpected error: $error');
+    _showErrorSnackbar(defaultMessage);
   }
 
-  // Store last fetch parameters for smart refresh
   void _storeFetchParams({
     bool? isBooked,
     String? staffId,
@@ -157,29 +176,104 @@ class SessionController extends GetxController {
     };
   }
 
-  // Refresh current context data
   Future<void> _refreshCurrentContext() async {
-    switch (_currentContext) {
-      case 'timeslot':
+    switch (_context) {
+      case _SessionContext.timeslot:
         if (_currentTimeSlotId != null) {
           await fetchSessionsByTimeSlot(_currentTimeSlotId!);
         }
         break;
-      case 'staff':
+      case _SessionContext.staff:
         if (selectedStaffId.value.isNotEmpty) {
           await fetchSessionsByStaff(selectedStaffId.value);
         }
         break;
-      case 'schedule':
-      default:
+      case _SessionContext.schedule:
         await fetchSessions();
+        break;
+      case _SessionContext.idle:
+        // no-op
         break;
     }
   }
 
-  // CRUD Operations
+  bool _matchesCurrentFilters(Session session) {
+    if (selectedStaffId.value.isNotEmpty &&
+        session.staffId != selectedStaffId.value) {
+      return false;
+    }
 
-  // Fetch all sessions with optional filters
+    if (filterIsBooked.value != null &&
+        session.isBooked != filterIsBooked.value) {
+      return false;
+    }
+
+    if (_currentTimeSlotId != null &&
+        session.timeSlotId != _currentTimeSlotId) {
+      return false;
+    }
+
+    return true;
+  }
+
+  void _updateSessionInList(Session updatedSession) {
+    final index = sessions.indexWhere((s) => s.id == updatedSession.id);
+
+    if (index != -1) {
+      if (_matchesCurrentFilters(updatedSession)) {
+        sessions[index] = updatedSession;
+      } else {
+        sessions.removeAt(index);
+      }
+    } else if (_matchesCurrentFilters(updatedSession)) {
+      sessions.add(updatedSession);
+    }
+
+    if (currentSession.value?.id == updatedSession.id) {
+      currentSession.value = updatedSession;
+    }
+  }
+
+  // =========================
+  // Filters / setters
+  // =========================
+
+  void setDate(DateTime date) {
+    selectedDate.value = date;
+    _refreshCurrentContext();
+  }
+
+  void setServiceDuration(int duration) {
+    serviceDuration.value = duration;
+    fetchAvailableSessions();
+  }
+
+  void setStaffFilter(String staffId) {
+    selectedStaffId.value = staffId;
+    _refreshCurrentContext();
+  }
+
+  void setBookingStatusFilter(bool? isBooked) {
+    filterIsBooked.value = isBooked;
+    _refreshCurrentContext();
+  }
+
+  void resetFilters() {
+    selectedStaffId.value = '';
+    filterIsBooked.value = null;
+    selectedDate.value = DateTime.now();
+    _currentTimeSlotId = null;
+    _setContext(_SessionContext.schedule);
+    _lastFetchParams.clear();
+
+    // Tidak auto-fetch di onInit, tapi resetFilters biasanya memang user action → fetch boleh
+    fetchSessions();
+  }
+
+  // =========================
+  // Fetch methods (kontrak repository tetap)
+  // =========================
+
   Future<void> fetchSessions({
     bool? isBooked,
     String? staffId,
@@ -190,7 +284,6 @@ class SessionController extends GetxController {
       isLoading.value = true;
       errorMessage.value = '';
 
-      // Store parameters for future refreshes
       _storeFetchParams(
         isBooked: isBooked,
         staffId: staffId,
@@ -198,7 +291,6 @@ class SessionController extends GetxController {
         date: date,
       );
 
-      // Use filters from parameters or stored filter values
       final sessionsList = await repository.getAllSessions(
         isBooked: isBooked ?? filterIsBooked.value,
         staffId:
@@ -217,382 +309,18 @@ class SessionController extends GetxController {
     }
   }
 
-  // Fetch sessions by specific timeSlot (untuk timeslot view)
   Future<void> fetchSessionsByTimeSlot(String timeSlotId) async {
-    _setContext('timeslot', timeSlotId: timeSlotId);
+    _setContext(_SessionContext.timeslot, timeSlotId: timeSlotId);
     await fetchSessions(timeSlotId: timeSlotId);
   }
 
-  // Smart refresh - gunakan parameter yang tersimpan
-  Future<bool> refreshData({String? specificTimeSlotId}) async {
-    try {
-      isLoading.value = true;
-      clearError();
-
-      // Update timeSlotId if specified
-      if (specificTimeSlotId != null) {
-        _currentTimeSlotId = specificTimeSlotId;
-        _lastFetchParams['timeSlotId'] = specificTimeSlotId;
-      }
-
-      // Refresh with stored parameters
-      await repository
-          .getAllSessions(
-            isBooked: _lastFetchParams['isBooked'],
-            staffId: _lastFetchParams['staffId'],
-            timeSlotId: _lastFetchParams['timeSlotId'],
-            date: _lastFetchParams['date'],
-          )
-          .then((sessionsList) {
-            sessions.value = sessionsList;
-            _notifyDataChange('refresh');
-          });
-
-      // Signal success
-      Get.snackbar(
-        'Berhasil',
-        'Data berhasil disegarkan',
-        backgroundColor: Colors.green.shade100,
-        colorText: Colors.green.shade900,
-        snackPosition: SnackPosition.TOP,
-        duration: const Duration(seconds: 1),
-      );
-
-      return true;
-    } catch (e) {
-      _handleError(e, 'Gagal menyegarkan data');
-      return false;
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
-  // Universal refresh method - akan refresh data berdasarkan context saat ini
-  Future<void> universalRefresh() async {
-    await _refreshCurrentContext();
-  }
-
-  // Refresh sessions dengan timeSlotId tertentu
-  Future<void> refreshSessions(String timeSlotId) async {
-    try {
-      isLoading.value = true;
-      _currentTimeSlotId = timeSlotId;
-      await fetchSessions(timeSlotId: timeSlotId);
-    } catch (e) {
-      _handleError(e, 'Gagal menyegarkan sesi');
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
-  // Create a new session
-  Future<bool> createSession({
-    required String timeSlotId,
-    required String staffId,
-    bool isBooked = false,
-  }) async {
-    try {
-      isSubmitting.value = true;
-      clearError();
-
-      final session = await repository.createSession(
-        timeSlotId: timeSlotId,
-        staffId: staffId,
-        isBooked: isBooked,
-      );
-
-      // Add to current list if it matches current filters
-      if (_matchesCurrentFilters(session)) {
-        sessions.add(session);
-      }
-
-      // Update current session and context
-      currentSession.value = session;
-      _currentTimeSlotId = timeSlotId;
-
-      // Refresh data to ensure consistency
-      await _refreshCurrentContext();
-
-      _showSuccessSnackbar('Sesi berhasil dibuat');
-      notifyDataChange('create', timeSlotId);
-      return true;
-    } catch (e) {
-      _handleError(e, 'Terjadi kesalahan saat membuat sesi');
-      return false;
-    } finally {
-      isSubmitting.value = false;
-    }
-  }
-
-  // Helper for success messages
-  void _showSuccessSnackbar(String message) {
-    Get.snackbar(
-      'Berhasil',
-      message,
-      backgroundColor: Colors.green,
-      colorText: Colors.white,
-      snackPosition: SnackPosition.BOTTOM,
-    );
-  }
-
-  // Check if session matches current filters
-  bool _matchesCurrentFilters(Session session) {
-    // Check staff filter
-    if (selectedStaffId.value.isNotEmpty &&
-        session.staffId != selectedStaffId.value) {
-      return false;
-    }
-
-    // Check booking status filter
-    if (filterIsBooked.value != null &&
-        session.isBooked != filterIsBooked.value) {
-      return false;
-    }
-
-    // Check timeSlot filter
-    if (_currentTimeSlotId != null &&
-        session.timeSlotId != _currentTimeSlotId) {
-      return false;
-    }
-
-    return true;
-  }
-
-  // Create multiple sessions at once
-  Future<bool> createManySessions({
-    required List<Map<String, dynamic>> sessionsList,
-  }) async {
-    try {
-      isSubmitting.value = true;
-      clearError();
-
-      // Extract timeSlotId from first session if available
-      if (sessionsList.isNotEmpty &&
-          sessionsList[0].containsKey('timeSlotId')) {
-        _currentTimeSlotId = sessionsList[0]['timeSlotId'];
-      }
-
-      await repository.createManySessions(sessions: sessionsList);
-
-      // Refresh current context to get updated data
-      await _refreshCurrentContext();
-
-      _showSuccessSnackbar('Semua sesi berhasil dibuat');
-      _notifyDataChange('create_many');
-      return true;
-    } catch (e) {
-      _handleError(e, 'Terjadi kesalahan saat membuat beberapa sesi');
-      return false;
-    } finally {
-      isSubmitting.value = false;
-    }
-  }
-
-  // Get session by ID
-  Future<void> getSessionById(String id) async {
-    try {
-      isLoading.value = true;
-      clearError();
-
-      final session = await repository.getSessionById(id);
-      currentSession.value = session;
-      _notifyDataChange('get_detail');
-    } catch (e) {
-      _handleError(e, 'Terjadi kesalahan saat mengambil detail sesi');
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
-  // Update session in the list - improved version
-  void _updateSessionInList(Session updatedSession) {
-    final index = sessions.indexWhere((s) => s.id == updatedSession.id);
-
-    if (index != -1) {
-      if (_matchesCurrentFilters(updatedSession)) {
-        sessions[index] = updatedSession;
-      } else {
-        // Remove if it no longer matches filters
-        sessions.removeAt(index);
-      }
-    } else if (_matchesCurrentFilters(updatedSession)) {
-      // Add if it now matches filters
-      sessions.add(updatedSession);
-    }
-
-    // Update current session if it's the one being viewed
-    if (currentSession.value?.id == updatedSession.id) {
-      currentSession.value = updatedSession;
-    }
-  }
-
-  // Update a session
-  Future<bool> updateSession({
-    required String id,
-    String? timeSlotId,
-    String? staffId,
-    bool? isBooked,
-  }) async {
-    try {
-      isSubmitting.value = true;
-      clearError();
-
-      final updatedSession = await repository.updateSession(
-        id: id,
-        timeSlotId: timeSlotId,
-        staffId: staffId,
-        isBooked: isBooked,
-      );
-
-      // Update in current list
-      _updateSessionInList(updatedSession);
-
-      // Update context if timeSlotId changed
-      if (timeSlotId != null) {
-        _currentTimeSlotId = timeSlotId;
-      }
-
-      _showSuccessSnackbar('Sesi berhasil diperbarui');
-      notifyDataChange('update', timeSlotId!);
-      return true;
-    } catch (e) {
-      _handleError(e, 'Terjadi kesalahan saat memperbarui sesi');
-      return false;
-    } finally {
-      isSubmitting.value = false;
-    }
-  }
-
-  // Update session booking status
-  Future<bool> updateSessionBookingStatus(String id, bool isBooked) async {
-    try {
-      isSubmitting.value = true;
-      clearError();
-
-      final updatedSession = await repository.updateSessionBookingStatus(
-        id,
-        isBooked,
-      );
-
-      // Update in current list
-      _updateSessionInList(updatedSession);
-
-      _showSuccessSnackbar(
-        isBooked ? 'Sesi berhasil dipesan' : 'Sesi berhasil dibatalkan',
-      );
-      _notifyDataChange('update_booking');
-      return true;
-    } catch (e) {
-      _handleError(e, 'Terjadi kesalahan saat memperbarui status pemesanan');
-      return false;
-    } finally {
-      isSubmitting.value = false;
-    }
-  }
-
-  // Delete a session
-  Future<bool> deleteSession(String id) async {
-    try {
-      isSubmitting.value = true;
-      clearError();
-
-      final success = await repository.deleteSession(id);
-
-      if (success) {
-        // Remove from current list
-        sessions.removeWhere((session) => session.id == id);
-
-        // Clear current session if it's the deleted one
-        if (currentSession.value?.id == id) {
-          currentSession.value = null;
-        }
-
-        Get.snackbar(
-          'Berhasil',
-          'Sesi berhasil dihapus',
-          backgroundColor: ColorTheme.success.withValues(alpha: 0.1),
-          colorText: ColorTheme.success,
-        );
-        notifyDataChange('delete', currentTimeSlotId ?? '');
-        return true;
-      }
-      return success;
-    } catch (e) {
-      _handleError(e, 'Gagal menghapus sesi');
-      return false;
-    } finally {
-      isSubmitting.value = false;
-    }
-  }
-
-  // Get available sessions for a specific date and service duration
-  Future<void> fetchAvailableSessions() async {
-    try {
-      isLoading.value = true;
-      clearError();
-
-      final formattedDate = _formatDate(selectedDate.value);
-      final result = await repository.getAvailableSessions(
-        date: formattedDate,
-        duration: serviceDuration.value > 0 ? serviceDuration.value : null,
-      );
-
-      availableSessions.value = result;
-      _notifyDataChange('fetch_available');
-    } catch (e) {
-      _handleError(e, 'Terjadi kesalahan saat mengambil sesi yang tersedia');
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
-  // Get sessions by staff ID with optional date range
-  Future<void> fetchSessionsByStaff(
-    String staffId, {
-    DateTime? startDate,
-    DateTime? endDate,
-  }) async {
-    try {
-      isLoading.value = true;
-      clearError();
-
-      _setContext('staff');
-      selectedStaffId.value = staffId;
-
-      String? formattedStartDate;
-      String? formattedEndDate;
-
-      if (startDate != null) {
-        formattedStartDate = _formatDate(startDate);
-      }
-
-      if (endDate != null) {
-        formattedEndDate = _formatDate(endDate);
-      }
-
-      final result = await repository.getSessionsByStaff(
-        staffId,
-        startDate: formattedStartDate,
-        endDate: formattedEndDate,
-      );
-
-      sessions.value = result;
-      _notifyDataChange('fetch_by_staff');
-    } catch (e) {
-      _handleError(e, 'Terjadi kesalahan saat mengambil jadwal staf');
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
-  // Get sessions for a specific date
   Future<void> fetchSessionsByDate(DateTime date) async {
     try {
       isLoading.value = true;
       clearError();
-      sessions.clear(); // Clear existing data
+      sessions.clear();
 
-      _setContext('schedule');
+      _setContext(_SessionContext.schedule);
       selectedDate.value = date;
 
       final formattedDate = _formatDate(date);
@@ -616,40 +344,306 @@ class SessionController extends GetxController {
     }
   }
 
-  // Reset all filters
-  void resetFilters() {
-    selectedStaffId.value = '';
-    filterIsBooked.value = null;
-    selectedDate.value = DateTime.now();
-    _currentTimeSlotId = null;
-    _currentContext = 'schedule';
-    _lastFetchParams.clear();
-    fetchSessions();
-  }
+  Future<void> fetchSessionsByStaff(
+    String staffId, {
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    try {
+      isLoading.value = true;
+      clearError();
 
-  // Method untuk dipanggil saat kembali ke schedule view
-  Future<void> onReturnToSchedule() async {
-    _setContext('schedule');
-    await universalRefresh();
-  }
+      _setContext(_SessionContext.staff);
+      selectedStaffId.value = staffId;
 
-  // Method untuk dipanggil saat masuk ke timeslot view
-  void onEnterTimeSlotView(String timeSlotId) {
-    _setContext('timeslot', timeSlotId: timeSlotId);
-  }
+      String? formattedStartDate;
+      String? formattedEndDate;
 
-  // Method untuk memastikan data selalu sinkron
-  Future<void> ensureDataSync({String? forTimeSlotId}) async {
-    if (forTimeSlotId != null) {
-      _currentTimeSlotId = forTimeSlotId;
+      if (startDate != null) formattedStartDate = _formatDate(startDate);
+      if (endDate != null) formattedEndDate = _formatDate(endDate);
+
+      final result = await repository.getSessionsByStaff(
+        staffId,
+        startDate: formattedStartDate,
+        endDate: formattedEndDate,
+      );
+
+      sessions.value = result;
+      _notifyDataChange('fetch_by_staff');
+    } catch (e) {
+      _handleError(e, 'Terjadi kesalahan saat mengambil jadwal staf');
+    } finally {
+      isLoading.value = false;
     }
+  }
+
+  Future<void> fetchAvailableSessions() async {
+    try {
+      isLoading.value = true;
+      clearError();
+
+      final formattedDate = _formatDate(selectedDate.value);
+      final result = await repository.getAvailableSessions(
+        date: formattedDate,
+        duration: serviceDuration.value > 0 ? serviceDuration.value : null,
+      );
+
+      availableSessions.value = result;
+      _notifyDataChange('fetch_available');
+    } catch (e) {
+      _handleError(e, 'Terjadi kesalahan saat mengambil sesi yang tersedia');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // =========================
+  // Refresh helpers
+  // =========================
+
+  Future<bool> refreshData({String? specificTimeSlotId}) async {
+    try {
+      isLoading.value = true;
+      clearError();
+
+      if (specificTimeSlotId != null) {
+        _currentTimeSlotId = specificTimeSlotId;
+        _lastFetchParams['timeSlotId'] = specificTimeSlotId;
+      }
+
+      final sessionsList = await repository.getAllSessions(
+        isBooked: _lastFetchParams['isBooked'],
+        staffId: _lastFetchParams['staffId'],
+        timeSlotId: _lastFetchParams['timeSlotId'],
+        date: _lastFetchParams['date'],
+      );
+
+      sessions.value = sessionsList;
+      _notifyDataChange('refresh');
+
+      Get.snackbar(
+        'Berhasil',
+        'Data berhasil disegarkan',
+        backgroundColor: ColorTheme.success.withValues(alpha: 0.10),
+        colorText: ColorTheme.success,
+        snackPosition: SnackPosition.TOP,
+        duration: const Duration(seconds: 1),
+      );
+
+      return true;
+    } catch (e) {
+      _handleError(e, 'Gagal menyegarkan data');
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> universalRefresh() async => _refreshCurrentContext();
+
+  Future<void> refreshSessions(String timeSlotId) async {
+    try {
+      isLoading.value = true;
+      _currentTimeSlotId = timeSlotId;
+      await fetchSessions(timeSlotId: timeSlotId);
+    } catch (e) {
+      _handleError(e, 'Gagal menyegarkan sesi');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> ensureDataSync({String? forTimeSlotId}) async {
+    if (forTimeSlotId != null) _currentTimeSlotId = forTimeSlotId;
     await universalRefresh();
   }
 
-  // Getter untuk mengetahui apakah ada data yang berubah
-  bool get hasDataChanged => dataChanged.value;
+  Future<void> onReturnToSchedule() async {
+    _setContext(_SessionContext.schedule);
+    await universalRefresh();
+  }
 
-  // Getter untuk context saat ini
-  String? get currentContext => _currentContext;
-  String? get currentTimeSlotId => _currentTimeSlotId;
+  void onEnterTimeSlotView(String timeSlotId) {
+    _setContext(_SessionContext.timeslot, timeSlotId: timeSlotId);
+  }
+
+  // =========================
+  // CRUD methods (kontrak repository tetap)
+  // =========================
+
+  Future<bool> createSession({
+    required String timeSlotId,
+    required String staffId,
+    bool isBooked = false,
+  }) async {
+    try {
+      isSubmitting.value = true;
+      clearError();
+
+      final session = await repository.createSession(
+        timeSlotId: timeSlotId,
+        staffId: staffId,
+        isBooked: isBooked,
+      );
+
+      if (_matchesCurrentFilters(session)) {
+        sessions.add(session);
+      }
+
+      currentSession.value = session;
+      _currentTimeSlotId = timeSlotId;
+
+      await _refreshCurrentContext();
+
+      _showSuccessSnackbar('Sesi berhasil dibuat');
+      notifyDataChange('create', timeSlotId);
+      _notifyDataChange('create');
+      return true;
+    } catch (e) {
+      _handleError(e, 'Terjadi kesalahan saat membuat sesi');
+      return false;
+    } finally {
+      isSubmitting.value = false;
+    }
+  }
+
+  Future<bool> createManySessions({
+    required List<Map<String, dynamic>> sessionsList,
+  }) async {
+    try {
+      isSubmitting.value = true;
+      clearError();
+
+      if (sessionsList.isNotEmpty &&
+          sessionsList[0].containsKey('timeSlotId')) {
+        _currentTimeSlotId = sessionsList[0]['timeSlotId']?.toString();
+      }
+
+      await repository.createManySessions(sessions: sessionsList);
+
+      await _refreshCurrentContext();
+
+      _showSuccessSnackbar('Semua sesi berhasil dibuat');
+      _notifyDataChange('create_many');
+      return true;
+    } catch (e) {
+      _handleError(e, 'Terjadi kesalahan saat membuat beberapa sesi');
+      return false;
+    } finally {
+      isSubmitting.value = false;
+    }
+  }
+
+  Future<void> getSessionById(String id) async {
+    try {
+      isLoading.value = true;
+      clearError();
+
+      final session = await repository.getSessionById(id);
+      currentSession.value = session;
+      _notifyDataChange('get_detail');
+    } catch (e) {
+      _handleError(e, 'Terjadi kesalahan saat mengambil detail sesi');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<bool> updateSession({
+    required String id,
+    String? timeSlotId,
+    String? staffId,
+    bool? isBooked,
+  }) async {
+    try {
+      isSubmitting.value = true;
+      clearError();
+
+      final updatedSession = await repository.updateSession(
+        id: id,
+        timeSlotId: timeSlotId,
+        staffId: staffId,
+        isBooked: isBooked,
+      );
+
+      _updateSessionInList(updatedSession);
+
+      if (timeSlotId != null) {
+        _currentTimeSlotId = timeSlotId;
+      }
+
+      _showSuccessSnackbar('Sesi berhasil diperbarui');
+
+      // FIX: jangan pakai timeSlotId! (bisa null)
+      notifyDataChange('update', timeSlotId ?? _currentTimeSlotId ?? '');
+      _notifyDataChange('update');
+      return true;
+    } catch (e) {
+      _handleError(e, 'Terjadi kesalahan saat memperbarui sesi');
+      return false;
+    } finally {
+      isSubmitting.value = false;
+    }
+  }
+
+  Future<bool> updateSessionBookingStatus(String id, bool isBooked) async {
+    try {
+      isSubmitting.value = true;
+      clearError();
+
+      final updatedSession = await repository.updateSessionBookingStatus(
+        id,
+        isBooked,
+      );
+
+      _updateSessionInList(updatedSession);
+
+      _showSuccessSnackbar(
+        isBooked ? 'Sesi berhasil dipesan' : 'Sesi berhasil dibatalkan',
+      );
+      _notifyDataChange('update_booking');
+      return true;
+    } catch (e) {
+      _handleError(e, 'Terjadi kesalahan saat memperbarui status pemesanan');
+      return false;
+    } finally {
+      isSubmitting.value = false;
+    }
+  }
+
+  Future<bool> deleteSession(String id) async {
+    try {
+      isSubmitting.value = true;
+      clearError();
+
+      final success = await repository.deleteSession(id);
+
+      if (success) {
+        sessions.removeWhere((s) => s.id == id);
+
+        if (currentSession.value?.id == id) {
+          currentSession.value = null;
+        }
+
+        Get.snackbar(
+          'Berhasil',
+          'Sesi berhasil dihapus',
+          backgroundColor: ColorTheme.success.withValues(alpha: 0.10),
+          colorText: ColorTheme.success,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+
+        notifyDataChange('delete', _currentTimeSlotId ?? '');
+        _notifyDataChange('delete');
+        return true;
+      }
+
+      return false;
+    } catch (e) {
+      _handleError(e, 'Gagal menghapus sesi');
+      return false;
+    } finally {
+      isSubmitting.value = false;
+    }
+  }
 }
