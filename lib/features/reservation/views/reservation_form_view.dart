@@ -1,17 +1,21 @@
 // lib/features/reservation/views/reservation_form_view.dart
+import 'dart:io';
+
+import 'package:emababyspa/common/layouts/main_layout.dart';
+import 'package:emababyspa/common/theme/app_theme.dart';
+import 'package:emababyspa/common/theme/semantic_colors.dart';
+import 'package:emababyspa/common/widgets/app_button.dart';
+import 'package:emababyspa/data/models/service.dart';
+import 'package:emababyspa/data/models/session.dart';
+import 'package:emababyspa/features/reservation/controllers/reservation_controller.dart';
+import 'package:emababyspa/features/service/controllers/service_controller.dart';
+import 'package:emababyspa/features/theme/controllers/theme_controller.dart';
+import 'package:emababyspa/utils/timezone_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
-import 'package:emababyspa/common/layouts/main_layout.dart';
-import 'package:emababyspa/common/widgets/app_button.dart';
-import 'package:emababyspa/features/reservation/controllers/reservation_controller.dart';
-import 'package:emababyspa/features/service/controllers/service_controller.dart';
-import 'package:emababyspa/data/models/session.dart';
-import 'package:emababyspa/data/models/service.dart';
-import 'package:emababyspa/utils/timezone_utils.dart';
-import 'package:emababyspa/features/theme/controllers/theme_controller.dart';
+import 'package:intl/intl.dart';
 
 class ReservationFormView extends StatefulWidget {
   const ReservationFormView({super.key});
@@ -60,9 +64,7 @@ class _ReservationFormViewState extends State<ReservationFormView> {
       selectedSession = args['session'];
       if (selectedSession != null) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            _loadServiceData();
-          }
+          if (mounted) _loadServiceData();
         });
       }
     }
@@ -88,9 +90,12 @@ class _ReservationFormViewState extends State<ReservationFormView> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return MainLayout(
       child: Scaffold(
-        backgroundColor: Theme.of(context).colorScheme.surface,
+        backgroundColor: colorScheme.surface,
         appBar: _buildAppBar(context),
         body: _buildBody(context),
         bottomNavigationBar: _buildBottomActions(context),
@@ -99,84 +104,160 @@ class _ReservationFormViewState extends State<ReservationFormView> {
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context) {
-    final appBarTheme = Theme.of(context).appBarTheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    // ✅ Stabil: warna AppBar tidak berubah saat scroll (Material 3 "scrolledUnder")
     return AppBar(
-      title: Text(
-        'Create Manual Reservation',
-        style: appBarTheme.titleTextStyle,
-      ),
-      backgroundColor: appBarTheme.backgroundColor,
-      elevation: appBarTheme.elevation,
-      iconTheme: appBarTheme.iconTheme,
-      foregroundColor: appBarTheme.foregroundColor,
+      title: const Text('Buat Reservasi Manual'),
+      centerTitle: true,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      backgroundColor: colorScheme.surface,
+      surfaceTintColor: Colors.transparent,
     );
   }
 
   Widget _buildBody(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    return Form(
+      key: _formKey,
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(
+              spacing.lg,
+              spacing.lg,
+              spacing.lg,
+              spacing.xxl,
+            ),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                _buildTopIntro(context),
+                SizedBox(height: spacing.lg),
+
+                if (selectedSession != null) ...[
+                  _buildSessionInfoCard(context),
+                  SizedBox(height: spacing.lg),
+                ],
+
+                _buildCustomerInfoCard(context),
+                SizedBox(height: spacing.lg),
+
+                _buildBabyInfoCard(context),
+                SizedBox(height: spacing.lg),
+
+                _buildServiceSelectionCard(context),
+                SizedBox(height: spacing.lg),
+
+                _buildPaymentInfoCard(context),
+                SizedBox(height: spacing.lg),
+
+                _buildNotesCard(context),
+                SizedBox(height: spacing.xxl + spacing.xl),
+              ]),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTopIntro(BuildContext context) {
+    final theme = Theme.of(context);
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+    final colorScheme = theme.colorScheme;
+
     return Container(
+      padding: EdgeInsets.all(spacing.lg),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            colorScheme.surface,
-            colorScheme.primary.withValues(alpha: 0.05),
-          ],
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.75),
         ),
       ),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (selectedSession != null) _buildSessionInfoCard(context),
-              const SizedBox(height: 20),
-              _buildCustomerInfoCard(context),
-              const SizedBox(height: 20),
-              _buildBabyInfoCard(context),
-              const SizedBox(height: 20),
-              _buildServiceSelectionCard(context),
-              const SizedBox(height: 20),
-              _buildPaymentInfoCard(context),
-              const SizedBox(height: 20),
-              _buildNotesCard(context),
-              const SizedBox(height: 100),
-            ],
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            height: spacing.xl + spacing.xs,
+            width: spacing.xl + spacing.xs,
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.55,
+              ),
+              borderRadius: BorderRadius.circular(AppRadii.lg),
+              border: Border.all(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.75),
+              ),
+            ),
+            child: Icon(
+              Icons.edit_note_rounded,
+              color: colorScheme.onSurfaceVariant,
+            ),
           ),
-        ),
+          SizedBox(width: spacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Form Reservasi',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+                SizedBox(height: spacing.xs),
+                Text(
+                  'Lengkapi data customer, bayi, layanan, dan pembayaran. Pastikan semua input sudah benar sebelum submit.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildSessionInfoCard(BuildContext context) {
-    return _buildInfoCard(
+    final session = selectedSession!;
+    return _buildSectionCard(
       context: context,
-      title: 'Session Information',
-      icon: Icons.event,
+      title: 'Informasi Sesi',
+      icon: Icons.event_rounded,
+      subtitle: 'Ringkasan sesi yang dipakai untuk reservasi ini.',
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildInfoRow(context, 'Session ID', selectedSession!.id),
-          if (selectedSession!.timeSlot != null) ...[
-            _buildInfoRow(
+          _buildKV(context, 'ID Sesi', session.id, emphasize: true),
+          if (session.timeSlot != null) ...[
+            _buildDivider(context),
+            _buildKV(
               context,
-              'Date',
+              'Tanggal',
               TimeZoneUtil.formatISOToIndonesiaTime(
-                selectedSession!.timeSlot!.startTime.toIso8601String(),
+                session.timeSlot!.startTime.toIso8601String(),
                 format: 'EEEE, d MMMM yyyy',
               ),
             ),
-            _buildInfoRow(
+            _buildDivider(context),
+            _buildKV(
               context,
-              'Time',
-              '${TimeZoneUtil.formatISOToIndonesiaTime(selectedSession!.timeSlot!.startTime.toIso8601String(), format: 'HH:mm')} - ${TimeZoneUtil.formatISOToIndonesiaTime(selectedSession!.timeSlot!.endTime.toIso8601String(), format: 'HH:mm')}',
+              'Waktu',
+              '${TimeZoneUtil.formatISOToIndonesiaTime(session.timeSlot!.startTime.toIso8601String(), format: 'HH:mm')} - ${TimeZoneUtil.formatISOToIndonesiaTime(session.timeSlot!.endTime.toIso8601String(), format: 'HH:mm')}',
             ),
           ],
-          if (selectedSession!.staff != null) ...[
-            _buildInfoRow(context, 'Staff', selectedSession!.staff!.name),
+          if (session.staff != null) ...[
+            _buildDivider(context),
+            _buildKV(context, 'Terapis', session.staff!.name),
           ],
         ],
       ),
@@ -184,67 +265,69 @@ class _ReservationFormViewState extends State<ReservationFormView> {
   }
 
   Widget _buildCustomerInfoCard(BuildContext context) {
-    return _buildInfoCard(
+    final theme = Theme.of(context);
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    return _buildSectionCard(
       context: context,
-      title: 'Customer Information',
-      icon: Icons.person,
+      title: 'Data Customer',
+      icon: Icons.person_rounded,
+      subtitle: 'Identitas customer untuk kebutuhan reservasi & komunikasi.',
       child: Column(
         children: [
           _buildTextFormField(
             context: context,
             controller: _customerNameController,
-            label: 'Customer Name',
-            hint: 'Enter customer full name',
-            icon: Icons.person_outline,
+            label: 'Nama Customer',
+            hint: 'Contoh: Siti Aisyah',
+            icon: Icons.person_outline_rounded,
+            textInputAction: TextInputAction.next,
             validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'Customer name is required';
-              }
-              if (value.trim().length < 2) {
-                return 'Customer name must be at least 2 characters';
-              }
+              if (value == null || value.trim().isEmpty)
+                return 'Nama customer wajib diisi';
+              if (value.trim().length < 2) return 'Nama minimal 2 karakter';
               return null;
             },
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: spacing.md),
           _buildTextFormField(
             context: context,
             controller: _customerPhoneController,
-            label: 'Phone Number',
-            hint: 'Enter phone number (e.g., 08123456789)',
+            label: 'Nomor HP',
+            hint: 'Contoh: 081234567890',
             icon: Icons.phone_outlined,
             keyboardType: TextInputType.phone,
+            textInputAction: TextInputAction.next,
             inputFormatters: [
               FilteringTextInputFormatter.digitsOnly,
               LengthLimitingTextInputFormatter(15),
             ],
             validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'Phone number is required';
-              }
-              if (value.trim().length < 10) {
-                return 'Phone number must be at least 10 digits';
-              }
+              if (value == null || value.trim().isEmpty)
+                return 'Nomor HP wajib diisi';
+              if (value.trim().length < 10) return 'Minimal 10 digit';
               return null;
             },
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: spacing.md),
           _buildTextFormField(
             context: context,
             controller: _customerAddressController,
-            label: 'Address (Optional)',
-            hint: 'Enter customer address',
+            label: 'Alamat (Opsional)',
+            hint: 'Alamat singkat / patokan',
             icon: Icons.location_on_outlined,
             maxLines: 2,
+            textInputAction: TextInputAction.next,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: spacing.md),
           _buildTextFormField(
             context: context,
             controller: _customerInstagramController,
-            label: 'Instagram (Optional)',
-            hint: 'Enter Instagram username',
-            icon: Icons.camera_alt_outlined,
+            label: 'Instagram (Opsional)',
+            hint: 'username instagram',
+            icon: Icons.alternate_email_rounded,
             prefixText: '@',
+            textInputAction: TextInputAction.next,
           ),
         ],
       ),
@@ -252,55 +335,59 @@ class _ReservationFormViewState extends State<ReservationFormView> {
   }
 
   Widget _buildBabyInfoCard(BuildContext context) {
-    return _buildInfoCard(
+    final theme = Theme.of(context);
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    return _buildSectionCard(
       context: context,
-      title: 'Baby Information',
-      icon: Icons.child_care,
+      title: 'Data Bayi',
+      icon: Icons.child_friendly_rounded,
+      subtitle: 'Informasi bayi untuk validasi usia & kebutuhan layanan.',
       child: Column(
         children: [
           _buildTextFormField(
             context: context,
             controller: _babyNameController,
-            label: 'Baby Name',
-            hint: 'Enter baby name',
-            icon: Icons.child_friendly_outlined,
+            label: 'Nama Bayi',
+            hint: 'Contoh: Aira',
+            icon: Icons.child_care_outlined,
+            textInputAction: TextInputAction.next,
             validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'Baby name is required';
-              }
+              if (value == null || value.trim().isEmpty)
+                return 'Nama bayi wajib diisi';
               return null;
             },
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: spacing.md),
           _buildTextFormField(
             context: context,
             controller: _babyAgeController,
-            label: 'Baby Age (months)',
-            hint: 'Enter baby age in months',
+            label: 'Usia Bayi (bulan)',
+            hint: 'Contoh: 6',
             icon: Icons.cake_outlined,
             keyboardType: TextInputType.number,
+            textInputAction: TextInputAction.next,
             inputFormatters: [
               FilteringTextInputFormatter.digitsOnly,
               LengthLimitingTextInputFormatter(3),
             ],
             validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'Baby age is required';
-              }
+              if (value == null || value.trim().isEmpty)
+                return 'Usia bayi wajib diisi';
               final age = int.tryParse(value.trim());
-              if (age == null || age < 0 || age > 60) {
-                return 'Please enter a valid age (0-60 months)';
-              }
+              if (age == null || age < 0 || age > 60)
+                return 'Usia valid 0–60 bulan';
               return null;
             },
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: spacing.md),
           _buildTextFormField(
             context: context,
             controller: _parentNamesController,
-            label: 'Parent Names (Optional)',
-            hint: 'Enter parent names',
+            label: 'Nama Orang Tua (Opsional)',
+            hint: 'Contoh: Bunda Siti & Ayah Budi',
             icon: Icons.family_restroom_outlined,
+            textInputAction: TextInputAction.next,
           ),
         ],
       ),
@@ -308,47 +395,60 @@ class _ReservationFormViewState extends State<ReservationFormView> {
   }
 
   Widget _buildServiceSelectionCard(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
 
-    return _buildInfoCard(
+    return _buildSectionCard(
       context: context,
-      title: 'Service Selection',
-      icon: Icons.spa,
+      title: 'Pilih Layanan',
+      icon: Icons.spa_rounded,
+      subtitle: 'Pilih layanan lalu tentukan tier harga (jika tersedia).',
       child: Obx(() {
         final services = serviceController.services;
 
         if (serviceController.isLoadingServices.value) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(20),
-              child: CircularProgressIndicator(),
-            ),
+          return Padding(
+            padding: EdgeInsets.all(spacing.lg),
+            child: const Center(child: CircularProgressIndicator()),
           );
         }
 
         if (services.isEmpty) {
           return Container(
-            padding: const EdgeInsets.all(20),
+            width: double.infinity,
+            padding: EdgeInsets.all(spacing.lg),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.45,
+              ),
+              borderRadius: BorderRadius.circular(AppRadii.lg),
+              border: Border.all(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.75),
+              ),
+            ),
             child: Column(
               children: [
                 Icon(
                   Icons.spa_outlined,
-                  size: 48,
-                  color: colorScheme.onSurface.withValues(alpha: 0.4),
+                  size: 44,
+                  color: colorScheme.onSurfaceVariant,
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: spacing.sm),
                 Text(
-                  'No Services Available',
+                  'Belum ada layanan',
                   style: textTheme.titleMedium?.copyWith(
-                    color: colorScheme.onSurface.withValues(alpha: 0.8),
+                    fontWeight: FontWeight.w900,
+                    color: colorScheme.onSurface,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: spacing.xs),
                 Text(
-                  'No services found. Please check your service configuration.',
+                  'Tidak ada layanan yang tersedia. Cek konfigurasi layanan terlebih dahulu.',
                   style: textTheme.bodyMedium?.copyWith(
                     color: colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -361,24 +461,19 @@ class _ReservationFormViewState extends State<ReservationFormView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             DropdownButtonFormField<Service>(
-              decoration: InputDecoration(
-                labelText: 'Select Service',
-                prefixIcon: Icon(
-                  Icons.spa_outlined,
-                  color: colorScheme.primary,
-                ),
+              decoration: _inputDecoration(
+                context,
+                label: 'Layanan',
+                hint: 'Pilih layanan',
+                icon: Icons.spa_outlined,
               ),
               value: selectedService,
               isExpanded: true,
-              // ✨ --- PERBAIKAN UTAMA DI SINI --- ✨
-              // Builder ini untuk mendefinisikan widget yang tampil SETELAH item dipilih.
-              // Kita gunakan Text sederhana agar pas dan tidak overflow.
-              selectedItemBuilder: (BuildContext context) {
-                return services.map<Widget>((Service item) {
-                  return Text(item.name, overflow: TextOverflow.ellipsis);
+              selectedItemBuilder: (context) {
+                return services.map<Widget>((s) {
+                  return Text(s.name, overflow: TextOverflow.ellipsis);
                 }).toList();
               },
-              // Builder 'items' tetap sama untuk menampilkan detail di dalam list.
               items:
                   services.map((service) {
                     return DropdownMenuItem<Service>(
@@ -390,14 +485,17 @@ class _ReservationFormViewState extends State<ReservationFormView> {
                           Text(
                             service.name,
                             style: textTheme.bodyLarge?.copyWith(
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.w800,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           if (service.description.isNotEmpty == true)
                             Text(
                               service.description,
                               style: textTheme.bodySmall?.copyWith(
                                 color: colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w600,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -406,21 +504,17 @@ class _ReservationFormViewState extends State<ReservationFormView> {
                       ),
                     );
                   }).toList(),
-              onChanged: (Service? value) {
+              onChanged: (value) {
                 setState(() {
                   selectedService = value;
                   selectedPriceTierId = null;
                 });
               },
-              validator: (value) {
-                if (value == null) {
-                  return 'Please select a service';
-                }
-                return null;
-              },
+              validator:
+                  (value) => value == null ? 'Silakan pilih layanan' : null,
             ),
             if (selectedService != null) ...[
-              const SizedBox(height: 16),
+              SizedBox(height: spacing.md),
               _buildPriceTierSelection(context),
             ],
           ],
@@ -430,68 +524,91 @@ class _ReservationFormViewState extends State<ReservationFormView> {
   }
 
   Widget _buildPriceTierSelection(BuildContext context) {
-    if (selectedService?.priceTiers == null ||
-        selectedService!.priceTiers!.isEmpty) {
+    final service = selectedService;
+    if (service?.priceTiers == null || service!.priceTiers!.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
+    final currency = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Price Tier',
-          style: textTheme.titleMedium?.copyWith(color: colorScheme.onSurface),
+          'Tier Harga',
+          style: textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w900,
+            color: colorScheme.onSurface,
+          ),
         ),
-        const SizedBox(height: 8),
-        ...selectedService!.priceTiers!.map((priceTier) {
+        SizedBox(height: spacing.sm),
+        ...service.priceTiers!.map((priceTier) {
+          final isSelected = selectedPriceTierId == priceTier.id;
+
           return Container(
-            margin: const EdgeInsets.only(bottom: 8),
+            margin: EdgeInsets.only(bottom: spacing.sm),
             decoration: BoxDecoration(
+              color:
+                  isSelected
+                      ? colorScheme.primaryContainer.withValues(alpha: 0.22)
+                      : colorScheme.surface,
+              borderRadius: BorderRadius.circular(AppRadii.lg),
               border: Border.all(
                 color:
-                    selectedPriceTierId == priceTier.id
-                        ? colorScheme.primary
-                        : colorScheme.outline,
-                width: selectedPriceTierId == priceTier.id ? 2 : 1,
+                    isSelected
+                        ? colorScheme.primary.withValues(alpha: 0.55)
+                        : colorScheme.outlineVariant.withValues(alpha: 0.75),
+                width: isSelected ? 1.5 : 1,
               ),
-              borderRadius: BorderRadius.circular(12),
             ),
             child: RadioListTile<String>(
+              value: priceTier.id,
+              groupValue: selectedPriceTierId,
+              onChanged: (value) => setState(() => selectedPriceTierId = value),
+              activeColor: colorScheme.primary,
               title: Text(
                 priceTier.tierName,
                 style: textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w900,
+                  color: colorScheme.onSurface,
                 ),
               ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Age: ${priceTier.minBabyAge}-${priceTier.maxBabyAge} months',
-                    style: textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
+              subtitle: Padding(
+                padding: EdgeInsets.only(top: spacing.xs),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Usia: ${priceTier.minBabyAge}-${priceTier.maxBabyAge} bulan',
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                  Text(
-                    'Rp ${priceTier.price.toStringAsFixed(0)}',
-                    style: textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.primary,
+                    SizedBox(height: spacing.xs),
+                    Text(
+                      currency.format(priceTier.price),
+                      style: textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: colorScheme.primary,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              value: priceTier.id,
-              groupValue: selectedPriceTierId,
-              onChanged: (String? value) {
-                setState(() {
-                  selectedPriceTierId = value;
-                });
-              },
-              activeColor: colorScheme.primary,
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: spacing.md,
+                vertical: spacing.xs,
+              ),
             ),
           );
         }),
@@ -500,70 +617,89 @@ class _ReservationFormViewState extends State<ReservationFormView> {
   }
 
   Widget _buildPaymentInfoCard(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-    return _buildInfoCard(
+    final theme = Theme.of(context);
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final semantic = theme.extension<AppSemanticColors>();
+
+    final paidOn = semantic?.success ?? colorScheme.tertiary;
+    final unpaidOn = semantic?.warning ?? colorScheme.secondary;
+
+    return _buildSectionCard(
       context: context,
-      title: 'Payment Information',
-      icon: Icons.payment,
+      title: 'Pembayaran',
+      icon: Icons.payment_rounded,
+      subtitle: 'Atur metode pembayaran dan unggah bukti (jika diperlukan).',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           DropdownButtonFormField<String>(
-            decoration: InputDecoration(
-              labelText: 'Payment Method',
-              prefixIcon: Icon(
-                Icons.payment_outlined,
-                color: colorScheme.primary,
-              ),
+            decoration: _inputDecoration(
+              context,
+              label: 'Metode Pembayaran',
+              hint: 'Pilih metode',
+              icon: Icons.payment_outlined,
             ),
             value: selectedPaymentMethod,
             items:
                 paymentMethods.map((method) {
                   return DropdownMenuItem<String>(
                     value: method,
-                    child: Text(method),
+                    child: Text(method, overflow: TextOverflow.ellipsis),
                   );
                 }).toList(),
-            onChanged: (String? value) {
-              setState(() {
-                selectedPaymentMethod = value ?? 'CASH';
-              });
-            },
+            onChanged:
+                (value) =>
+                    setState(() => selectedPaymentMethod = value ?? 'CASH'),
           ),
-          const SizedBox(height: 16),
-          SwitchListTile(
-            title: Text('Payment Received', style: textTheme.bodyLarge),
-            subtitle: Text(
-              isPaid ? 'Payment has been received' : 'Payment not yet received',
-              style: textTheme.bodyMedium?.copyWith(
-                color: isPaid ? Colors.green.shade400 : Colors.orange.shade400,
+          SizedBox(height: spacing.md),
+          Container(
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.45,
+              ),
+              borderRadius: BorderRadius.circular(AppRadii.lg),
+              border: Border.all(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.75),
               ),
             ),
-            value: isPaid,
-            onChanged: (bool value) {
-              setState(() {
-                isPaid = value;
-              });
-            },
-            activeColor: colorScheme.primary,
-            tileColor: colorScheme.surfaceVariant.withValues(alpha: 0.3),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+            child: SwitchListTile(
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: spacing.md,
+                vertical: spacing.xs,
+              ),
+              title: Text(
+                'Pembayaran Diterima',
+                style: textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              subtitle: Text(
+                isPaid ? 'Sudah dibayar' : 'Belum dibayar',
+                style: textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: isPaid ? paidOn : unpaidOn,
+                ),
+              ),
+              value: isPaid,
+              onChanged: (value) => setState(() => isPaid = value),
+              activeColor: colorScheme.primary,
             ),
           ),
           if (isPaid && selectedPaymentMethod != 'CASH') ...[
-            const SizedBox(height: 16),
+            SizedBox(height: spacing.md),
             _buildPaymentProofSection(context),
           ],
-          const SizedBox(height: 16),
+          SizedBox(height: spacing.md),
           _buildTextFormField(
             context: context,
             controller: _paymentNotesController,
-            label: 'Payment Notes (Optional)',
-            hint: 'Enter payment notes',
+            label: 'Catatan Pembayaran (Opsional)',
+            hint: 'Contoh: transfer via BCA, atas nama ...',
             icon: Icons.note_outlined,
             maxLines: 2,
+            textInputAction: TextInputAction.next,
           ),
         ],
       ),
@@ -571,53 +707,49 @@ class _ReservationFormViewState extends State<ReservationFormView> {
   }
 
   Widget _buildPaymentProofSection(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final bool isDark = themeController.isDarkMode;
+    final theme = Theme.of(context);
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final semantic = theme.extension<AppSemanticColors>();
+
+    final ok = semantic?.success ?? colorScheme.tertiary;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Payment Proof', style: textTheme.titleMedium),
-        const SizedBox(height: 8),
+        Text(
+          'Bukti Pembayaran',
+          style: textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w900,
+            color: colorScheme.onSurface,
+          ),
+        ),
+        SizedBox(height: spacing.sm),
         if (paymentProofFile != null) ...[
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(spacing.md),
             decoration: BoxDecoration(
-              color:
-                  isDark
-                      ? Colors.green.withValues(alpha: 0.2)
-                      : Colors.green.shade50,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isDark ? Colors.green.shade700 : Colors.green.shade200,
-              ),
+              color: ok.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(AppRadii.lg),
+              border: Border.all(color: ok.withValues(alpha: 0.35)),
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.check_circle,
-                  color: isDark ? Colors.green.shade300 : Colors.green.shade600,
-                ),
-                const SizedBox(width: 12),
+                Icon(Icons.check_circle_rounded, color: ok),
+                SizedBox(width: spacing.sm),
                 Expanded(
                   child: Text(
-                    'Payment proof selected',
-                    style: textTheme.bodyLarge?.copyWith(
-                      color:
-                          isDark
-                              ? Colors.green.shade200
-                              : Colors.green.shade800,
-                      fontWeight: FontWeight.w500,
+                    'Bukti pembayaran sudah dipilih',
+                    style: textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: colorScheme.onSurface,
                     ),
                   ),
                 ),
                 TextButton(
-                  onPressed: () {
-                    setState(() {
-                      paymentProofFile = null;
-                    });
-                  },
-                  child: const Text('Remove'),
+                  onPressed: () => setState(() => paymentProofFile = null),
+                  child: const Text('Hapus'),
                 ),
               ],
             ),
@@ -625,8 +757,8 @@ class _ReservationFormViewState extends State<ReservationFormView> {
         ] else ...[
           OutlinedButton.icon(
             onPressed: _pickPaymentProof,
-            icon: const Icon(Icons.camera_alt_outlined),
-            label: const Text('Upload Payment Proof'),
+            icon: const Icon(Icons.photo_library_outlined),
+            label: const Text('Unggah Bukti'),
           ),
         ],
       ],
@@ -634,73 +766,116 @@ class _ReservationFormViewState extends State<ReservationFormView> {
   }
 
   Widget _buildNotesCard(BuildContext context) {
-    return _buildInfoCard(
+    return _buildSectionCard(
       context: context,
-      title: 'Additional Notes',
-      icon: Icons.note,
+      title: 'Catatan Tambahan',
+      icon: Icons.notes_rounded,
+      subtitle: 'Opsional. Tambahkan permintaan khusus atau informasi penting.',
       child: _buildTextFormField(
         context: context,
         controller: _notesController,
-        label: 'Notes (Optional)',
-        hint: 'Enter any additional notes or special requests',
+        label: 'Catatan (Opsional)',
+        hint: 'Contoh: bayi sedang pilek ringan, mohon ditangani pelan',
         icon: Icons.note_outlined,
         maxLines: 3,
+        textInputAction: TextInputAction.done,
       ),
     );
   }
 
-  Widget _buildInfoCard({
+  Widget _buildSectionCard({
     required BuildContext context,
     required String title,
     required IconData icon,
+    required String subtitle,
     required Widget child,
   }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final cardTheme = Theme.of(context).cardTheme;
+    final theme = Theme.of(context);
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+    final colorScheme = theme.colorScheme;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: cardTheme.color ?? colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).shadowColor.withValues(alpha: 0.05),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
+    return Card(
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      color: colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+        side: BorderSide(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.75),
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: colorScheme.primaryContainer,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-              ),
-            ),
-            child: Row(
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: EdgeInsets.all(spacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Icon(icon, color: colorScheme.onPrimaryContainer),
-                const SizedBox(width: 12),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onPrimaryContainer,
+                Container(
+                  height: spacing.xl,
+                  width: spacing.xl,
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.55,
+                    ),
+                    borderRadius: BorderRadius.circular(AppRadii.lg),
+                    border: Border.all(
+                      color: colorScheme.outlineVariant.withValues(alpha: 0.75),
+                    ),
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 20,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                SizedBox(width: spacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                      SizedBox(height: spacing.xxs),
+                      Text(
+                        subtitle,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-          ),
-          Padding(padding: const EdgeInsets.all(16), child: child),
-        ],
+            SizedBox(height: spacing.md),
+            child,
+          ],
+        ),
       ),
+    );
+  }
+
+  InputDecoration _inputDecoration(
+    BuildContext context, {
+    required String label,
+    required String hint,
+    required IconData icon,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      prefixIcon: Icon(icon, color: colorScheme.primary),
     );
   }
 
@@ -715,96 +890,129 @@ class _ReservationFormViewState extends State<ReservationFormView> {
     List<TextInputFormatter>? inputFormatters,
     int maxLines = 1,
     String? prefixText,
+    TextInputAction? textInputAction,
   }) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final decoration = _inputDecoration(
+      context,
+      label: label,
+      hint: hint,
+      icon: icon,
+    ).copyWith(prefixText: prefixText);
+
     return TextFormField(
       controller: controller,
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        prefixIcon: Icon(icon, color: colorScheme.primary),
-        prefixText: prefixText,
-      ),
+      decoration: decoration,
       validator: validator,
       keyboardType: keyboardType,
       inputFormatters: inputFormatters,
       maxLines: maxLines,
+      textInputAction: textInputAction,
     );
   }
 
-  Widget _buildInfoRow(BuildContext context, String label, String value) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
+  Widget _buildKV(
+    BuildContext context,
+    String label,
+    String value, {
+    bool emphasize = false,
+  }) {
+    final theme = Theme.of(context);
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+    final colorScheme = theme.colorScheme;
+
+    final labelStyle = theme.textTheme.bodyMedium?.copyWith(
+      color: colorScheme.onSurfaceVariant,
+      fontWeight: FontWeight.w700,
+    );
+
+    final valueStyle = (emphasize
+            ? theme.textTheme.titleMedium
+            : theme.textTheme.bodyMedium)
+        ?.copyWith(
+          color: colorScheme.onSurface,
+          fontWeight: emphasize ? FontWeight.w900 : FontWeight.w800,
+        );
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: EdgeInsets.symmetric(vertical: spacing.xs),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 100,
-            child: Text(
-              label,
-              style: textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
+          ConstrainedBox(
+            constraints: BoxConstraints(minWidth: spacing.xxl + spacing.md),
+            child: Text(label, style: labelStyle),
           ),
-          const SizedBox(width: 8),
-          Text(':', style: textTheme.bodyMedium),
-          const SizedBox(width: 8),
+          SizedBox(width: spacing.sm),
           Expanded(
-            child: Text(
-              value,
-              style: textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w500,
-                color: colorScheme.onSurface,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: SelectableText(
+                value.isEmpty ? '—' : value,
+                style: valueStyle,
+                textAlign: TextAlign.right,
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDivider(BuildContext context) {
+    final theme = Theme.of(context);
+    return Divider(
+      height: 0,
+      color: theme.colorScheme.outlineVariant.withValues(alpha: 0.75),
     );
   }
 
   Widget _buildBottomActions(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+    final colorScheme = theme.colorScheme;
+
+    // ✅ Button berdampingan, hemat space
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(
+        spacing.lg,
+      ).copyWith(bottom: spacing.lg + MediaQuery.of(context).padding.bottom),
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).shadowColor.withValues(alpha: 0.1),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, -2),
+        border: Border(
+          top: BorderSide(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.85),
           ),
-        ],
+        ),
       ),
-      child: SafeArea(
-        child: Obx(() {
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AppButton(
-                text: 'Create Reservation',
-                icon: Icons.add_circle_outline,
-                isLoading: reservationController.isFormSubmitting.value,
+      child: Obx(() {
+        final isSubmitting = reservationController.isFormSubmitting.value;
+
+        return Row(
+          children: [
+            Expanded(
+              child: AppButton(
+                text: 'Batal',
+                icon: Icons.close_rounded,
+                onPressed: isSubmitting ? null : () => Get.back(),
+                type: AppButtonType.secondary,
+                isFullWidth: true,
+              ),
+            ),
+            SizedBox(width: spacing.md),
+            Expanded(
+              flex: 2,
+              child: AppButton(
+                text: 'Buat Reservasi',
+                icon: Icons.check_circle_outline_rounded,
+                isLoading: isSubmitting,
                 onPressed: _canSubmit() ? _submitForm : null,
+                isFullWidth: true,
+                type: AppButtonType.primary,
               ),
-              const SizedBox(height: 12),
-              TextButton(
-                onPressed:
-                    reservationController.isFormSubmitting.value
-                        ? null
-                        : () => Get.back(),
-                child: const Text('Cancel'),
-              ),
-            ],
-          );
-        }),
-      ),
+            ),
+          ],
+        );
+      }),
     );
   }
 
@@ -826,9 +1034,7 @@ class _ReservationFormViewState extends State<ReservationFormView> {
       );
 
       if (pickedFile != null) {
-        setState(() {
-          paymentProofFile = File(pickedFile.path);
-        });
+        setState(() => paymentProofFile = File(pickedFile.path));
       }
     } catch (e) {
       Get.snackbar(
