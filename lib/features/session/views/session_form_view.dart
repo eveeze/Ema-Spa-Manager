@@ -1,4 +1,7 @@
+// lib/features/session/views/session_form_view.dart
 import 'package:emababyspa/common/layouts/main_layout.dart';
+import 'package:emababyspa/common/theme/app_theme.dart';
+import 'package:emababyspa/common/theme/semantic_colors.dart';
 import 'package:emababyspa/common/theme/text_theme.dart';
 import 'package:emababyspa/common/widgets/app_button.dart';
 import 'package:emababyspa/data/models/staff.dart';
@@ -18,13 +21,13 @@ class SessionFormView extends StatefulWidget {
 class _SessionFormViewState extends State<SessionFormView> {
   final SessionController _sessionController = Get.find<SessionController>();
   final StaffController _staffController = Get.find<StaffController>();
-  // ThemeController tidak perlu di-find di sini jika hanya digunakan di dalam GetBuilder
-  // final ThemeController _themeController = Get.find<ThemeController>();
 
   late String _timeSlotId;
   late List<dynamic> _existingSessions;
+
   List<Staff> _availableStaff = [];
   final Map<String, bool> _selectedStaffMap = {};
+
   bool _isCreating = false;
   bool _showMultiSelect = false;
 
@@ -44,7 +47,6 @@ class _SessionFormViewState extends State<SessionFormView> {
     // 1. Fetch semua staff
     await _staffController.fetchAllStaffs();
 
-    // Pastikan widget masih ada di tree sebelum melanjutkan
     if (!mounted) return;
 
     // 2. Filter hanya staff yang aktif
@@ -63,12 +65,11 @@ class _SessionFormViewState extends State<SessionFormView> {
 
     // 5. Inisialisasi map seleksi
     _selectedStaffMap.clear();
-    for (var staff in _availableStaff) {
+    for (final staff in _availableStaff) {
       _selectedStaffMap[staff.id] = false;
     }
 
-    // 6. Atur ulang seleksi awal dengan benar
-    // setState() di sini aman karena kita berada di luar siklus build awal
+    // 6. Atur ulang seleksi awal
     setState(() {
       _resetSelections();
     });
@@ -76,13 +77,19 @@ class _SessionFormViewState extends State<SessionFormView> {
 
   @override
   Widget build(BuildContext context) {
-    // GetBuilder akan otomatis rebuild saat tema berubah
     return GetBuilder<ThemeController>(
-      builder: (controller) {
+      builder: (_) {
+        final theme = Theme.of(context);
+        final colorScheme = theme.colorScheme;
+        final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
         return MainLayout(
           child: Scaffold(
             appBar: AppBar(
-              title: Text('Add Session${_showMultiSelect ? 's' : ''}'),
+              title: Text(
+                _showMultiSelect ? 'Tambah Beberapa Sesi' : 'Tambah Sesi',
+                style: theme.appBarTheme.titleTextStyle,
+              ),
               actions: [
                 if (_availableStaff.isNotEmpty)
                   IconButton(
@@ -90,11 +97,12 @@ class _SessionFormViewState extends State<SessionFormView> {
                       _showMultiSelect
                           ? Icons.person_outline
                           : Icons.people_outline,
+                      color: colorScheme.onSurfaceVariant,
                     ),
                     tooltip:
                         _showMultiSelect
-                            ? 'Single Selection'
-                            : 'Multi Selection',
+                            ? 'Mode satu terapis'
+                            : 'Mode beberapa terapis',
                     onPressed: () {
                       setState(() {
                         _showMultiSelect = !_showMultiSelect;
@@ -102,54 +110,79 @@ class _SessionFormViewState extends State<SessionFormView> {
                       });
                     },
                   ),
+                SizedBox(width: spacing.xs),
               ],
             ),
-            body: _buildBody(),
-            bottomNavigationBar: _buildBottomBar(),
+            body: _buildBody(context),
+            bottomNavigationBar: _buildBottomBar(context),
           ),
         );
       },
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
     if (_staffController.isLoading.value) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(
+        child: CircularProgressIndicator(color: colorScheme.primary),
+      );
     }
 
     if (_availableStaff.isEmpty) {
-      final textTheme = Theme.of(context).textTheme;
-      final colorScheme = Theme.of(context).colorScheme;
-
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(M3Spacing.xl),
+          padding: EdgeInsets.all(spacing.xl),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.person_search_rounded,
-                size: 80,
-                color: colorScheme.secondary,
+              Container(
+                height: 88,
+                width: 88,
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.55,
+                  ),
+                  borderRadius: BorderRadius.circular(AppRadii.xl),
+                  border: Border.all(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.70),
+                  ),
+                ),
+                child: Icon(
+                  Icons.person_search_rounded,
+                  size: 44,
+                  color: colorScheme.onSurfaceVariant,
+                ),
               ),
-              const SizedBox(height: M3Spacing.lg),
+              SizedBox(height: spacing.lg),
               Text(
-                'No Available Staff',
-                style: textTheme.headlineSmall,
+                'Terapis Tidak Tersedia',
+                style: textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: colorScheme.onSurface,
+                ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: M3Spacing.sm),
+              SizedBox(height: spacing.sm),
               Text(
-                'All staff members are already assigned to this time slot.',
+                'Semua terapis aktif sudah terjadwal di slot waktu ini. Silakan kembali atau pilih slot waktu lain.',
                 textAlign: TextAlign.center,
-                style: textTheme.bodyMedium,
+                style: textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-              const SizedBox(height: M3Spacing.lg),
+              SizedBox(height: spacing.lg),
               AppButton(
-                text: 'Go Back',
+                text: 'Kembali',
                 onPressed: () => Get.back(),
                 isFullWidth: false,
                 type: AppButtonType.secondary,
+                icon: Icons.arrow_back_rounded,
               ),
             ],
           ),
@@ -161,84 +194,98 @@ class _SessionFormViewState extends State<SessionFormView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          padding: EdgeInsets.fromLTRB(spacing.lg, spacing.lg, spacing.lg, 0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                _showMultiSelect ? 'Select Multiple Staff' : 'Select Staff',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+                _showMultiSelect ? 'Pilih Beberapa Terapis' : 'Pilih Terapis',
+                style: textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: colorScheme.onSurface,
+                ),
               ),
-              const SizedBox(height: M3Spacing.xs),
+              SizedBox(height: spacing.xs),
               Text(
                 _showMultiSelect
-                    ? 'Choose staff to create multiple sessions at once.'
-                    : 'Select a staff member for the session.',
-                style: Theme.of(context).textTheme.bodyMedium,
+                    ? 'Pilih beberapa terapis untuk membuat beberapa sesi sekaligus.'
+                    : 'Pilih satu terapis untuk sesi ini.',
+                style: textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-              const SizedBox(height: M3Spacing.md),
-              _buildSelectionHint(),
+              SizedBox(height: spacing.md),
+              _buildSelectionHint(context),
             ],
           ),
         ),
         Expanded(
           child:
               _showMultiSelect
-                  ? _buildMultiSelectList()
-                  : _buildSingleSelectList(),
+                  ? _buildMultiSelectList(context)
+                  : _buildSingleSelectList(context),
         ),
       ],
     );
   }
 
-  Widget _buildSelectionHint() {
+  Widget _buildSelectionHint(BuildContext context) {
     final int selectedCount =
         _selectedStaffMap.values.where((selected) => selected).length;
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
 
-    if (!_showMultiSelect) {
-      return const SizedBox.shrink();
-    }
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    if (!_showMultiSelect) return const SizedBox.shrink();
+
+    final bool hasSelection = selectedCount > 0;
 
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      padding: const EdgeInsets.symmetric(
-        horizontal: M3Spacing.md,
-        vertical: M3Spacing.sm,
+      duration: const Duration(milliseconds: 260),
+      padding: EdgeInsets.symmetric(
+        horizontal: spacing.md,
+        vertical: spacing.sm,
       ),
       decoration: BoxDecoration(
         color:
-            selectedCount > 0
-                ? colorScheme.primaryContainer
-                : colorScheme.errorContainer.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(8),
+            hasSelection
+                ? colorScheme.primaryContainer.withValues(alpha: 0.60)
+                : colorScheme.errorContainer.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        border: Border.all(
+          color:
+              hasSelection
+                  ? colorScheme.primary.withValues(alpha: 0.22)
+                  : colorScheme.error.withValues(alpha: 0.22),
+        ),
       ),
       child: Row(
         children: [
           Icon(
-            selectedCount > 0
+            hasSelection
                 ? Icons.check_circle_outline_rounded
                 : Icons.info_outline_rounded,
             size: 20,
             color:
-                selectedCount > 0
-                    ? colorScheme.onPrimaryContainer
+                hasSelection
+                    ? colorScheme.primary
                     : colorScheme.onErrorContainer,
           ),
-          const SizedBox(width: M3Spacing.sm),
+          SizedBox(width: spacing.sm),
           Expanded(
             child: Text(
-              selectedCount > 0
-                  ? 'Selected $selectedCount staff member${selectedCount > 1 ? 's' : ''}'
-                  : 'Select at least one staff member',
+              hasSelection
+                  ? 'Terpilih $selectedCount terapis'
+                  : 'Pilih minimal 1 terapis untuk melanjutkan',
               style: textTheme.labelLarge?.copyWith(
                 color:
-                    selectedCount > 0
+                    hasSelection
                         ? colorScheme.onPrimaryContainer
                         : colorScheme.onErrorContainer,
+                fontWeight: FontWeight.w800,
               ),
             ),
           ),
@@ -247,14 +294,18 @@ class _SessionFormViewState extends State<SessionFormView> {
     );
   }
 
-  Widget _buildSingleSelectList() {
+  Widget _buildSingleSelectList(BuildContext context) {
+    final theme = Theme.of(context);
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
     return ListView.builder(
-      padding: const EdgeInsets.all(M3Spacing.md),
+      padding: EdgeInsets.all(spacing.md),
       itemCount: _availableStaff.length,
       itemBuilder: (context, index) {
         final staff = _availableStaff[index];
         final isSelected = _selectedStaffMap[staff.id] ?? false;
-        return _buildStaffListItem(staff, isSelected, () {
+
+        return _buildStaffListItem(context, staff, isSelected, () {
           setState(() {
             _selectedStaffMap.updateAll((key, value) => false);
             _selectedStaffMap[staff.id] = true;
@@ -264,14 +315,18 @@ class _SessionFormViewState extends State<SessionFormView> {
     );
   }
 
-  Widget _buildMultiSelectList() {
+  Widget _buildMultiSelectList(BuildContext context) {
+    final theme = Theme.of(context);
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
     return ListView.builder(
-      padding: const EdgeInsets.all(M3Spacing.md),
+      padding: EdgeInsets.all(spacing.md),
       itemCount: _availableStaff.length,
       itemBuilder: (context, index) {
         final staff = _availableStaff[index];
         final isSelected = _selectedStaffMap[staff.id] ?? false;
-        return _buildStaffListItem(staff, isSelected, () {
+
+        return _buildStaffListItem(context, staff, isSelected, () {
           setState(() {
             _selectedStaffMap[staff.id] = !isSelected;
           });
@@ -280,65 +335,115 @@ class _SessionFormViewState extends State<SessionFormView> {
     );
   }
 
-  Widget _buildStaffListItem(Staff staff, bool isSelected, VoidCallback onTap) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
+  Widget _buildStaffListItem(
+    BuildContext context,
+    Staff staff,
+    bool isSelected,
+    VoidCallback onTap,
+  ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    final String initial =
+        staff.name.isNotEmpty ? staff.name[0].toUpperCase() : '?';
 
     return Card(
-      elevation: isSelected ? 2 : 0,
-      margin: const EdgeInsets.symmetric(vertical: M3Spacing.xs),
+      elevation: 0,
+      margin: EdgeInsets.symmetric(vertical: spacing.xs),
+      color:
+          isSelected
+              ? colorScheme.primaryContainer.withValues(alpha: 0.35)
+              : colorScheme.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
         side: BorderSide(
-          color: isSelected ? colorScheme.primary : colorScheme.outline,
-          width: isSelected ? 1.5 : 1.0,
+          color:
+              isSelected
+                  ? colorScheme.primary.withValues(alpha: 0.45)
+                  : colorScheme.outlineVariant.withValues(alpha: 0.70),
+          width: isSelected ? 1.25 : 1.0,
         ),
       ),
-      child: ListTile(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
         onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: M3Spacing.md,
-          vertical: M3Spacing.xs,
-        ),
-        leading: CircleAvatar(
-          backgroundColor:
-              isSelected ? colorScheme.primary : colorScheme.primaryContainer,
-          foregroundColor:
-              isSelected
-                  ? colorScheme.onPrimary
-                  : colorScheme.onPrimaryContainer,
-          child: Text(
-            staff.name.isNotEmpty ? staff.name[0].toUpperCase() : '?',
-            style: textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color:
-                  isSelected
-                      ? colorScheme.onPrimary
-                      : colorScheme.onPrimaryContainer,
-            ),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: spacing.md,
+            vertical: spacing.sm,
           ),
-        ),
-        title: Text(
-          staff.name,
-          style: textTheme.bodyLarge?.copyWith(
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            color: colorScheme.onSurface,
-          ),
-        ),
-        subtitle: Text(
-          staff.phoneNumber,
-          style: textTheme.bodySmall?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-          ),
-        ),
-        trailing:
-            _showMultiSelect
-                ? Checkbox(value: isSelected, onChanged: (_) => onTap())
-                : Radio<bool>(
-                  value: true,
-                  groupValue: isSelected,
-                  onChanged: (_) => onTap(),
+          child: Row(
+            children: [
+              Container(
+                height: 44,
+                width: 44,
+                decoration: BoxDecoration(
+                  color:
+                      isSelected
+                          ? colorScheme.primary
+                          : colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(AppRadii.md),
+                  border: Border.all(
+                    color:
+                        isSelected
+                            ? colorScheme.primary.withValues(alpha: 0.30)
+                            : colorScheme.outlineVariant.withValues(
+                              alpha: 0.70,
+                            ),
+                  ),
                 ),
+                alignment: Alignment.center,
+                child: Text(
+                  initial,
+                  style: textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color:
+                        isSelected
+                            ? colorScheme.onPrimary
+                            : colorScheme.onPrimaryContainer,
+                  ),
+                ),
+              ),
+              SizedBox(width: spacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      staff.name,
+                      style: textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: colorScheme.onSurface,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: spacing.xxs),
+                    Text(
+                      staff.phoneNumber,
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: spacing.sm),
+              _showMultiSelect
+                  ? Checkbox(value: isSelected, onChanged: (_) => onTap())
+                  : Radio<bool>(
+                    value: true,
+                    groupValue: isSelected,
+                    onChanged: (_) => onTap(),
+                  ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -351,37 +456,56 @@ class _SessionFormViewState extends State<SessionFormView> {
     }
   }
 
-  Widget _buildBottomBar() {
+  Widget _buildBottomBar(BuildContext context) {
     final bool hasSelection = _selectedStaffMap.values.contains(true);
-    final colorScheme = Theme.of(context).colorScheme;
+
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
 
     return Container(
-      padding: const EdgeInsets.all(
-        M3Spacing.md,
-      ).copyWith(bottom: M3Spacing.md + MediaQuery.of(context).padding.bottom),
+      padding: EdgeInsets.all(
+        spacing.md,
+      ).copyWith(bottom: spacing.md + MediaQuery.of(context).padding.bottom),
       decoration: BoxDecoration(
         color: colorScheme.surface,
+        border: Border(
+          top: BorderSide(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.70),
+            width: 1,
+          ),
+        ),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.shadow.withValues(alpha: 0.1),
+            color: colorScheme.shadow.withValues(alpha: 0.10),
             offset: const Offset(0, -2),
-            blurRadius: 8,
+            blurRadius: 10,
           ),
         ],
-        border: Border(
-          top: BorderSide(color: colorScheme.outlineVariant, width: 1),
-        ),
       ),
       child:
           _isCreating
               ? Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const CircularProgressIndicator(),
-                  const SizedBox(height: M3Spacing.md),
+                  SizedBox(
+                    height: 22,
+                    width: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                  SizedBox(height: spacing.md),
                   Text(
-                    'Creating session${_showMultiSelect ? 's' : ''}...',
-                    style: Theme.of(context).textTheme.bodyMedium,
+                    _showMultiSelect
+                        ? 'Sedang membuat beberapa sesi...'
+                        : 'Sedang membuat sesi...',
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               )
@@ -389,18 +513,16 @@ class _SessionFormViewState extends State<SessionFormView> {
                 children: [
                   Expanded(
                     child: AppButton(
-                      text: 'Cancel',
+                      text: 'Batal',
                       onPressed: () => Get.back(),
                       type: AppButtonType.secondary,
+                      icon: Icons.close_rounded,
                     ),
                   ),
-                  const SizedBox(width: M3Spacing.md),
+                  SizedBox(width: spacing.md),
                   Expanded(
                     child: AppButton(
-                      text:
-                          _showMultiSelect
-                              ? 'Create Sessions'
-                              : 'Create Session',
+                      text: _showMultiSelect ? 'Buat Sesi' : 'Buat Sesi',
                       onPressed: hasSelection ? _createSessions : null,
                       icon: Icons.check_circle_outline,
                     ),
@@ -411,25 +533,25 @@ class _SessionFormViewState extends State<SessionFormView> {
   }
 
   void _showSnackbar(String title, String message, {bool isError = false}) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final semantic = theme.extension<AppSemanticColors>();
+    final successColor = semantic?.success ?? colorScheme.tertiary;
+
     Get.snackbar(
       title,
       message,
       backgroundColor:
-          isError ? colorScheme.errorContainer : colorScheme.primaryContainer,
-      colorText:
           isError
-              ? colorScheme.onErrorContainer
-              : colorScheme.onPrimaryContainer,
+              ? colorScheme.errorContainer
+              : successColor.withValues(alpha: 0.16),
+      colorText: colorScheme.onSurface,
       snackPosition: SnackPosition.BOTTOM,
       margin: const EdgeInsets.all(M3Spacing.md),
       borderRadius: 12,
       icon: Icon(
         isError ? Icons.error_outline : Icons.check_circle_outline,
-        color:
-            isError
-                ? colorScheme.onErrorContainer
-                : colorScheme.onPrimaryContainer,
+        color: isError ? colorScheme.error : successColor,
       ),
     );
   }
@@ -437,8 +559,8 @@ class _SessionFormViewState extends State<SessionFormView> {
   Future<void> _createSessions() async {
     if (!_selectedStaffMap.values.contains(true)) {
       _showSnackbar(
-        'No Selection',
-        'Please select at least one staff member.',
+        'Belum Ada Pilihan',
+        'Pilih minimal satu terapis terlebih dahulu.',
         isError: true,
       );
       return;
@@ -450,12 +572,14 @@ class _SessionFormViewState extends State<SessionFormView> {
 
     try {
       bool success = false;
+
       if (_showMultiSelect) {
         final List<String> selectedStaffIds =
             _selectedStaffMap.entries
                 .where((entry) => entry.value)
                 .map((entry) => entry.key)
                 .toList();
+
         final List<Map<String, dynamic>> sessionsList =
             selectedStaffIds.map((staffId) {
               return {
@@ -470,12 +594,13 @@ class _SessionFormViewState extends State<SessionFormView> {
         );
       } else {
         String? selectedStaffId;
-        for (var entry in _selectedStaffMap.entries) {
+        for (final entry in _selectedStaffMap.entries) {
           if (entry.value) {
             selectedStaffId = entry.key;
             break;
           }
         }
+
         if (selectedStaffId != null) {
           success = await _sessionController.createSession(
             timeSlotId: _timeSlotId,
@@ -488,21 +613,25 @@ class _SessionFormViewState extends State<SessionFormView> {
       if (success) {
         await _sessionController.fetchSessions(timeSlotId: _timeSlotId);
         _showSnackbar(
-          'Success',
-          'Session${_showMultiSelect ? 's' : ''} created successfully.',
+          'Berhasil',
+          _showMultiSelect
+              ? 'Beberapa sesi berhasil dibuat.'
+              : 'Sesi berhasil dibuat.',
         );
         Get.back(result: true);
       } else {
         _showSnackbar(
-          'Error',
-          'Failed to create session${_showMultiSelect ? 's' : ''}.',
+          'Gagal',
+          _showMultiSelect
+              ? 'Gagal membuat beberapa sesi.'
+              : 'Gagal membuat sesi.',
           isError: true,
         );
       }
     } catch (e) {
       _showSnackbar(
-        'Error',
-        'An unexpected error occurred: ${e.toString()}',
+        'Terjadi Kesalahan',
+        'Ada masalah tak terduga: ${e.toString()}',
         isError: true,
       );
     } finally {

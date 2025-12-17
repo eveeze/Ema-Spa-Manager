@@ -148,7 +148,7 @@ class DashboardView extends GetView<DashboardController> {
                       'Selamat Datang,',
                       style: theme.textTheme.titleMedium?.copyWith(
                         color: cs.onPrimary,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w800,
                         letterSpacing: 0.2,
                       ),
                     ),
@@ -161,7 +161,7 @@ class DashboardView extends GetView<DashboardController> {
                         style: theme.textTheme.headlineMedium?.copyWith(
                           fontFamily: 'DeliusSwashCaps',
                           color: cs.onPrimary,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w900,
                           letterSpacing: 0.4,
                           height: 1.15,
                         ),

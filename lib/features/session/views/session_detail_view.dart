@@ -1,7 +1,7 @@
 // lib/features/session/views/session_detail_view.dart
-
 import 'package:emababyspa/common/layouts/main_layout.dart';
-import 'package:emababyspa/common/theme/text_theme.dart';
+import 'package:emababyspa/common/theme/app_theme.dart';
+import 'package:emababyspa/common/theme/semantic_colors.dart';
 import 'package:emababyspa/common/widgets/app_button.dart';
 import 'package:emababyspa/data/models/reservation.dart';
 import 'package:emababyspa/data/models/session.dart';
@@ -29,11 +29,9 @@ class _SessionDetailViewState extends State<SessionDetailView> {
     final args = Get.arguments as Map<String, dynamic>;
     session = args['session'];
 
-    // --- PERBAIKAN DI SINI ---
-    // Kita panggil getSessionById setelah frame pertama selesai di-build.
+    // UI-only: tetap panggil setelah frame pertama untuk menghindari error build.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        // Memastikan widget masih ada di tree
         sessionController.getSessionById(session.id);
       }
     });
@@ -45,6 +43,7 @@ class _SessionDetailViewState extends State<SessionDetailView> {
       builder: (_) {
         return MainLayout(
           child: Scaffold(
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             appBar: _buildAppBar(context),
             body: _buildBody(context),
             bottomNavigationBar: _buildBottomActions(context),
@@ -55,12 +54,23 @@ class _SessionDetailViewState extends State<SessionDetailView> {
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
     return AppBar(
-      title: const Text('Session Details'),
+      title: Text(
+        'Detail Sesi',
+        style:
+            theme.appBarTheme.titleTextStyle ??
+            textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+      ),
+      backgroundColor: colorScheme.surface,
+      surfaceTintColor: colorScheme.surface,
+      scrolledUnderElevation: 0,
       actions: [
         PopupMenuButton<String>(
-          icon: const Icon(Icons.more_vert_rounded),
+          icon: Icon(Icons.more_vert_rounded, color: colorScheme.onSurface),
           onSelected: (value) {
             if (value == 'delete') {
               _showDeleteConfirmation(context);
@@ -76,10 +86,13 @@ class _SessionDetailViewState extends State<SessionDetailView> {
                         Icons.delete_outline_rounded,
                         color: colorScheme.error,
                       ),
-                      const SizedBox(width: M3Spacing.md),
+                      const SizedBox(width: 12),
                       Text(
-                        'Delete Session',
-                        style: TextStyle(color: colorScheme.error),
+                        'Hapus Sesi',
+                        style: textTheme.bodyLarge?.copyWith(
+                          color: colorScheme.error,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ],
                   ),
@@ -91,28 +104,35 @@ class _SessionDetailViewState extends State<SessionDetailView> {
   }
 
   Widget _buildBody(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
     return RefreshIndicator(
       onRefresh: () async => await sessionController.getSessionById(session.id),
+      color: colorScheme.primary,
+      backgroundColor: colorScheme.surface,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: M3Spacing.md),
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.symmetric(horizontal: spacing.lg),
         child: Obx(() {
-          // Gunakan data dari controller jika sudah ada, jika tidak, gunakan data dari argumen
           final currentSession =
               sessionController.currentSession.value ?? session;
+
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: M3Spacing.md),
+              SizedBox(height: spacing.md),
               _buildStatusHeader(context, currentSession),
-              const SizedBox(height: M3Spacing.lg),
+              SizedBox(height: spacing.lg),
               _buildSessionInfoCard(context, currentSession),
-              const SizedBox(height: M3Spacing.lg),
+              SizedBox(height: spacing.lg),
               _buildTimeSlotInfoCard(context, currentSession),
-              const SizedBox(height: M3Spacing.lg),
+              SizedBox(height: spacing.lg),
               _buildStaffInfoCard(context, currentSession),
-              const SizedBox(height: M3Spacing.lg),
+              SizedBox(height: spacing.lg),
               _buildReservationCard(context, currentSession),
-              const SizedBox(height: 120),
+              SizedBox(height: spacing.xxl + 64),
             ],
           );
         }),
@@ -121,45 +141,84 @@ class _SessionDetailViewState extends State<SessionDetailView> {
   }
 
   Widget _buildStatusHeader(BuildContext context, Session session) {
-    final isBooked = session.isBooked;
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+    final semantic = theme.extension<AppSemanticColors>();
+
+    final bool isBooked = session.isBooked;
+
+    final Color okColor = semantic?.success ?? colorScheme.tertiary;
+    final Color warningColor = colorScheme.error;
 
     final Color containerColor =
-        isBooked ? colorScheme.errorContainer : colorScheme.primaryContainer;
-    final Color contentColor =
         isBooked
-            ? colorScheme.onErrorContainer
-            : colorScheme.onPrimaryContainer;
+            ? colorScheme.errorContainer.withValues(alpha: 0.85)
+            : okColor.withValues(alpha: 0.14);
+    final Color contentColor =
+        isBooked ? colorScheme.onErrorContainer : okColor;
+
     final IconData icon =
         isBooked ? Icons.event_busy_rounded : Icons.event_available_rounded;
 
+    final String title = isBooked ? 'Sesi Terpesan' : 'Sesi Tersedia';
+    final String subtitle =
+        isBooked
+            ? 'Sesi ini sedang terisi oleh pemesanan.'
+            : 'Sesi ini masih tersedia untuk pemesanan.';
+
     return Card(
-      color: containerColor,
       elevation: 0,
+      color: containerColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+        side: BorderSide(
+          color: (isBooked ? warningColor : okColor).withValues(alpha: 0.18),
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
       child: Padding(
-        padding: const EdgeInsets.all(M3Spacing.lg),
+        padding: EdgeInsets.all(spacing.lg),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: contentColor, size: 40),
-            const SizedBox(width: M3Spacing.md),
+            Container(
+              height: spacing.xxl,
+              width: spacing.xxl,
+              decoration: BoxDecoration(
+                color: (isBooked ? warningColor : okColor).withValues(
+                  alpha: 0.14,
+                ),
+                borderRadius: BorderRadius.circular(AppRadii.lg),
+                border: Border.all(
+                  color: (isBooked ? warningColor : okColor).withValues(
+                    alpha: 0.22,
+                  ),
+                ),
+              ),
+              alignment: Alignment.center,
+              child: Icon(icon, color: contentColor, size: 26),
+            ),
+            SizedBox(width: spacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    isBooked ? 'Booked Session' : 'Available Session',
+                    title,
                     style: textTheme.titleLarge?.copyWith(
-                      color: contentColor,
-                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
+                      fontWeight: FontWeight.w900,
                     ),
                   ),
-                  const SizedBox(height: M3Spacing.xs),
+                  SizedBox(height: spacing.xs),
                   Text(
-                    isBooked
-                        ? 'This session is currently booked.'
-                        : 'This session is available for booking.',
-                    style: textTheme.bodyMedium?.copyWith(color: contentColor),
+                    subtitle,
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
@@ -176,67 +235,101 @@ class _SessionDetailViewState extends State<SessionDetailView> {
     required IconData icon,
     required List<Widget> children,
   }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
 
     return Card(
       elevation: 0,
-      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+      color: colorScheme.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+        side: BorderSide(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.70),
+        ),
       ),
       clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(M3Spacing.md),
-            child: Row(
+      child: Padding(
+        padding: EdgeInsets.all(spacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Icon(icon, color: colorScheme.onSurfaceVariant, size: 20),
-                const SizedBox(width: M3Spacing.sm),
-                Text(
-                  title,
-                  style: textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+                Container(
+                  height: spacing.xl,
+                  width: spacing.xl,
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.55,
+                    ),
+                    borderRadius: BorderRadius.circular(AppRadii.lg),
+                    border: Border.all(
+                      color: colorScheme.outlineVariant.withValues(alpha: 0.70),
+                    ),
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    icon,
+                    color: colorScheme.onSurfaceVariant,
+                    size: 20,
+                  ),
+                ),
+                SizedBox(width: spacing.md),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: colorScheme.onSurface,
+                    ),
                   ),
                 ),
               ],
             ),
-          ),
-          Divider(height: 1, color: colorScheme.outlineVariant),
-          Padding(
-            padding: const EdgeInsets.all(M3Spacing.md),
-            child: Column(children: children),
-          ),
-        ],
+            SizedBox(height: spacing.md),
+            Divider(
+              color: colorScheme.outlineVariant.withValues(alpha: 0.70),
+              height: 1,
+            ),
+            SizedBox(height: spacing.md),
+            Column(children: children),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildInfoRow(BuildContext context, String label, String value) {
-    final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+    final colorScheme = theme.colorScheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: M3Spacing.sm + 2),
+      padding: EdgeInsets.symmetric(vertical: spacing.sm),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 110,
+          ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 96, maxWidth: 140),
             child: Text(
               label,
               style: textTheme.bodyMedium?.copyWith(
                 color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
-          const SizedBox(width: M3Spacing.md),
+          SizedBox(width: spacing.md),
           Expanded(
             child: SelectableText(
               value,
-              style: textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+              style: textTheme.bodyLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: colorScheme.onSurface,
+              ),
             ),
           ),
         ],
@@ -247,18 +340,18 @@ class _SessionDetailViewState extends State<SessionDetailView> {
   Widget _buildSessionInfoCard(BuildContext context, Session session) {
     return _buildInfoCard(
       context: context,
-      title: 'Session Information',
+      title: 'Informasi Sesi',
       icon: Icons.info_outline_rounded,
       children: [
-        _buildInfoRow(context, 'Session ID', session.id),
+        _buildInfoRow(context, 'ID Sesi', session.id),
         _buildInfoRow(
           context,
-          'Booking Status',
-          session.isBooked ? 'Booked' : 'Available',
+          'Status',
+          session.isBooked ? 'Terpesan' : 'Tersedia',
         ),
         _buildInfoRow(
           context,
-          'Created At',
+          'Dibuat',
           TimeZoneUtil.formatISOToIndonesiaTime(
             session.createdAt.toIso8601String(),
             format: 'EEEE, d MMMM yyyy HH:mm',
@@ -266,7 +359,7 @@ class _SessionDetailViewState extends State<SessionDetailView> {
         ),
         _buildInfoRow(
           context,
-          'Last Updated',
+          'Diperbarui',
           TimeZoneUtil.formatISOToIndonesiaTime(
             session.updatedAt.toIso8601String(),
             format: 'EEEE, d MMMM yyyy HH:mm',
@@ -278,15 +371,16 @@ class _SessionDetailViewState extends State<SessionDetailView> {
 
   Widget _buildTimeSlotInfoCard(BuildContext context, Session session) {
     final timeSlot = session.timeSlot;
+
     return _buildInfoCard(
       context: context,
-      title: 'Time Slot Information',
+      title: 'Informasi Slot Waktu',
       icon: Icons.access_time_rounded,
       children: [
         if (timeSlot != null) ...[
           _buildInfoRow(
             context,
-            'Date',
+            'Tanggal',
             TimeZoneUtil.formatISOToIndonesiaTime(
               timeSlot.startTime.toIso8601String(),
               format: 'EEEE, d MMMM yyyy',
@@ -294,7 +388,7 @@ class _SessionDetailViewState extends State<SessionDetailView> {
           ),
           _buildInfoRow(
             context,
-            'Start Time',
+            'Mulai',
             TimeZoneUtil.formatISOToIndonesiaTime(
               timeSlot.startTime.toIso8601String(),
               format: 'HH:mm',
@@ -302,7 +396,7 @@ class _SessionDetailViewState extends State<SessionDetailView> {
           ),
           _buildInfoRow(
             context,
-            'End Time',
+            'Selesai',
             TimeZoneUtil.formatISOToIndonesiaTime(
               timeSlot.endTime.toIso8601String(),
               format: 'HH:mm',
@@ -310,68 +404,88 @@ class _SessionDetailViewState extends State<SessionDetailView> {
           ),
           _buildInfoRow(
             context,
-            'Duration',
-            '${timeSlot.endTime.difference(timeSlot.startTime).inMinutes} minutes',
+            'Durasi',
+            '${timeSlot.endTime.difference(timeSlot.startTime).inMinutes} menit',
           ),
         ] else
-          _buildInfoRow(context, 'Time Slot ID', session.timeSlotId),
+          _buildInfoRow(context, 'ID Slot Waktu', session.timeSlotId),
       ],
     );
   }
 
   Widget _buildStaffInfoCard(BuildContext context, Session session) {
     final staff = session.staff;
+
     return _buildInfoCard(
       context: context,
-      title: 'Staff Information',
+      title: 'Informasi Terapis',
       icon: Icons.person_outline_rounded,
       children: [
         if (staff != null) ...[
-          _buildInfoRow(context, 'Staff Name', staff.name),
+          _buildInfoRow(context, 'Nama', staff.name),
           _buildInfoRow(context, 'Email', staff.email),
-          _buildInfoRow(context, 'Phone', staff.phoneNumber),
+          _buildInfoRow(context, 'Telepon', staff.phoneNumber),
           _buildInfoRow(
             context,
             'Status',
-            staff.isActive ? 'Active' : 'Inactive',
+            staff.isActive ? 'Aktif' : 'Nonaktif',
           ),
         ] else
-          _buildInfoRow(context, 'Staff ID', session.staffId),
+          _buildInfoRow(context, 'ID Terapis', session.staffId),
       ],
     );
   }
 
   Widget _buildEmptyReservationState(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
 
     return Container(
-      padding: const EdgeInsets.all(M3Spacing.lg),
+      width: double.infinity,
+      padding: EdgeInsets.all(spacing.lg),
       decoration: BoxDecoration(
-        color: colorScheme.secondaryContainer.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colorScheme.outlineVariant),
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.70),
+        ),
       ),
       child: Column(
         children: [
-          Icon(
-            Icons.event_note_outlined,
-            size: 48,
-            color: colorScheme.onSecondaryContainer,
-          ),
-          const SizedBox(height: M3Spacing.md),
-          Text(
-            'No Reservation',
-            style: textTheme.titleLarge?.copyWith(
+          Container(
+            height: 84,
+            width: 84,
+            decoration: BoxDecoration(
+              color: colorScheme.secondaryContainer.withValues(alpha: 0.35),
+              borderRadius: BorderRadius.circular(AppRadii.xl),
+              border: Border.all(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.70),
+              ),
+            ),
+            alignment: Alignment.center,
+            child: Icon(
+              Icons.event_note_outlined,
+              size: 44,
               color: colorScheme.onSecondaryContainer,
-              fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: M3Spacing.sm),
+          SizedBox(height: spacing.md),
           Text(
-            'This session is not yet reserved by any customer.',
+            'Belum Ada Reservasi',
+            style: textTheme.titleLarge?.copyWith(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.w900,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: spacing.sm),
+          Text(
+            'Sesi ini belum dipesan oleh pelanggan.',
             style: textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSecondaryContainer.withValues(alpha: 0.8),
+              color: colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
             ),
             textAlign: TextAlign.center,
           ),
@@ -382,26 +496,27 @@ class _SessionDetailViewState extends State<SessionDetailView> {
 
   Widget _buildReservationCard(BuildContext context, Session session) {
     final reservation = session.reservation;
+
     return _buildInfoCard(
       context: context,
-      title: 'Reservation Information',
+      title: 'Informasi Reservasi',
       icon:
           reservation != null
               ? Icons.event_note_rounded
               : Icons.event_note_outlined,
       children: [
         if (reservation != null) ...[
-          _buildInfoRow(context, 'Reservation ID', reservation.id),
+          _buildInfoRow(context, 'ID Reservasi', reservation.id),
           _buildInfoRow(
             context,
-            'Type',
+            'Jenis',
             _getReservationTypeText(reservation.reservationType),
           ),
-          _buildInfoRow(context, 'Baby Name', reservation.babyName),
-          _buildInfoRow(context, 'Baby Age', '${reservation.babyAge} months'),
+          _buildInfoRow(context, 'Nama Bayi', reservation.babyName),
+          _buildInfoRow(context, 'Usia Bayi', '${reservation.babyAge} bulan'),
           if (reservation.parentNames != null &&
               reservation.parentNames!.isNotEmpty)
-            _buildInfoRow(context, 'Parent Names', reservation.parentNames!),
+            _buildInfoRow(context, 'Nama Orang Tua', reservation.parentNames!),
           _buildInfoRow(
             context,
             'Status',
@@ -409,14 +524,14 @@ class _SessionDetailViewState extends State<SessionDetailView> {
           ),
           _buildInfoRow(
             context,
-            'Total Price',
+            'Total',
             'Rp ${reservation.totalPrice.toStringAsFixed(0)}',
           ),
           if (reservation.notes != null && reservation.notes!.isNotEmpty)
-            _buildInfoRow(context, 'Notes', reservation.notes!),
+            _buildInfoRow(context, 'Catatan', reservation.notes!),
           _buildInfoRow(
             context,
-            'Reserved At',
+            'Direservasi',
             TimeZoneUtil.formatISOToIndonesiaTime(
               reservation.createdAt.toIso8601String(),
               format: 'EEEE, d MMMM yyyy HH:mm',
@@ -429,88 +544,95 @@ class _SessionDetailViewState extends State<SessionDetailView> {
   }
 
   Widget _buildBottomActions(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
     return Obx(() {
       final currentSession = sessionController.currentSession.value ?? session;
       final hasReservation = currentSession.reservation != null;
       final isBooked = currentSession.isBooked;
 
-      return Container(
-        padding: const EdgeInsets.all(M3Spacing.md).copyWith(
-          bottom: M3Spacing.md + MediaQuery.of(context).padding.bottom,
-        ),
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          border: Border(
-            top: BorderSide(color: colorScheme.outlineVariant, width: 1.0),
+      return SafeArea(
+        top: false,
+        child: Container(
+          padding: EdgeInsets.all(spacing.lg),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            border: Border(
+              top: BorderSide(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.70),
+                width: 1,
+              ),
+            ),
           ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (!hasReservation && !isBooked)
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (!hasReservation && !isBooked)
+                AppButton(
+                  text: 'Tambah Reservasi Manual',
+                  onPressed:
+                      () => _navigateToReservationForm(context, currentSession),
+                  icon: Icons.add_circle_outline,
+                  type: AppButtonType.primary,
+                  isFullWidth: true,
+                ),
+              if (hasReservation)
+                Row(
+                  children: [
+                    Expanded(
+                      child: AppButton(
+                        text: 'Lihat',
+                        onPressed: () {
+                          Get.toNamed(
+                            AppRoutes.reservationDetail.replaceAll(
+                              ':id',
+                              currentSession.reservation!.id,
+                            ),
+                          );
+                        },
+                        type: AppButtonType.outline,
+                        icon: Icons.visibility_outlined,
+                      ),
+                    ),
+                    SizedBox(width: spacing.md),
+                    Expanded(
+                      child: AppButton(
+                        text: 'Ubah',
+                        onPressed: () {
+                          Get.toNamed(
+                            AppRoutes.reservationEdit.replaceAll(
+                              ':id',
+                              currentSession.reservation!.id,
+                            ),
+                          );
+                        },
+                        type: AppButtonType.primary,
+                        icon: Icons.edit_outlined,
+                      ),
+                    ),
+                  ],
+                ),
+              if (hasReservation) SizedBox(height: spacing.sm),
               AppButton(
-                text: 'Add Manual Reservation',
+                text: isBooked ? 'Tandai Tersedia' : 'Tandai Terpesan',
+                icon:
+                    isBooked
+                        ? Icons.event_available_outlined
+                        : Icons.event_busy_outlined,
                 onPressed:
-                    () => _navigateToReservationForm(context, currentSession),
-                icon: Icons.add_circle_outline,
-                type: AppButtonType.primary,
+                    () => _showToggleBookingConfirmation(
+                      context,
+                      currentSession,
+                      !isBooked,
+                    ),
+                type: AppButtonType.outline,
                 isFullWidth: true,
               ),
-            if (hasReservation)
-              Row(
-                children: [
-                  Expanded(
-                    child: AppButton(
-                      text: 'View',
-                      onPressed: () {
-                        Get.toNamed(
-                          AppRoutes.reservationDetail.replaceAll(
-                            ':id',
-                            currentSession.reservation!.id,
-                          ),
-                        );
-                      },
-                      type: AppButtonType.outline,
-                      icon: Icons.visibility_outlined,
-                    ),
-                  ),
-                  const SizedBox(width: M3Spacing.md),
-                  Expanded(
-                    child: AppButton(
-                      text: 'Edit',
-                      onPressed: () {
-                        Get.toNamed(
-                          AppRoutes.reservationEdit.replaceAll(
-                            ':id',
-                            currentSession.reservation!.id,
-                          ),
-                        );
-                      },
-                      type: AppButtonType.primary,
-                      icon: Icons.edit_outlined,
-                    ),
-                  ),
-                ],
-              ),
-            if (hasReservation) const SizedBox(height: M3Spacing.sm),
-            AppButton(
-              text: isBooked ? 'Mark as Available' : 'Mark as Booked',
-              icon:
-                  isBooked
-                      ? Icons.event_available_outlined
-                      : Icons.event_busy_outlined,
-              onPressed:
-                  () => _showToggleBookingConfirmation(
-                    context,
-                    currentSession,
-                    !isBooked,
-                  ),
-              type: AppButtonType.outline,
-              isFullWidth: true,
-            ),
-          ],
+            ],
+          ),
         ),
       );
     });
@@ -521,7 +643,9 @@ class _SessionDetailViewState extends State<SessionDetailView> {
     String message, {
     bool isError = false,
   }) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     Get.snackbar(
       title,
       message,
@@ -532,8 +656,10 @@ class _SessionDetailViewState extends State<SessionDetailView> {
               ? colorScheme.onErrorContainer
               : colorScheme.onPrimaryContainer,
       snackPosition: SnackPosition.BOTTOM,
-      margin: const EdgeInsets.all(M3Spacing.md),
-      borderRadius: 12,
+      margin: EdgeInsets.all(
+        (theme.extension<AppSpacing>() ?? const AppSpacing()).md,
+      ),
+      borderRadius: AppRadii.lg,
       icon: Icon(
         isError ? Icons.error_outline : Icons.check_circle_outline,
         color:
@@ -551,10 +677,7 @@ class _SessionDetailViewState extends State<SessionDetailView> {
     )?.then((result) {
       if (result == true) {
         sessionController.getSessionById(session.id);
-        _showCustomSnackbar(
-          'Success',
-          'Manual reservation created successfully',
-        );
+        _showCustomSnackbar('Berhasil', 'Reservasi manual berhasil dibuat.');
       }
     });
   }
@@ -564,22 +687,42 @@ class _SessionDetailViewState extends State<SessionDetailView> {
     Session session,
     bool newBookingStatus,
   ) {
-    final action = newBookingStatus ? 'book' : 'unbook';
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('${newBookingStatus ? 'Book' : 'Unbook'} Session'),
-          content: Text('Are you sure you want to $action this session?'),
+          icon: Icon(
+            newBookingStatus
+                ? Icons.event_busy_outlined
+                : Icons.event_available_outlined,
+            color: newBookingStatus ? colorScheme.error : colorScheme.primary,
+          ),
+          title: Text(
+            newBookingStatus ? 'Tandai Terpesan?' : 'Tandai Tersedia?',
+            style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+          ),
+          content: Text(
+            newBookingStatus
+                ? 'Sesi ini akan ditandai sebagai terpesan.'
+                : 'Sesi ini akan ditandai kembali sebagai tersedia.',
+            style: textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           actions: [
             AppButton(
-              text: 'Cancel',
+              text: 'Batal',
               onPressed: () => Get.back(),
               type: AppButtonType.text,
               size: AppButtonSize.small,
             ),
             AppButton(
-              text: newBookingStatus ? 'Book' : 'Unbook',
+              text: newBookingStatus ? 'Ya, Tandai' : 'Ya, Ubah',
               type: AppButtonType.text,
               size: AppButtonSize.small,
               onPressed: () {
@@ -597,34 +740,43 @@ class _SessionDetailViewState extends State<SessionDetailView> {
   }
 
   void _showDeleteConfirmation(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Delete Session'),
-          content: const Text(
-            'Are you sure you want to delete this session? This action cannot be undone.',
+          icon: Icon(Icons.delete_outline_rounded, color: colorScheme.error),
+          title: Text(
+            'Hapus Sesi?',
+            style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+          ),
+          content: Text(
+            'Tindakan ini bersifat permanen dan tidak bisa dibatalkan. Yakin ingin menghapus sesi ini?',
+            style: textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           actions: [
             AppButton(
-              text: 'Cancel',
+              text: 'Batal',
               onPressed: () => Get.back(),
               type: AppButtonType.text,
               size: AppButtonSize.small,
             ),
             AppButton(
-              text: 'Delete',
+              text: 'Hapus',
               type: AppButtonType.text,
               size: AppButtonSize.small,
               onPressed: () {
-                Get.back(); // Close dialog
+                Get.back();
                 sessionController.deleteSession(session.id).then((success) {
                   if (success) {
-                    Get.back(); // Return to previous screen
-                    _showCustomSnackbar(
-                      'Success',
-                      'Session deleted successfully',
-                    );
+                    Get.back();
+                    _showCustomSnackbar('Berhasil', 'Sesi berhasil dihapus.');
                   }
                 });
               },
@@ -636,23 +788,23 @@ class _SessionDetailViewState extends State<SessionDetailView> {
   }
 
   String _getReservationTypeText(ReservationType type) =>
-      type == ReservationType.ONLINE ? 'Online Booking' : 'Manual Reservation';
+      type == ReservationType.ONLINE ? 'Reservasi Online' : 'Reservasi Manual';
 
   String _getReservationStatusText(ReservationStatus status) {
     switch (status) {
       case ReservationStatus.PENDING:
       case ReservationStatus.PENDING_PAYMENT:
-        return 'Pending';
+        return 'Menunggu';
       case ReservationStatus.CONFIRMED:
-        return 'Confirmed';
+        return 'Dikonfirmasi';
       case ReservationStatus.IN_PROGRESS:
-        return 'In Progress';
+        return 'Berlangsung';
       case ReservationStatus.COMPLETED:
-        return 'Completed';
+        return 'Selesai';
       case ReservationStatus.CANCELLED:
-        return 'Cancelled';
+        return 'Dibatalkan';
       case ReservationStatus.EXPIRED:
-        return 'Expired';
+        return 'Kedaluwarsa';
     }
   }
 }

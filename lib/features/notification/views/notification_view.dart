@@ -8,6 +8,9 @@ import 'package:emababyspa/utils/timezone_utils.dart';
 import 'package:emababyspa/features/theme/controllers/theme_controller.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
+import 'package:emababyspa/common/theme/app_theme.dart';
+import 'package:emababyspa/common/theme/semantic_colors.dart';
+
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
 
@@ -39,35 +42,58 @@ class _NotificationScreenState extends State<NotificationScreen> {
     super.dispose();
   }
 
-  /// Widget untuk tampilan kosong
   Widget _buildEmptyState(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+    final colorScheme = theme.colorScheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    final double iconSize =
+        (textTheme.displaySmall?.fontSize ??
+            textTheme.headlineLarge?.fontSize ??
+            56) *
+        1.2;
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32.0),
+        padding: EdgeInsets.symmetric(horizontal: spacing.xl),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.notifications_off_outlined,
-              size: 80,
-              // Menggunakan warna dari theme
-              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+            Container(
+              height: iconSize + spacing.md,
+              width: iconSize + spacing.md,
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.55,
+                ),
+                borderRadius: BorderRadius.circular(AppRadii.xl),
+                border: Border.all(
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.70),
+                ),
+              ),
+              alignment: Alignment.center,
+              child: Icon(
+                Icons.notifications_off_outlined,
+                size: iconSize,
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+              ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: spacing.lg),
             Text(
-              'Tidak Ada Notifikasi',
-              // Menggunakan style dari theme
-              style: textTheme.headlineSmall,
+              'Belum Ada Notifikasi',
+              style: textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w900,
+                color: colorScheme.onSurface,
+              ),
+              textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: spacing.sm),
             Text(
-              'Semua notifikasi baru dari pelanggan dan sistem akan muncul di sini.',
-              // Menggunakan style dari theme
+              'Notifikasi terbaru dari pelanggan maupun sistem akan tampil di sini.',
               style: textTheme.bodyMedium?.copyWith(
                 color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
               ),
               textAlign: TextAlign.center,
             ),
@@ -79,24 +105,41 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Mengambil color scheme dan text theme dari context
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
 
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        // Warna AppBar sudah diatur oleh AppTheme
-        title: const Text('Notifikasi'),
+        title: Text(
+          'Notifikasi',
+          style:
+              theme.appBarTheme.titleTextStyle ??
+              textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+        ),
         centerTitle: true,
+        backgroundColor: colorScheme.surface,
+        surfaceTintColor: colorScheme.surface,
+        scrolledUnderElevation: 0,
         actions: [
           Obx(() {
             if (controller.unreadCount.value > 0) {
-              return TextButton(
-                onPressed: controller.markAllAsRead,
-                child: Text(
-                  'Tandai Semua',
-                  style: TextStyle(
-                    // Menggunakan warna onPrimary agar kontras dengan AppBar
-                    color: colorScheme.onPrimary,
+              return Padding(
+                padding: EdgeInsets.only(right: spacing.xs),
+                child: TextButton.icon(
+                  onPressed: controller.markAllAsRead,
+                  icon: Icon(
+                    Icons.done_all_rounded,
+                    color: colorScheme.primary,
+                  ),
+                  label: Text(
+                    'Tandai Semua',
+                    style: textTheme.labelLarge?.copyWith(
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
               );
@@ -107,7 +150,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
       ),
       body: Obx(() {
         if (controller.isLoading.value) {
-          return const Center(child: CircularProgressIndicator());
+          return Center(
+            child: CircularProgressIndicator(color: colorScheme.primary),
+          );
         }
 
         if (controller.notifications.isEmpty) {
@@ -116,25 +161,33 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
         return RefreshIndicator(
           onRefresh: () => controller.fetchNotifications(isRefresh: true),
-          // Menggunakan warna dari theme
           color: colorScheme.primary,
           backgroundColor: colorScheme.surface,
           child: ListView.builder(
             controller: _scrollController,
+            padding: EdgeInsets.symmetric(
+              horizontal: spacing.lg,
+              vertical: spacing.md,
+            ),
             itemCount:
                 controller.notifications.length +
                 (controller.isLoadingMore.value ? 1 : 0),
             itemBuilder: (context, index) {
               if (index == controller.notifications.length) {
-                return const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: CircularProgressIndicator(),
+                return Padding(
+                  padding: EdgeInsets.symmetric(vertical: spacing.lg),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: colorScheme.primary,
+                    ),
                   ),
                 );
               }
               final notification = controller.notifications[index];
-              return _buildNotificationItem(context, notification);
+              return Padding(
+                padding: EdgeInsets.only(bottom: spacing.md),
+                child: _buildNotificationItem(context, notification),
+              );
             },
           ),
         );
@@ -142,91 +195,146 @@ class _NotificationScreenState extends State<NotificationScreen> {
     );
   }
 
-  /// Widget untuk satu item notifikasi
   Widget _buildNotificationItem(
     BuildContext context,
     model.Notification notification,
   ) {
-    final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+    final colorScheme = theme.colorScheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+    final semantic = theme.extension<AppSemanticColors>();
 
     final localTime = TimeZoneUtil.toIndonesiaTime(notification.createdAt);
     final timeAgoString = timeago.format(localTime, locale: 'id');
     final bool isUnread = !notification.isRead;
 
+    final Color accent = colorScheme.primary;
+    final Color unreadBg = colorScheme.primaryContainer.withValues(alpha: 0.18);
+    final Color cardBg = colorScheme.surface;
+    final Color border = colorScheme.outlineVariant.withValues(alpha: 0.70);
+
+    final Color badgeColor = (semantic?.info ?? accent).withValues(alpha: 0.12);
+
+    final IconData leadingIcon =
+        notification.type == 'reservation'
+            ? Icons.event_available_rounded
+            : Icons.notifications_active_rounded;
+
     return Material(
-      // Memberi highlight pada notifikasi yang belum dibaca menggunakan warna dari theme
-      color:
-          isUnread
-              ? colorScheme.primaryContainer.withValues(alpha: 0.3)
-              : Colors.transparent,
+      color: Colors.transparent,
       child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadii.xl),
         onTap: () {
           controller.markAsRead(notification.id);
           if (notification.type == 'reservation' &&
               notification.referenceId != null) {
-            // Menggunakan rute yang sesuai dari app_routes.dart
             Get.toNamed(
               '${AppRoutes.reservationList}/${notification.referenceId}',
             );
           }
         },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Indikator titik
-              SizedBox(
-                width: 24,
-                child:
-                    isUnread
-                        ? Align(
-                          alignment: Alignment.topCenter,
-                          child: Container(
-                            margin: const EdgeInsets.only(top: 6),
-                            height: 8,
-                            width: 8,
-                            decoration: BoxDecoration(
-                              // Menggunakan warna primary dari theme
-                              color: colorScheme.primary,
-                              shape: BoxShape.circle,
+        child: Ink(
+          decoration: BoxDecoration(
+            color: isUnread ? unreadBg : cardBg,
+            borderRadius: BorderRadius.circular(AppRadii.xl),
+            border: Border.all(color: border),
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(spacing.lg),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // leading
+                Container(
+                  height: spacing.xxl,
+                  width: spacing.xxl,
+                  decoration: BoxDecoration(
+                    color: badgeColor,
+                    borderRadius: BorderRadius.circular(AppRadii.lg),
+                    border: Border.all(color: accent.withValues(alpha: 0.18)),
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    leadingIcon,
+                    color: accent,
+                    size: textTheme.titleLarge?.fontSize ?? 20,
+                  ),
+                ),
+                SizedBox(width: spacing.md),
+
+                // content
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // title row + dot
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              notification.title,
+                              style: textTheme.titleMedium?.copyWith(
+                                fontWeight:
+                                    isUnread
+                                        ? FontWeight.w900
+                                        : FontWeight.w700,
+                                color: colorScheme.onSurface,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                        )
-                        : null,
-              ),
-              // Konten notifikasi
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      notification.title,
-                      // Menggunakan text style dari theme
-                      style: textTheme.titleMedium?.copyWith(
-                        fontWeight:
-                            isUnread ? FontWeight.bold : FontWeight.normal,
+                          if (isUnread) ...[
+                            SizedBox(width: spacing.sm),
+                            Container(
+                              margin: EdgeInsets.only(top: spacing.xxs),
+                              height: spacing.xs,
+                              width: spacing.xs,
+                              decoration: BoxDecoration(
+                                color: accent,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      notification.message,
-                      style: textTheme.bodyMedium?.copyWith(
-                        // Menggunakan warna sekunder agar tidak terlalu menonjol
-                        color: colorScheme.onSurfaceVariant,
+
+                      SizedBox(height: spacing.xs),
+                      Text(
+                        notification.message,
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      timeAgoString,
-                      // Menggunakan text style kecil dari theme
-                      style: textTheme.bodySmall,
-                    ),
-                  ],
+
+                      SizedBox(height: spacing.sm),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.schedule_rounded,
+                            size: textTheme.bodySmall?.fontSize ?? 12,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                          SizedBox(width: spacing.xs),
+                          Text(
+                            timeAgoString,
+                            style: textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
