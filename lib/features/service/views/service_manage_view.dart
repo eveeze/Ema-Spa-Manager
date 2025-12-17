@@ -1,13 +1,16 @@
 // lib/features/service/views/service_manage_view.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:emababyspa/common/theme/color_theme.dart';
 import 'package:emababyspa/common/widgets/custom_appbar.dart';
 import 'package:emababyspa/common/widgets/empty_state_widget.dart';
 import 'package:emababyspa/common/layouts/main_layout.dart';
 import 'package:emababyspa/features/service/controllers/service_controller.dart';
 import 'package:emababyspa/data/models/service.dart';
 import 'package:emababyspa/features/theme/controllers/theme_controller.dart';
+
+// Tokens / Theme Extensions
+import 'package:emababyspa/common/theme/app_theme.dart';
+import 'package:emababyspa/common/theme/semantic_colors.dart';
 
 class ServiceManageView extends GetView<ServiceController> {
   const ServiceManageView({super.key});
@@ -18,26 +21,30 @@ class ServiceManageView extends GetView<ServiceController> {
 
     return MainLayout(
       child: Obx(() {
+        // ✅ keep existing behavior (no logic changes)
         themeController.updateSystemBrightness();
 
+        final theme = Theme.of(context);
+        final cs = theme.colorScheme;
+        final tt = theme.textTheme;
+        final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+        final semantic = theme.extension<AppSemanticColors>();
+
+        final success = semantic?.success ?? cs.tertiary;
+        final warning = semantic?.warning ?? cs.secondary;
+
         return Scaffold(
-          backgroundColor:
-              themeController.isDarkMode
-                  ? ColorTheme.backgroundDark
-                  : Colors.grey[50],
-          appBar: CustomAppBar(
-            title: 'Service Management',
+          backgroundColor: cs.surface,
+          appBar: const CustomAppBar(
+            title: 'Kelola Layanan',
             showBackButton: true,
           ),
           floatingActionButton: Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadii.xl),
               boxShadow: [
                 BoxShadow(
-                  color:
-                      themeController.isDarkMode
-                          ? ColorTheme.primaryLightDark.withValues(alpha: 0.3)
-                          : ColorTheme.primary.withValues(alpha: 0.3),
+                  color: cs.primary.withValues(alpha: 0.28),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -45,26 +52,18 @@ class ServiceManageView extends GetView<ServiceController> {
             ),
             child: FloatingActionButton.extended(
               onPressed: () => Get.toNamed('/services/form'),
-              backgroundColor:
-                  themeController.isDarkMode
-                      ? ColorTheme.primaryLightDark
-                      : ColorTheme.primary,
+              backgroundColor: cs.primary,
               elevation: 0,
-              icon: Icon(
-                Icons.add_rounded,
-                color: themeController.isDarkMode ? Colors.black : Colors.white,
-              ),
+              icon: Icon(Icons.add_rounded, color: cs.onPrimary),
               label: Text(
-                'Add Service',
-                style: TextStyle(
-                  color:
-                      themeController.isDarkMode ? Colors.black : Colors.white,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'JosefinSans',
+                'Tambah Layanan',
+                style: tt.labelLarge?.copyWith(
+                  color: cs.onPrimary,
+                  fontWeight: FontWeight.w900,
                 ),
               ),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppRadii.xl),
               ),
             ),
           ),
@@ -73,49 +72,42 @@ class ServiceManageView extends GetView<ServiceController> {
               onRefresh: () async {
                 await controller.refreshServices();
               },
-              color:
-                  themeController.isDarkMode
-                      ? ColorTheme.primaryLightDark
-                      : ColorTheme.primary,
-              backgroundColor:
-                  themeController.isDarkMode
-                      ? ColorTheme.surfaceDark
-                      : Colors.white,
+              color: cs.primary,
+              backgroundColor: cs.surface,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: _buildFilterOptions(themeController),
+                      padding: EdgeInsets.all(spacing.lg),
+                      child: _buildFilterOptions(
+                        context: context,
+                        success: success,
+                        warning: warning,
+                      ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      padding: EdgeInsets.symmetric(horizontal: spacing.lg),
                       child: Obx(() {
                         if (controller.isLoadingServices.value) {
                           return SizedBox(
-                            height: MediaQuery.of(context).size.height * 0.4,
+                            height: MediaQuery.of(context).size.height * 0.38,
                             child: Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   CircularProgressIndicator(
                                     valueColor: AlwaysStoppedAnimation<Color>(
-                                      themeController.isDarkMode
-                                          ? ColorTheme.primaryLightDark
-                                          : ColorTheme.primary,
+                                      cs.primary,
                                     ),
                                   ),
-                                  const SizedBox(height: 16),
+                                  SizedBox(height: spacing.md),
                                   Text(
-                                    'Loading services...',
-                                    style: TextStyle(
-                                      color:
-                                          themeController.isDarkMode
-                                              ? ColorTheme.textSecondaryDark
-                                              : ColorTheme.textSecondary,
-                                      fontFamily: 'JosefinSans',
+                                    'Memuat layanan...',
+                                    style: tt.bodyMedium?.copyWith(
+                                      color: cs.onSurfaceVariant,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 ],
@@ -126,12 +118,12 @@ class ServiceManageView extends GetView<ServiceController> {
 
                         if (controller.serviceError.isNotEmpty) {
                           return SizedBox(
-                            height: MediaQuery.of(context).size.height * 0.4,
+                            height: MediaQuery.of(context).size.height * 0.38,
                             child: EmptyStateWidget(
-                              title: 'Oops!',
+                              title: 'Terjadi Kesalahan',
                               message: controller.serviceError.value,
                               icon: Icons.error_outline_rounded,
-                              buttonLabel: 'Refresh',
+                              buttonLabel: 'Muat Ulang',
                               onButtonPressed: controller.refreshServices,
                               fullScreen: false,
                             ),
@@ -140,12 +132,13 @@ class ServiceManageView extends GetView<ServiceController> {
 
                         if (controller.services.isEmpty) {
                           return SizedBox(
-                            height: MediaQuery.of(context).size.height * 0.4,
+                            height: MediaQuery.of(context).size.height * 0.38,
                             child: EmptyStateWidget(
-                              title: 'No Services Found',
-                              message: 'You haven\'t added any services yet.',
+                              title: 'Belum Ada Layanan',
+                              message:
+                                  'Kamu belum menambahkan layanan. Tambahkan layanan pertama untuk mulai menerima reservasi.',
                               icon: Icons.spa_outlined,
-                              buttonLabel: 'Add Service',
+                              buttonLabel: 'Tambah Layanan',
                               onButtonPressed:
                                   () => Get.toNamed('/services/form'),
                               fullScreen: false,
@@ -153,10 +146,10 @@ class ServiceManageView extends GetView<ServiceController> {
                           );
                         }
 
-                        return _buildServiceList(themeController);
+                        return _buildServiceList(context);
                       }),
                     ),
-                    const SizedBox(height: 100),
+                    SizedBox(height: spacing.xxl + spacing.xl),
                   ],
                 ),
               ),
@@ -167,19 +160,31 @@ class ServiceManageView extends GetView<ServiceController> {
     );
   }
 
-  Widget _buildFilterOptions(ThemeController themeController) {
+  // =========================
+  // FILTER (more proportional & balanced)
+  // =========================
+  Widget _buildFilterOptions({
+    required BuildContext context,
+    required Color success,
+    required Color warning,
+  }) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tt = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    final borderCol = cs.outlineVariant.withValues(alpha: 0.65);
+    final panelBg = cs.surface;
+
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(spacing.lg),
       decoration: BoxDecoration(
-        color:
-            themeController.isDarkMode ? ColorTheme.surfaceDark : Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: panelBg,
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+        border: Border.all(color: borderCol, width: 1),
         boxShadow: [
           BoxShadow(
-            color:
-                themeController.isDarkMode
-                    ? Colors.black.withValues(alpha: 0.2)
-                    : Colors.black.withValues(alpha: 0.04),
+            color: cs.shadow.withValues(alpha: 0.06),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -190,197 +195,145 @@ class ServiceManageView extends GetView<ServiceController> {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.filter_list_rounded,
-                color:
-                    themeController.isDarkMode
-                        ? ColorTheme.primaryLightDark
-                        : ColorTheme.primary,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
+              Icon(Icons.tune_rounded, color: cs.primary, size: 20),
+              SizedBox(width: spacing.sm),
               Text(
-                'Filter Options',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color:
-                      themeController.isDarkMode
-                          ? ColorTheme.textPrimaryDark
-                          : ColorTheme.textPrimary,
-                  fontFamily: 'JosefinSans',
+                'Filter',
+                style: tt.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: cs.onSurface,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: spacing.lg),
+
+          // Category dropdown container for consistent height
           Obx(() {
-            return controller.isLoadingCategories.value
-                ? Container(
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color:
-                        themeController.isDarkMode
-                            ? Colors.grey[700]
-                            : Colors.grey[100],
-                    borderRadius: BorderRadius.circular(12),
+            if (controller.isLoadingCategories.value) {
+              return Container(
+                height: 56,
+                decoration: BoxDecoration(
+                  color: cs.surfaceContainerHighest.withValues(alpha: 0.55),
+                  borderRadius: BorderRadius.circular(AppRadii.lg),
+                  border: Border.all(color: borderCol),
+                ),
+                child: Center(
+                  child: LinearProgressIndicator(
+                    backgroundColor: cs.outlineVariant.withValues(alpha: 0.30),
+                    valueColor: AlwaysStoppedAnimation<Color>(cs.primary),
                   ),
-                  child: Center(
-                    child: LinearProgressIndicator(
-                      backgroundColor:
-                          themeController.isDarkMode
-                              ? Colors.grey[600]
-                              : Colors.grey[300],
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        themeController.isDarkMode
-                            ? ColorTheme.primaryLightDark
-                            : ColorTheme.primary,
-                      ),
-                    ),
+                ),
+              );
+            }
+
+            return Container(
+              decoration: BoxDecoration(
+                color: cs.surfaceContainerHighest.withValues(alpha: 0.35),
+                borderRadius: BorderRadius.circular(AppRadii.lg),
+                border: Border.all(color: borderCol, width: 1),
+              ),
+              child: DropdownButtonFormField<String>(
+                dropdownColor: cs.surface,
+                decoration: InputDecoration(
+                  labelText: 'Kategori',
+                  labelStyle: tt.bodyMedium?.copyWith(
+                    color: cs.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
                   ),
-                )
-                : Container(
-                  decoration: BoxDecoration(
-                    color:
-                        themeController.isDarkMode
-                            ? ColorTheme.backgroundDark
-                            : Colors.grey[50],
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color:
-                          themeController.isDarkMode
-                              ? ColorTheme.borderDark
-                              : Colors.grey[200]!,
-                      width: 1,
-                    ),
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: spacing.lg,
+                    vertical: spacing.md,
                   ),
-                  child: DropdownButtonFormField<String>(
-                    dropdownColor:
-                        themeController.isDarkMode
-                            ? ColorTheme.surfaceDark
-                            : Colors.white,
-                    decoration: InputDecoration(
-                      labelText: 'Filter by Category',
-                      labelStyle: TextStyle(
-                        color:
-                            themeController.isDarkMode
-                                ? ColorTheme.textSecondaryDark
-                                : ColorTheme.textSecondary,
-                        fontFamily: 'JosefinSans',
-                      ),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 16,
-                      ),
-                      prefixIcon: Icon(
-                        Icons.category_outlined,
-                        color:
-                            themeController.isDarkMode
-                                ? ColorTheme.primaryLightDark
-                                : ColorTheme.primary,
-                        size: 20,
-                      ),
-                    ),
+                  prefixIcon: Icon(
+                    Icons.category_outlined,
+                    color: cs.primary,
+                    size: 20,
+                  ),
+                ),
+                value: null,
+                style: tt.bodyMedium?.copyWith(
+                  color: cs.onSurface,
+                  fontWeight: FontWeight.w700,
+                ),
+                onChanged: (String? categoryId) {
+                  if (categoryId != null) {
+                    controller.fetchServices(categoryId: categoryId);
+                  } else {
+                    controller.fetchServices();
+                  }
+                },
+                items: [
+                  DropdownMenuItem<String>(
                     value: null,
-                    style: TextStyle(
-                      color:
-                          themeController.isDarkMode
-                              ? ColorTheme.textPrimaryDark
-                              : ColorTheme.textPrimary,
-                      fontFamily: 'JosefinSans',
+                    child: Text(
+                      'Semua Kategori',
+                      style: tt.bodyMedium?.copyWith(
+                        color: cs.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                    onChanged: (String? categoryId) {
-                      if (categoryId != null) {
-                        controller.fetchServices(categoryId: categoryId);
-                      } else {
-                        controller.fetchServices();
-                      }
-                    },
-                    items: [
-                      DropdownMenuItem<String>(
-                        value: null,
-                        child: Text(
-                          'All Categories',
-                          style: TextStyle(
-                            fontFamily: 'JosefinSans',
-                            color:
-                                themeController.isDarkMode
-                                    ? ColorTheme.textSecondaryDark
-                                    : ColorTheme.textSecondary,
-                          ),
+                  ),
+                  ...controller.serviceCategories.map((category) {
+                    return DropdownMenuItem<String>(
+                      value: category.id,
+                      child: Text(
+                        category.name,
+                        style: tt.bodyMedium?.copyWith(
+                          color: cs.onSurface,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
-                      ...controller.serviceCategories.map((category) {
-                        return DropdownMenuItem<String>(
-                          value: category.id,
-                          child: Text(
-                            category.name,
-                            style: TextStyle(
-                              fontFamily: 'JosefinSans',
-                              color:
-                                  themeController.isDarkMode
-                                      ? ColorTheme.textPrimaryDark
-                                      : ColorTheme.textPrimary,
-                            ),
-                          ),
-                        );
-                      }),
-                    ],
-                  ),
-                );
+                    );
+                  }),
+                ],
+              ),
+            );
           }),
-          const SizedBox(height: 16),
+
+          SizedBox(height: spacing.lg),
           Text(
-            'Filter by Status',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color:
-                  themeController.isDarkMode
-                      ? ColorTheme.textSecondaryDark
-                      : ColorTheme.textSecondary,
-              fontFamily: 'JosefinSans',
+            'Status',
+            style: tt.labelLarge?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: cs.onSurfaceVariant,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: spacing.sm),
+
+          // Equal-size status buttons
           Row(
             children: [
               Expanded(
-                child: _buildFilterButton(
-                  label: 'Active',
+                child: _statusButton(
+                  context: context,
+                  label: 'Aktif',
                   icon: Icons.check_circle_outline_rounded,
-                  color:
-                      themeController.isDarkMode
-                          ? ColorTheme.successDark
-                          : ColorTheme.success,
-                  themeController: themeController,
+                  tone: _Tone.success,
+                  color: success,
                   onPressed: () => controller.fetchServices(isActive: true),
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: spacing.sm),
               Expanded(
-                child: _buildFilterButton(
-                  label: 'Inactive',
+                child: _statusButton(
+                  context: context,
+                  label: 'Nonaktif',
                   icon: Icons.cancel_outlined,
-                  color:
-                      themeController.isDarkMode
-                          ? ColorTheme.errorDark
-                          : ColorTheme.error,
-                  themeController: themeController,
+                  tone: _Tone.danger,
+                  color: cs.error,
                   onPressed: () => controller.fetchServices(isActive: false),
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: spacing.sm),
               Expanded(
-                child: _buildFilterButton(
-                  label: 'All',
+                child: _statusButton(
+                  context: context,
+                  label: 'Semua',
                   icon: Icons.list_rounded,
-                  color:
-                      themeController.isDarkMode
-                          ? ColorTheme.primaryLightDark
-                          : ColorTheme.primary,
-                  themeController: themeController,
+                  tone: _Tone.warning,
+                  color: warning,
                   onPressed: () => controller.fetchServices(),
                 ),
               ),
@@ -391,88 +344,78 @@ class ServiceManageView extends GetView<ServiceController> {
     );
   }
 
-  Widget _buildFilterButton({
+  Widget _statusButton({
+    required BuildContext context,
     required String label,
     required IconData icon,
+    required _Tone tone,
     required Color color,
     required VoidCallback onPressed,
-    required ThemeController themeController,
   }) {
-    Color foregroundColor = color;
-    Color backgroundColor =
-        themeController.isDarkMode
-            ? color.withValues(alpha: 0.15)
-            : color.withValues(alpha: 0.05);
-    Color borderColor =
-        themeController.isDarkMode
-            ? color.withValues(alpha: 0.5)
-            : color.withValues(alpha: 0.3);
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tt = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
 
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color:
-                themeController.isDarkMode
-                    ? color.withValues(alpha: 0.25)
-                    : color.withValues(alpha: 0.1),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    final bg = color.withValues(alpha: 0.12);
+    final border = color.withValues(alpha: 0.35);
+
+    return SizedBox(
+      height: 44, // equal height across buttons (proportional)
       child: OutlinedButton.icon(
         onPressed: onPressed,
-        icon: Icon(icon, size: 18, color: foregroundColor),
-        label: Text(
-          label,
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontFamily: 'JosefinSans',
-            color: foregroundColor,
+        icon: Icon(icon, size: 18, color: color),
+        label: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: tt.labelLarge?.copyWith(
+              fontWeight: FontWeight.w900,
+              color: color,
+            ),
           ),
         ),
         style: OutlinedButton.styleFrom(
-          foregroundColor: foregroundColor,
-          side: BorderSide(color: borderColor, width: 1.5),
-          backgroundColor: backgroundColor,
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+          backgroundColor: bg,
+          side: BorderSide(color: border, width: 1.5),
+          padding: EdgeInsets.symmetric(
+            horizontal: spacing.md,
+            vertical: spacing.sm,
           ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+          ),
+          foregroundColor: cs.onSurface,
         ),
       ),
     );
   }
 
-  Widget _buildServiceList(ThemeController themeController) {
+  // =========================
+  // LIST + CARD (symmetry + taller image)
+  // =========================
+  Widget _buildServiceList(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tt = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(bottom: 16),
+          padding: EdgeInsets.only(bottom: spacing.md),
           child: Row(
             children: [
-              Icon(
-                Icons.list_alt_rounded,
-                color:
-                    themeController.isDarkMode
-                        ? ColorTheme.primaryLightDark
-                        : ColorTheme.primary,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
+              Icon(Icons.spa_rounded, color: cs.primary, size: 20),
+              SizedBox(width: spacing.sm),
               Text(
-                'Services (${controller.services.length})',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color:
-                      themeController.isDarkMode
-                          ? ColorTheme.textPrimaryDark
-                          : ColorTheme.textPrimary,
-                  fontFamily: 'JosefinSans',
+                'Daftar Layanan (${controller.services.length})',
+                style: tt.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: cs.onSurface,
                 ),
               ),
             ],
@@ -482,544 +425,360 @@ class ServiceManageView extends GetView<ServiceController> {
           physics: const NeverScrollableScrollPhysics(),
           shrinkWrap: true,
           itemCount: controller.services.length,
-          separatorBuilder: (context, index) => const SizedBox(height: 16),
+          separatorBuilder: (context, index) => SizedBox(height: spacing.md),
           itemBuilder: (context, index) {
             final service = controller.services[index];
-            return _buildServiceCard(service, themeController);
+            return _buildServiceCard(context, service);
           },
         ),
       ],
     );
   }
 
-  Widget _buildServiceCard(Service service, ThemeController themeController) {
-    String categoryName = 'Unknown';
+  Widget _buildServiceCard(BuildContext context, Service service) {
+    final ThemeController themeController = Get.find<ThemeController>(); // keep
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tt = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+    final semantic = theme.extension<AppSemanticColors>();
+
+    final success = semantic?.success ?? cs.tertiary;
+    final warning = semantic?.warning ?? cs.secondary;
+
+    String categoryName = 'Tanpa kategori';
     final category = controller.serviceCategories.firstWhereOrNull(
-      (category) => category.id == service.categoryId,
+      (c) => c.id == service.categoryId,
     );
-    if (category != null) {
+    if (category != null && category.name.trim().isNotEmpty) {
       categoryName = category.name;
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        color:
-            themeController.isDarkMode ? ColorTheme.surfaceDark : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color:
-                themeController.isDarkMode
-                    ? Colors.black.withValues(alpha: 0.3)
-                    : Colors.black.withValues(alpha: 0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: InkWell(
-        onTap: () => controller.navigateToEditService(service.id),
-        borderRadius: BorderRadius.circular(16),
-        splashColor:
-            themeController.isDarkMode
-                ? ColorTheme.primaryLightDark.withValues(alpha: 0.1)
-                : ColorTheme.primary.withValues(alpha: 0.1),
-        highlightColor:
-            themeController.isDarkMode
-                ? ColorTheme.primaryLightDark.withValues(alpha: 0.2)
-                : ColorTheme.primary.withValues(alpha: 0.2),
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildServiceImage(service, themeController),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildServiceHeader(service, themeController),
-                    const SizedBox(height: 12),
-                    _buildCategoryBadge(categoryName, themeController),
-                    const SizedBox(height: 12),
-                    _buildServiceDetails(service, themeController),
-                  ],
+    final borderCol = cs.outlineVariant.withValues(alpha: 0.65);
+
+    // Make card height stable & more symmetric
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 128),
+      child: Container(
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: BorderRadius.circular(AppRadii.xl),
+          border: Border.all(color: borderCol, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: cs.shadow.withValues(alpha: 0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: InkWell(
+          onTap: () => controller.navigateToEditService(service.id),
+          borderRadius: BorderRadius.circular(AppRadii.xl),
+          splashColor: cs.primary.withValues(alpha: 0.08),
+          highlightColor: cs.primary.withValues(alpha: 0.10),
+          child: Padding(
+            padding: EdgeInsets.all(spacing.lg),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                _buildTallThumb(context, service),
+                SizedBox(width: spacing.md),
+
+                // Main info
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Name + status chip (top aligned)
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              service.name,
+                              style: tt.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                color: cs.onSurface,
+                                letterSpacing: -0.2,
+                                height: 1.15,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          SizedBox(width: spacing.sm),
+                          _statusChip(context, isActive: service.isActive),
+                        ],
+                      ),
+                      SizedBox(height: spacing.xs),
+
+                      // category
+                      Text(
+                        categoryName,
+                        style: tt.bodySmall?.copyWith(
+                          color: cs.onSurfaceVariant,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+
+                      SizedBox(height: spacing.sm),
+
+                      // Minimal meta: duration + price/tier only (clean)
+                      Wrap(
+                        spacing: spacing.sm,
+                        runSpacing: spacing.xs,
+                        children: [
+                          _metaPill(
+                            context: context,
+                            icon: Icons.schedule_rounded,
+                            label: '${service.duration} menit',
+                            tone: _Tone.normal,
+                          ),
+                          if (service.hasPriceTiers)
+                            _metaPill(
+                              context: context,
+                              icon: Icons.layers_outlined,
+                              label: 'Banyak harga',
+                              tone: _Tone.warning,
+                              toneColor: warning,
+                            )
+                          else if (service.price != null)
+                            _metaPill(
+                              context: context,
+                              icon: Icons.payments_outlined,
+                              label: 'Rp ${service.price!.toStringAsFixed(0)}',
+                              tone: _Tone.success,
+                              toneColor: success,
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              _buildActionButtons(service, themeController),
+
+                SizedBox(width: spacing.md),
+
+                // Actions aligned + same sizing
+                _buildActionButtons(context, service, themeController),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Taller thumb to match card height better
+  Widget _buildTallThumb(BuildContext context, Service service) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return SizedBox(
+      width: 88,
+      height: 112,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              cs.primary.withValues(alpha: 0.14),
+              cs.primary.withValues(alpha: 0.05),
             ],
           ),
+          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.65)),
         ),
-      ),
-    );
-  }
-
-  Widget _buildServiceImage(Service service, ThemeController themeController) {
-    return Container(
-      width: 80,
-      height: 80,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors:
-              themeController.isDarkMode
-                  ? [
-                    ColorTheme.infoDark.withValues(alpha: 0.2),
-                    ColorTheme.primaryLightDark.withValues(alpha: 0.1),
-                  ]
-                  : [
-                    ColorTheme.info.withValues(alpha: 0.1),
-                    ColorTheme.primary.withValues(alpha: 0.05),
-                  ],
-        ),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color:
-              themeController.isDarkMode
-                  ? ColorTheme.infoDark.withValues(alpha: 0.3)
-                  : ColorTheme.info.withValues(alpha: 0.2),
-          width: 1,
-        ),
-      ),
-      child:
-          service.imageUrl != null && service.imageUrl!.isNotEmpty
-              ? ClipRRect(
-                borderRadius: BorderRadius.circular(13),
-                child: Image.network(
-                  service.imageUrl!,
-                  width: 80,
-                  height: 80,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Icon(
-                      Icons.spa_rounded,
-                      size: 32,
-                      color:
-                          themeController.isDarkMode
-                              ? ColorTheme.infoDark
-                              : ColorTheme.info,
-                    );
-                  },
+        child:
+            service.imageUrl != null && service.imageUrl!.isNotEmpty
+                ? ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadii.lg - 1),
+                  child: Image.network(
+                    service.imageUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) {
+                      return Center(
+                        child: Icon(
+                          Icons.spa_rounded,
+                          size: 32,
+                          color: cs.primary,
+                        ),
+                      );
+                    },
+                  ),
+                )
+                : Center(
+                  child: Icon(Icons.spa_rounded, size: 32, color: cs.primary),
                 ),
-              )
-              : Icon(
-                Icons.spa_rounded,
-                size: 32,
-                color:
-                    themeController.isDarkMode
-                        ? ColorTheme.infoDark
-                        : ColorTheme.info,
-              ),
-    );
-  }
-
-  Widget _buildServiceHeader(Service service, ThemeController themeController) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Text(
-            service.name,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color:
-                  themeController.isDarkMode
-                      ? ColorTheme.textPrimaryDark
-                      : ColorTheme.textPrimary,
-              fontFamily: 'JosefinSans',
-              letterSpacing: -0.3,
-              height: 1.2,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        const SizedBox(width: 12),
-        _buildStatusBadge(service, themeController),
-      ],
-    );
-  }
-
-  Widget _buildStatusBadge(Service service, ThemeController themeController) {
-    final isActive = service.isActive;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color:
-            isActive
-                ? themeController.isDarkMode
-                    ? ColorTheme.successDark.withValues(alpha: 0.15)
-                    : ColorTheme.success.withValues(alpha: 0.1)
-                : themeController.isDarkMode
-                ? ColorTheme.errorDark.withValues(alpha: 0.15)
-                : ColorTheme.error.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color:
-              isActive
-                  ? themeController.isDarkMode
-                      ? ColorTheme.successDark.withValues(alpha: 0.4)
-                      : ColorTheme.success.withValues(alpha: 0.3)
-                  : themeController.isDarkMode
-                  ? ColorTheme.errorDark.withValues(alpha: 0.4)
-                  : ColorTheme.error.withValues(alpha: 0.3),
-          width: 1,
-        ),
-      ),
-      child: Text(
-        isActive ? 'Active' : 'Inactive',
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color:
-              isActive
-                  ? themeController.isDarkMode
-                      ? ColorTheme.successDark
-                      : ColorTheme.success
-                  : themeController.isDarkMode
-                  ? ColorTheme.errorDark
-                  : ColorTheme.error,
-          fontFamily: 'JosefinSans',
-        ),
       ),
     );
   }
 
-  Widget _buildCategoryBadge(
-    String categoryName,
-    ThemeController themeController,
-  ) {
+  Widget _statusChip(BuildContext context, {required bool isActive}) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tt = theme.textTheme;
+    final semantic = theme.extension<AppSemanticColors>();
+
+    final success = semantic?.success ?? cs.tertiary;
+    final tint = isActive ? success : cs.error;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color:
-            themeController.isDarkMode
-                ? ColorTheme.infoDark.withValues(alpha: 0.15)
-                : ColorTheme.info.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color:
-              themeController.isDarkMode
-                  ? ColorTheme.infoDark.withValues(alpha: 0.3)
-                  : ColorTheme.info.withValues(alpha: 0.2),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.category_outlined,
-            size: 14,
-            color:
-                themeController.isDarkMode
-                    ? ColorTheme.infoDark
-                    : ColorTheme.info,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            categoryName,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color:
-                  themeController.isDarkMode
-                      ? ColorTheme.infoDark
-                      : ColorTheme.info,
-              fontFamily: 'JosefinSans',
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildServiceDetails(
-    Service service,
-    ThemeController themeController,
-  ) {
-    return Wrap(
-      spacing: 16.0,
-      runSpacing: 8.0,
-      children: [
-        _buildDetailItem(
-          icon: Icons.access_time_rounded,
-          text: '${service.duration} min',
-          themeController: themeController,
-        ),
-        if (service.hasPriceTiers)
-          _buildPriceTierBadge(themeController)
-        else if (service.price != null)
-          _buildPriceBadge(service.price!, themeController),
-        if (service.minBabyAge != null && service.maxBabyAge != null)
-          _buildDetailItem(
-            icon: Icons.child_care_rounded,
-            text: '${service.minBabyAge} - ${service.maxBabyAge} months old',
-            themeController: themeController,
-          ),
-      ],
-    );
-  }
-
-  Widget _buildDetailItem({
-    required IconData icon,
-    required String text,
-    required ThemeController themeController,
-  }) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color:
-                themeController.isDarkMode
-                    ? ColorTheme.textSecondaryDark.withValues(alpha: 0.15)
-                    : ColorTheme.textSecondary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Icon(
-            icon,
-            size: 14,
-            color:
-                themeController.isDarkMode
-                    ? ColorTheme.textSecondaryDark
-                    : ColorTheme.textSecondary,
-          ),
-        ),
-        const SizedBox(width: 6),
-        Flexible(
-          child: Text(
-            text,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color:
-                  themeController.isDarkMode
-                      ? ColorTheme.textSecondaryDark
-                      : ColorTheme.textSecondary,
-              fontFamily: 'JosefinSans',
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPriceBadge(double price, ThemeController themeController) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color:
-            themeController.isDarkMode
-                ? ColorTheme.successDark.withValues(alpha: 0.15)
-                : ColorTheme.success.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
+        color: tint.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        border: Border.all(color: tint.withValues(alpha: 0.30), width: 1),
       ),
       child: Text(
-        'Rp ${price.toStringAsFixed(0)}',
-        style: TextStyle(
-          fontSize: 12,
-          color:
-              themeController.isDarkMode
-                  ? ColorTheme.successDark
-                  : ColorTheme.success,
-          fontWeight: FontWeight.bold,
-          fontFamily: 'JosefinSans',
+        isActive ? 'Aktif' : 'Nonaktif',
+        style: tt.labelSmall?.copyWith(
+          fontWeight: FontWeight.w900,
+          color: tint,
         ),
       ),
     );
   }
 
-  Widget _buildPriceTierBadge(ThemeController themeController) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color:
-            themeController.isDarkMode
-                ? ColorTheme.warningDark.withValues(alpha: 0.15)
-                : ColorTheme.warning.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.layers_outlined,
-            size: 12,
-            color:
-                themeController.isDarkMode
-                    ? ColorTheme.warningDark.withValues(alpha: 0.9)
-                    : const Color(0xFFc77700),
-          ),
-          const SizedBox(width: 4),
-          Text(
-            'Multiple tiers',
-            style: TextStyle(
-              fontSize: 11,
-              color:
-                  themeController.isDarkMode
-                      ? ColorTheme.warningDark.withValues(alpha: 0.9)
-                      : const Color(0xFFc77700),
-              fontWeight: FontWeight.w600,
-              fontFamily: 'JosefinSans',
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildActionButtons(
+    BuildContext context,
+    Service service,
+    ThemeController themeController,
+  ) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final semantic = theme.extension<AppSemanticColors>();
+    final success = semantic?.success ?? cs.tertiary;
+    final danger = cs.error;
 
-  Widget _buildActionButtons(Service service, ThemeController themeController) {
+    // fixed sized buttons for symmetry
+    const size = 44.0;
+
     return Column(
-      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Container(
-          decoration: BoxDecoration(
-            color:
-                service.isActive
-                    ? themeController.isDarkMode
-                        ? ColorTheme.successDark.withValues(alpha: 0.15)
-                        : ColorTheme.success.withValues(alpha: 0.1)
-                    : themeController.isDarkMode
-                    ? Colors.grey[700]!.withValues(alpha: 0.3)
-                    : Colors.grey.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: IconButton(
-            icon: Icon(
-              service.isActive
-                  ? Icons.toggle_on_rounded
-                  : Icons.toggle_off_rounded,
-              color:
-                  service.isActive
-                      ? themeController.isDarkMode
-                          ? ColorTheme.successDark
-                          : ColorTheme.success
-                      : themeController.isDarkMode
-                      ? ColorTheme.textSecondaryDark
-                      : ColorTheme.textSecondary,
-              size: 28,
+        SizedBox(
+          width: size,
+          height: size,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: (service.isActive ? success : cs.onSurfaceVariant)
+                  .withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(AppRadii.md),
             ),
-            onPressed:
-                () => controller.toggleServiceStatus(
-                  service.id,
-                  !service.isActive,
-                ),
-            tooltip: service.isActive ? "Deactivate" : "Activate",
-            padding: const EdgeInsets.all(8),
-            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+            child: IconButton(
+              icon: Icon(
+                service.isActive
+                    ? Icons.toggle_on_rounded
+                    : Icons.toggle_off_rounded,
+                color: service.isActive ? success : cs.onSurfaceVariant,
+                size: 28,
+              ),
+              onPressed:
+                  () => controller.toggleServiceStatus(
+                    service.id,
+                    !service.isActive,
+                  ),
+              tooltip: service.isActive ? "Nonaktifkan" : "Aktifkan",
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(
+                minWidth: size,
+                minHeight: size,
+              ),
+            ),
           ),
         ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color:
-                themeController.isDarkMode
-                    ? ColorTheme.errorDark.withValues(alpha: 0.15)
-                    : ColorTheme.error.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: IconButton(
-            icon: Icon(
-              Icons.delete_outline_rounded,
-              color:
-                  themeController.isDarkMode
-                      ? ColorTheme.errorDark
-                      : ColorTheme.error,
-              size: 20,
+        const SizedBox(height: 10),
+        SizedBox(
+          width: size,
+          height: size,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: danger.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(AppRadii.md),
             ),
-            onPressed: () => _showDeleteConfirmation(service, themeController),
-            tooltip: "Delete Service",
-            padding: const EdgeInsets.all(8),
-            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+            child: IconButton(
+              icon: Icon(Icons.delete_outline_rounded, color: danger, size: 20),
+              onPressed: () => _showDeleteConfirmation(context, service),
+              tooltip: "Hapus Layanan",
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(
+                minWidth: size,
+                minHeight: size,
+              ),
+            ),
           ),
         ),
       ],
     );
   }
 
-  void _showDeleteConfirmation(
-    Service service,
-    ThemeController themeController,
-  ) {
+  void _showDeleteConfirmation(BuildContext context, Service service) {
+    final ThemeController themeController = Get.find<ThemeController>(); // keep
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tt = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
     Get.dialog(
       AlertDialog(
-        backgroundColor:
-            themeController.isDarkMode ? ColorTheme.surfaceDark : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: cs.surface,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadii.xl),
+        ),
         title: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: EdgeInsets.all(spacing.sm),
               decoration: BoxDecoration(
-                color:
-                    themeController.isDarkMode
-                        ? ColorTheme.errorDark.withValues(alpha: 0.15)
-                        : ColorTheme.error.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+                color: cs.errorContainer,
+                borderRadius: BorderRadius.circular(AppRadii.md),
               ),
               child: Icon(
                 Icons.delete_outline_rounded,
-                color:
-                    themeController.isDarkMode
-                        ? ColorTheme.errorDark
-                        : ColorTheme.error,
+                color: cs.onErrorContainer,
                 size: 20,
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: spacing.md),
             Text(
-              'Delete Service',
-              style: TextStyle(
-                fontFamily: 'JosefinSans',
-                fontWeight: FontWeight.bold,
-                color:
-                    themeController.isDarkMode
-                        ? ColorTheme.textPrimaryDark
-                        : ColorTheme.textPrimary,
+              'Hapus Layanan',
+              style: tt.titleMedium?.copyWith(
+                fontWeight: FontWeight.w900,
+                color: cs.onSurface,
               ),
             ),
           ],
         ),
         content: Text(
-          'Are you sure you want to delete "${service.name}"? This action cannot be undone.',
-          style: TextStyle(
-            fontFamily: 'JosefinSans',
+          'Yakin ingin menghapus "${service.name}"? Tindakan ini tidak bisa dibatalkan.',
+          style: tt.bodyMedium?.copyWith(
             height: 1.4,
-            color:
-                themeController.isDarkMode
-                    ? ColorTheme.textSecondaryDark
-                    : ColorTheme.textSecondary,
+            color: cs.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Get.back(),
             style: TextButton.styleFrom(
-              foregroundColor:
-                  themeController.isDarkMode
-                      ? ColorTheme.textSecondaryDark
-                      : ColorTheme.textSecondary,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              foregroundColor: cs.onSurfaceVariant,
+              padding: EdgeInsets.symmetric(
+                horizontal: spacing.lg,
+                vertical: spacing.md,
+              ),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadii.md),
               ),
             ),
             child: Text(
-              'Cancel',
-              style: TextStyle(
-                fontFamily: 'JosefinSans',
-                fontWeight: FontWeight.w600,
-                color:
-                    themeController.isDarkMode
-                        ? ColorTheme.textSecondaryDark.withValues(alpha: 0.8)
-                        : ColorTheme.textSecondary,
-              ),
+              'Batal',
+              style: tt.labelLarge?.copyWith(fontWeight: FontWeight.w800),
             ),
           ),
           ElevatedButton(
@@ -1028,28 +787,77 @@ class ServiceManageView extends GetView<ServiceController> {
               controller.deleteService(service.id);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor:
-                  themeController.isDarkMode
-                      ? ColorTheme.errorDark
-                      : ColorTheme.error,
-              foregroundColor:
-                  themeController.isDarkMode ? Colors.black : Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              backgroundColor: cs.error,
+              foregroundColor: cs.onError,
+              padding: EdgeInsets.symmetric(
+                horizontal: spacing.lg,
+                vertical: spacing.md,
+              ),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadii.md),
               ),
               elevation: 0,
             ),
-            child: const Text(
-              'Delete',
-              style: TextStyle(
-                fontFamily: 'JosefinSans',
-                fontWeight: FontWeight.bold,
-              ),
+            child: Text(
+              'Hapus',
+              style: tt.labelLarge?.copyWith(fontWeight: FontWeight.w900),
             ),
           ),
         ],
       ),
     );
+
+    // ignore: unused_local_variable
+    final _ = themeController;
   }
+}
+
+// ======= compact pill helpers (UI only) =======
+enum _Tone { normal, success, warning, danger }
+
+Widget _metaPill({
+  required BuildContext context,
+  required IconData icon,
+  required String label,
+  required _Tone tone,
+  Color? toneColor,
+}) {
+  final theme = Theme.of(context);
+  final cs = theme.colorScheme;
+  final tt = theme.textTheme;
+
+  final baseTint = toneColor ?? cs.onSurfaceVariant;
+
+  final bg =
+      (tone == _Tone.normal)
+          ? cs.surfaceContainerHighest.withValues(alpha: 0.45)
+          : baseTint.withValues(alpha: 0.12);
+
+  final border =
+      (tone == _Tone.normal)
+          ? cs.outlineVariant.withValues(alpha: 0.65)
+          : baseTint.withValues(alpha: 0.30);
+
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+    decoration: BoxDecoration(
+      color: bg,
+      borderRadius: BorderRadius.circular(AppRadii.lg),
+      border: Border.all(color: border, width: 1),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: baseTint),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: tt.labelLarge?.copyWith(
+            fontWeight: FontWeight.w900,
+            color: baseTint,
+          ),
+        ),
+      ],
+    ),
+  );
 }

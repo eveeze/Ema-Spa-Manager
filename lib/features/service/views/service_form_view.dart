@@ -1,15 +1,17 @@
 // lib/features/service/views/service_form_view.dart
 import 'dart:io';
-import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:emababyspa/common/theme/color_theme.dart';
+
+import 'package:emababyspa/common/theme/app_theme.dart';
+import 'package:emababyspa/common/theme/semantic_colors.dart';
+import 'package:emababyspa/common/widgets/app_button.dart';
+import 'package:emababyspa/common/widgets/app_text_field.dart';
 import 'package:emababyspa/common/widgets/custom_appbar.dart';
 import 'package:emababyspa/common/layouts/main_layout.dart';
 import 'package:emababyspa/features/service/controllers/service_controller.dart';
-import 'package:emababyspa/common/widgets/app_button.dart';
-import 'package:emababyspa/common/widgets/app_text_field.dart';
 import 'package:emababyspa/features/theme/controllers/theme_controller.dart';
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 
 class ServiceFormView extends GetView<ServiceController> {
   ServiceFormView({super.key});
@@ -40,190 +42,65 @@ class ServiceFormView extends GetView<ServiceController> {
       _initializePriceTierControllers(0);
     }
 
-    final bool isDark = themeController.isDarkMode;
-    final Color scaffoldBackgroundColor =
-        isDark ? const Color(0xFF121212) : Colors.grey[50]!;
-    final Color cardBackgroundColor =
-        isDark ? const Color(0xFF1E1E1E) : Colors.white;
-    final Color defaultTextColor =
-        isDark
-            ? Colors.white.withValues(alpha: 0.87)
-            : Colors.black.withValues(alpha: 0.87);
-    final Color secondaryTextColor =
-        isDark ? Colors.white.withValues(alpha: 0.60) : Colors.grey[600]!;
-    final Color shadowColor =
-        isDark
-            ? Colors.black.withValues(alpha: 0.5)
-            : Colors.black.withValues(alpha: 0.05);
-    final Color primaryColorWithOpacityLow = ColorTheme.primary.withValues(
-      alpha: isDark ? 0.2 : 0.1,
-    );
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tt = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+    final semantic = theme.extension<AppSemanticColors>();
+
+    final infoTone = semantic?.info ?? cs.secondary;
+    final warningTone = semantic?.warning ?? cs.tertiary;
+    final dangerTone = semantic?.danger ?? cs.error;
 
     return MainLayout(
       child: Scaffold(
-        backgroundColor: scaffoldBackgroundColor,
+        backgroundColor: cs.surface,
         appBar: const CustomAppBar(
-          title: 'Add New Service',
+          title: 'Tambah Layanan',
           showBackButton: true,
         ),
         body: SafeArea(
           child: Obx(() {
             if (controller.isLoadingCategories.value ||
                 controller.isLoadingStaff.value) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: cardBackgroundColor,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: shadowColor,
-                            blurRadius: 10,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: const CircularProgressIndicator(),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Loading service data...',
-                      style: TextStyle(
-                        color: secondaryTextColor,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
+              return _LoadingState(
+                title: 'Menyiapkan data layanan…',
+                subtitle: 'Tunggu sebentar ya.',
               );
             }
 
             if (controller.categoryError.isNotEmpty) {
-              return Center(
-                child: Container(
-                  margin: const EdgeInsets.all(24),
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: cardBackgroundColor,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: shadowColor,
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color:
-                              isDark
-                                  ? Colors.red.withValues(alpha: 0.2)
-                                  : Colors.red[50],
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          Icons.error_outline,
-                          color:
-                              isDark ? Colors.redAccent[100] : Colors.red[400],
-                          size: 48,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Oops! Something went wrong',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: defaultTextColor,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Error: ${controller.categoryError.value}',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: secondaryTextColor),
-                      ),
-                      const SizedBox(height: 24),
-                      AppButton(
-                        text: 'Try Again',
-                        onPressed: controller.fetchCategories,
-                        type: AppButtonType.primary,
-                        icon: Icons.refresh,
-                      ),
-                    ],
-                  ),
-                ),
+              return _MessageState(
+                icon: Icons.error_outline_rounded,
+                title: 'Terjadi kendala',
+                message: controller.categoryError.value,
+                buttonLabel: 'Coba Lagi',
+                onPressed: controller.fetchCategories,
+                tone: dangerTone,
               );
             }
 
             if (controller.serviceCategories.isEmpty) {
-              return Center(
-                child: Container(
-                  margin: const EdgeInsets.all(24),
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: cardBackgroundColor,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: shadowColor,
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: primaryColorWithOpacityLow,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          Icons.category_outlined,
-                          color: ColorTheme.primary,
-                          size: 48,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No Categories Found',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: defaultTextColor,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Please add service categories first before creating a new service.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: secondaryTextColor),
-                      ),
-                      const SizedBox(height: 24),
-                      AppButton(
-                        text: 'Go to Categories',
-                        onPressed: () => Get.toNamed('/service-categories'),
-                        type: AppButtonType.primary,
-                        icon: Icons.arrow_forward,
-                      ),
-                    ],
-                  ),
-                ),
+              return _MessageState(
+                icon: Icons.category_outlined,
+                title: 'Kategori belum tersedia',
+                message:
+                    'Tambahkan kategori layanan terlebih dahulu agar kamu bisa membuat layanan baru.',
+                buttonLabel: 'Kelola Kategori',
+                onPressed: () => Get.toNamed('/service-categories'),
+                tone: infoTone,
               );
             }
-            return _buildForm(context);
+
+            return _buildForm(
+              context,
+              infoTone: infoTone,
+              warningTone: warningTone,
+              dangerTone: dangerTone,
+              spacing: spacing,
+              tt: tt,
+              cs: cs,
+            );
           }),
         ),
       ),
@@ -239,103 +116,78 @@ class ServiceFormView extends GetView<ServiceController> {
     };
   }
 
-  Widget _buildForm(BuildContext context) {
-    final bool isDark = themeController.isDarkMode;
-    final Color secondaryTextColor =
-        isDark ? Colors.white.withValues(alpha: 0.60) : Colors.grey[600]!;
-    final Color primaryColorWithOpacityLow = ColorTheme.primary.withValues(
-      alpha: isDark ? 0.2 : 0.1,
-    );
-    final Color primaryColorWithOpacityMedium = ColorTheme.primary.withValues(
-      alpha: isDark ? 0.3 : 0.2,
-    );
-
+  Widget _buildForm(
+    BuildContext context, {
+    required Color infoTone,
+    required Color warningTone,
+    required Color dangerTone,
+    required AppSpacing spacing,
+    required TextTheme tt,
+    required ColorScheme cs,
+  }) {
     return Form(
       key: formKey,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
+        padding: EdgeInsets.all(spacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    primaryColorWithOpacityLow,
-                    ColorTheme.primary.withValues(alpha: isDark ? 0.1 : 0.05),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: primaryColorWithOpacityMedium),
-              ),
-              child: Column(
-                children: [
-                  Icon(Icons.spa_outlined, size: 32, color: ColorTheme.primary),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Create New Service',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: ColorTheme.primary,
-                      fontFamily: 'JosefinSans',
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Fill in the details below to add a new service',
-                    style: TextStyle(color: secondaryTextColor, fontSize: 14),
-                  ),
-                ],
-              ),
+            _HeaderCard(
+              title: 'Buat Layanan Baru',
+              subtitle: 'Lengkapi detail di bawah untuk menambahkan layanan.',
+              icon: Icons.spa_outlined,
             ),
-            const SizedBox(height: 32),
-            _buildImageSection(),
-            const SizedBox(height: 32),
-            _buildSectionCard(
-              title: 'Basic Information',
-              icon: Icons.info_outline,
+            SizedBox(height: spacing.xl),
+
+            _SectionCard(
+              title: 'Foto Layanan',
+              subtitle: 'Opsional, tapi sangat membantu agar terlihat menarik.',
+              leadingIcon: Icons.image_outlined,
+              child: _buildImagePicker(context),
+            ),
+            SizedBox(height: spacing.lg),
+
+            _SectionCard(
+              title: 'Informasi Dasar',
+              subtitle: 'Nama, deskripsi, kategori, dan durasi.',
+              leadingIcon: Icons.info_outline_rounded,
               child: Column(
                 children: [
                   AppTextField(
                     controller: nameController,
-                    label: 'Service Name',
-                    placeholder: 'Enter service name',
+                    label: 'Nama layanan',
+                    placeholder: 'Contoh: Baby Spa Premium',
                     isRequired: true,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Service name is required';
+                        return 'Nama layanan wajib diisi';
                       }
                       return null;
                     },
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: spacing.lg),
                   AppTextField(
                     controller: descriptionController,
-                    label: 'Description',
-                    placeholder: 'Enter service description',
+                    label: 'Deskripsi',
+                    placeholder: 'Tulis ringkas manfaat & detail layanan',
                     maxLines: 3,
                   ),
-                  const SizedBox(height: 20),
-                  _buildCategoryDropdown(),
-                  const SizedBox(height: 20),
+                  SizedBox(height: spacing.lg),
+                  _buildCategoryDropdown(context),
+                  SizedBox(height: spacing.lg),
                   AppTextField(
                     controller: durationController,
-                    label: 'Duration (minutes)',
-                    placeholder: 'Enter service duration',
+                    label: 'Durasi (menit)',
+                    placeholder: 'Contoh: 60',
                     keyboardType: TextInputType.number,
                     isRequired: true,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Duration is required';
+                        return 'Durasi wajib diisi';
                       }
-                      if (int.tryParse(value) == null ||
-                          int.parse(value) <= 0) {
-                        return 'Please enter a valid duration';
+                      final parsed = int.tryParse(value);
+                      if (parsed == null || parsed <= 0) {
+                        return 'Masukkan durasi yang valid';
                       }
                       return null;
                     },
@@ -343,320 +195,176 @@ class ServiceFormView extends GetView<ServiceController> {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
-            _buildSectionCard(
-              title: 'Pricing Configuration',
-              icon: Icons.attach_money,
+
+            SizedBox(height: spacing.lg),
+
+            _SectionCard(
+              title: 'Harga',
+              subtitle: 'Atur harga tunggal atau bertingkat berdasarkan usia.',
+              leadingIcon: Icons.payments_outlined,
               child: Column(
                 children: [
-                  _buildPriceTierSwitch(),
-                  const SizedBox(height: 20),
+                  _buildPriceTierSwitch(context, infoTone: infoTone),
+                  SizedBox(height: spacing.lg),
                   Obx(
                     () => AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
+                      duration: const Duration(milliseconds: 220),
+                      switchInCurve: Curves.easeOut,
+                      switchOutCurve: Curves.easeIn,
                       child:
                           !hasPriceTiers.value
-                              ? _buildSimplePricing()
-                              : _buildPriceTiers(),
+                              ? _buildSimplePricing(context, infoTone: infoTone)
+                              : _buildPriceTiers(
+                                context,
+                                warningTone: warningTone,
+                                dangerTone: dangerTone,
+                              ),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 40),
+
+            SizedBox(height: spacing.xl),
+
             Obx(
-              () => Container(
-                width: double.infinity,
-                height: 56,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      ColorTheme.primary,
-                      ColorTheme.primary.withValues(alpha: 0.8),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: ColorTheme.primary.withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: AppButton(
-                  text: 'Create Service',
-                  isLoading: controller.isCreatingService.value,
-                  onPressed: _submitForm,
-                  type: AppButtonType.primary,
-                  size: AppButtonSize.large,
-                  isFullWidth: true,
-                ),
+              () => AppButton(
+                text: 'Simpan Layanan',
+                isLoading: controller.isCreatingService.value,
+                onPressed: _submitForm,
+                type: AppButtonType.primary,
+                size: AppButtonSize.large,
+                isFullWidth: true,
               ),
             ),
-            const SizedBox(height: 20),
+
+            SizedBox(height: spacing.md),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSectionCard({
-    required String title,
-    required IconData icon,
-    required Widget child,
-  }) {
-    final bool isDark = themeController.isDarkMode;
-    final Color cardBackgroundColor =
-        isDark ? const Color(0xFF1E1E1E) : Colors.white;
-    final Color defaultTextColor =
-        isDark ? Colors.white.withValues(alpha: 0.87) : ColorTheme.textPrimary;
-    final Color shadowColor =
-        isDark
-            ? Colors.black.withValues(alpha: 0.5)
-            : Colors.black.withValues(alpha: 0.05);
-    final Color primaryColorWithOpacityLow = ColorTheme.primary.withValues(
-      alpha: isDark ? 0.25 : 0.1,
-    );
+  // =========================
+  // IMAGE PICKER (balanced + theme-only)
+  // =========================
+  Widget _buildImagePicker(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tt = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: cardBackgroundColor,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: shadowColor,
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: primaryColorWithOpacityLow,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: ColorTheme.primary, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: defaultTextColor,
-                  fontFamily: 'JosefinSans',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          child,
-        ],
-      ),
-    );
-  }
-
-  Widget _buildImageSection() {
-    final bool isDark = themeController.isDarkMode;
-    final Color cardBackgroundColor =
-        isDark ? const Color(0xFF1E1E1E) : Colors.white;
-    final Color defaultTextColor =
-        isDark ? Colors.white.withValues(alpha: 0.87) : ColorTheme.textPrimary;
-    final Color shadowColor =
-        isDark
-            ? Colors.black.withValues(alpha: 0.5)
-            : Colors.black.withValues(alpha: 0.05);
-    final Color primaryColorWithOpacityLow = ColorTheme.primary.withValues(
-      alpha: isDark ? 0.25 : 0.1,
-    );
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: cardBackgroundColor,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: shadowColor,
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: primaryColorWithOpacityLow,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(Icons.image, color: ColorTheme.primary, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Service Image',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: defaultTextColor,
-                  fontFamily: 'JosefinSans',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          _buildImagePicker(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildImagePicker() {
-    final bool isDark = themeController.isDarkMode;
-    final Color imagePickerBackgroundColor =
-        isDark ? Colors.grey[800]! : Colors.grey[50]!;
-    final Color imagePickerBorderColor = ColorTheme.primary.withOpacity(
-      isDark ? 0.6 : 0.3,
-    );
-    final Color shadowColor =
-        isDark ? Colors.black.withOpacity(0.4) : Colors.black.withOpacity(0.05);
-    final Color iconContainerBackgroundColor = ColorTheme.primary.withOpacity(
-      isDark ? 0.25 : 0.1,
-    );
-    final Color secondaryTextColor =
-        isDark ? Colors.white.withOpacity(0.60) : Colors.grey[500]!;
-    final Color editIconBackgroundColor =
-        isDark ? Colors.grey[700]! : Colors.white;
+    final border = cs.outlineVariant.withValues(alpha: 0.65);
+    final bg = cs.surfaceContainerHighest.withValues(alpha: 0.35);
 
     return Center(
-      child: GestureDetector(
+      child: InkWell(
         onTap: _pickImage,
-        child: Container(
-          width: 180,
-          height: 180,
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+        child: Ink(
+          width: 220,
+          height: 220,
           decoration: BoxDecoration(
-            color: imagePickerBackgroundColor,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: imagePickerBorderColor,
-              width: 2,
-              style: BorderStyle.solid,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: shadowColor,
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            color: bg,
+            borderRadius: BorderRadius.circular(AppRadii.xl),
+            border: Border.all(color: border, width: 1),
           ),
-          child: Obx(
-            () =>
-                imageFile.value != null
-                    ? Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(14),
-                          child: Image.file(
-                            imageFile.value!,
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            height: double.infinity,
-                          ),
-                        ),
-                        Positioned(
-                          top: 8,
-                          right: 8,
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: editIconBackgroundColor,
-                              borderRadius: BorderRadius.circular(8),
-                              boxShadow: [
-                                BoxShadow(
-                                  color:
-                                      isDark
-                                          ? Colors.black.withOpacity(0.3)
-                                          : Colors.black.withOpacity(0.1),
-                                  blurRadius: 4,
-                                ),
-                              ],
-                            ),
-                            child: Icon(
-                              Icons.edit,
-                              color: ColorTheme.primary,
-                              size: 16,
-                            ),
-                          ),
-                        ),
-                      ],
-                    )
-                    : Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: iconContainerBackgroundColor,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(
-                            Icons.add_photo_alternate_outlined,
-                            size: 40,
-                            color: ColorTheme.primary,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Add Service Image',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: ColorTheme.primary,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Tap to select from gallery',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: secondaryTextColor,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
+          child: Obx(() {
+            final file = imageFile.value;
+            if (file != null) {
+              return Stack(
+                fit: StackFit.expand,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadii.xl),
+                    child: Image.file(
+                      file,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
                     ),
-          ),
+                  ),
+                  Positioned(
+                    top: spacing.sm,
+                    right: spacing.sm,
+                    child: Container(
+                      padding: EdgeInsets.all(spacing.xs),
+                      decoration: BoxDecoration(
+                        color: cs.surface.withValues(alpha: 0.92),
+                        borderRadius: BorderRadius.circular(AppRadii.md),
+                        border: Border.all(
+                          color: cs.outlineVariant.withValues(alpha: 0.55),
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.edit_rounded,
+                        size: 18,
+                        color: cs.primary,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            }
+
+            return Padding(
+              padding: EdgeInsets.all(spacing.lg),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(spacing.md),
+                    decoration: BoxDecoration(
+                      color: cs.primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(AppRadii.lg),
+                      border: Border.all(
+                        color: cs.primary.withValues(alpha: 0.22),
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.add_photo_alternate_outlined,
+                      size: 40,
+                      color: cs.primary,
+                    ),
+                  ),
+                  SizedBox(height: spacing.md),
+                  Text(
+                    'Tambah foto',
+                    textAlign: TextAlign.center,
+                    style: tt.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: cs.onSurface,
+                    ),
+                  ),
+                  SizedBox(height: spacing.xs),
+                  Text(
+                    'Ketuk untuk memilih dari galeri',
+                    textAlign: TextAlign.center,
+                    style: tt.bodySmall?.copyWith(
+                      color: cs.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
         ),
       ),
     );
   }
 
-  Widget _buildCategoryDropdown() {
-    final bool isDark = themeController.isDarkMode;
-    final Color labelTextColor =
-        isDark ? Colors.white.withOpacity(0.87) : ColorTheme.textPrimary;
-    final Color dropdownBackgroundColor =
-        isDark ? Colors.grey[800]! : Colors.white;
-    final Color dropdownBorderColor =
-        isDark ? Colors.grey[700]! : ColorTheme.border;
-    final Color prefixIconColor = ColorTheme.primary.withOpacity(
-      isDark ? 0.9 : 0.7,
-    );
+  // =========================
+  // CATEGORY DROPDOWN (theme-only)
+  // =========================
+  Widget _buildCategoryDropdown(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tt = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    final border = cs.outlineVariant.withValues(alpha: 0.65);
+    final bg = cs.surfaceContainerHighest.withValues(alpha: 0.30);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -664,58 +372,44 @@ class ServiceFormView extends GetView<ServiceController> {
         Row(
           children: [
             Text(
-              'Category',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: labelTextColor,
-                fontFamily: 'JosefinSans',
+              'Kategori',
+              style: tt.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: cs.onSurface,
               ),
             ),
             Text(
-              " *",
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: ColorTheme.error,
-                fontFamily: 'JosefinSans',
+              ' *',
+              style: tt.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: cs.error,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: spacing.sm),
         Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: dropdownBorderColor),
-            color: dropdownBackgroundColor,
-            boxShadow: [
-              BoxShadow(
-                color:
-                    isDark
-                        ? Colors.black.withOpacity(0.2)
-                        : Colors.black.withOpacity(0.02),
-                blurRadius: 4,
-                offset: const Offset(0, 1),
-              ),
-            ],
+            color: bg,
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            border: Border.all(color: border, width: 1),
           ),
           child: DropdownButtonFormField<String>(
-            style: TextStyle(
-              color: isDark ? Colors.white.withOpacity(0.87) : Colors.black87,
+            dropdownColor: cs.surface,
+            style: tt.bodyMedium?.copyWith(
+              color: cs.onSurface,
+              fontWeight: FontWeight.w700,
             ),
-            dropdownColor: dropdownBackgroundColor,
             decoration: InputDecoration(
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
+              labelText: 'Pilih kategori',
               border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: spacing.lg,
+                vertical: spacing.md,
+              ),
               prefixIcon: Icon(
                 Icons.category_outlined,
-                color: prefixIconColor,
+                color: cs.primary,
                 size: 20,
               ),
             ),
@@ -730,7 +424,7 @@ class ServiceFormView extends GetView<ServiceController> {
             },
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Please select a category';
+                return 'Kategori wajib dipilih';
               }
               return null;
             },
@@ -747,57 +441,58 @@ class ServiceFormView extends GetView<ServiceController> {
     );
   }
 
-  Widget _buildPriceTierSwitch() {
-    final bool isDark = themeController.isDarkMode;
-    final Color switchBackgroundColor =
-        isDark ? Colors.grey[700]! : Colors.grey[50]!;
-    final Color switchBorderColor =
-        isDark ? Colors.grey[600]! : Colors.grey[200]!;
-    final Color labelTextColor =
-        isDark ? Colors.white.withOpacity(0.87) : ColorTheme.textPrimary;
-    final Color secondaryTextColor =
-        isDark ? Colors.white.withOpacity(0.60) : Colors.grey[600]!;
-    final Color iconContainerBackgroundColor = ColorTheme.primary.withOpacity(
-      isDark ? 0.25 : 0.1,
-    );
+  // =========================
+  // PRICE TIER SWITCH (balanced)
+  // =========================
+  Widget _buildPriceTierSwitch(
+    BuildContext context, {
+    required Color infoTone,
+  }) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tt = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    final border = cs.outlineVariant.withValues(alpha: 0.65);
+    final bg = cs.surfaceContainerHighest.withValues(alpha: 0.28);
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(spacing.lg),
       decoration: BoxDecoration(
-        color: switchBackgroundColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: switchBorderColor),
+        color: bg,
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+        border: Border.all(color: border, width: 1),
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: EdgeInsets.all(spacing.sm),
             decoration: BoxDecoration(
-              color: iconContainerBackgroundColor,
-              borderRadius: BorderRadius.circular(8),
+              color: cs.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(AppRadii.md),
+              border: Border.all(color: cs.primary.withValues(alpha: 0.22)),
             ),
-            child: Icon(
-              Icons.layers_outlined,
-              color: ColorTheme.primary,
-              size: 20,
-            ),
+            child: Icon(Icons.layers_outlined, color: cs.primary, size: 20),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: spacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Multiple Price Tiers',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: labelTextColor,
+                  'Harga bertingkat',
+                  style: tt.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: cs.onSurface,
                   ),
                 ),
+                SizedBox(height: spacing.xs),
                 Text(
-                  'Enable different prices for age ranges',
-                  style: TextStyle(fontSize: 12, color: secondaryTextColor),
+                  'Aktifkan jika harga berbeda untuk rentang usia tertentu.',
+                  style: tt.bodySmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
@@ -808,9 +503,10 @@ class ServiceFormView extends GetView<ServiceController> {
               onChanged: (value) {
                 hasPriceTiers.value = value;
               },
-              activeColor: ColorTheme.primary,
-              inactiveTrackColor: isDark ? Colors.grey[600] : Colors.grey[300],
-              inactiveThumbColor: isDark ? Colors.grey[400] : Colors.grey[100],
+              activeColor: cs.primary,
+              activeTrackColor: cs.primary.withValues(alpha: 0.30),
+              inactiveThumbColor: cs.onSurfaceVariant.withValues(alpha: 0.70),
+              inactiveTrackColor: cs.outlineVariant.withValues(alpha: 0.55),
             ),
           ),
         ],
@@ -818,110 +514,89 @@ class ServiceFormView extends GetView<ServiceController> {
     );
   }
 
-  Widget _buildSimplePricing() {
-    final bool isDark = themeController.isDarkMode;
-    final Color infoBoxColor =
-        isDark ? Colors.blue[900]!.withOpacity(0.5) : Colors.blue[50]!;
-    final Color infoBoxBorderColor =
-        isDark ? Colors.blue[700]! : Colors.blue[200]!;
-    final Color infoBoxTextColor =
-        isDark ? Colors.blue[200]! : Colors.blue[700]!;
-    final Color labelTextColor =
-        isDark ? Colors.white.withOpacity(0.87) : ColorTheme.textPrimary;
+  // =========================
+  // SIMPLE PRICING
+  // =========================
+  Widget _buildSimplePricing(BuildContext context, {required Color infoTone}) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tt = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
 
     return Column(
       key: const ValueKey('simple'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: infoBoxColor,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: infoBoxBorderColor),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.info_outline, color: infoBoxTextColor, size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Single price for all age ranges',
-                  style: TextStyle(
-                    color: infoBoxTextColor,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
+        _InfoBanner(
+          icon: Icons.info_outline_rounded,
+          tone: infoTone,
+          text: 'Harga tunggal berlaku untuk semua rentang usia.',
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: spacing.lg),
         AppTextField(
           controller: priceController,
-          label: 'Price (Rp)',
-          placeholder: 'Enter service price',
+          label: 'Harga (Rp)',
+          placeholder: 'Contoh: 150000',
           keyboardType: TextInputType.number,
           isRequired: true,
           validator: (value) {
             if (value == null || value.isEmpty) {
-              return 'Price is required';
+              return 'Harga wajib diisi';
             }
-            if (double.tryParse(value) == null || double.parse(value) < 0) {
-              return 'Please enter a valid price';
+            final parsed = double.tryParse(value);
+            if (parsed == null || parsed < 0) {
+              return 'Masukkan harga yang valid';
             }
             return null;
           },
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: spacing.lg),
         Text(
-          'Baby Age Range',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: labelTextColor,
+          'Rentang usia bayi',
+          style: tt.titleSmall?.copyWith(
+            fontWeight: FontWeight.w900,
+            color: cs.onSurface,
           ),
         ),
-        const SizedBox(height: 12),
-        // ✨ --- PERBAIKAN DI SINI --- ✨
-        // Mengubah Row menjadi Column untuk mencegah overflow horizontal.
+        SizedBox(height: spacing.sm),
         Column(
           children: [
             AppTextField(
               controller: minAgeController,
-              label: 'Min Age (months)',
-              placeholder: 'Min',
+              label: 'Usia minimum (bulan)',
+              placeholder: 'Contoh: 0',
               keyboardType: TextInputType.number,
               isRequired: true,
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Required';
+                  return 'Wajib diisi';
                 }
-                if (int.tryParse(value) == null || int.parse(value) < 0) {
-                  return 'Invalid';
+                final parsed = int.tryParse(value);
+                if (parsed == null || parsed < 0) {
+                  return 'Tidak valid';
                 }
                 return null;
               },
             ),
-            const SizedBox(height: 20), // Jarak vertikal
+            SizedBox(height: spacing.lg),
             AppTextField(
               controller: maxAgeController,
-              label: 'Max Age (months)',
-              placeholder: 'Max',
+              label: 'Usia maksimum (bulan)',
+              placeholder: 'Contoh: 12',
               keyboardType: TextInputType.number,
               isRequired: true,
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Required';
+                  return 'Wajib diisi';
                 }
                 final minAgeText = minAgeController.text;
-                if (minAgeText.isEmpty || int.tryParse(minAgeText) == null) {
-                  return 'Enter min age first';
+                final minParsed = int.tryParse(minAgeText);
+                if (minParsed == null) {
+                  return 'Isi usia minimum dulu';
                 }
-                if (int.tryParse(value) == null ||
-                    int.parse(value) <= int.parse(minAgeText)) {
-                  return 'Invalid';
+                final maxParsed = int.tryParse(value);
+                if (maxParsed == null || maxParsed <= minParsed) {
+                  return 'Harus lebih besar dari minimum';
                 }
                 return null;
               },
@@ -932,55 +607,27 @@ class ServiceFormView extends GetView<ServiceController> {
     );
   }
 
-  Widget _buildPriceTiers() {
-    final bool isDark = themeController.isDarkMode;
-    final Color infoBoxColor =
-        isDark ? Colors.orange[900]!.withOpacity(0.5) : Colors.orange[50]!;
-    final Color infoBoxBorderColor =
-        isDark ? Colors.orange[700]! : Colors.orange[200]!;
-    final Color infoBoxTextColor =
-        isDark ? Colors.orange[200]! : Colors.orange[700]!;
-    final Color tierCardBackgroundColor =
-        isDark ? const Color(0xFF2A2A2A) : Colors.white;
-    final Color tierCardBorderColor = ColorTheme.primary.withOpacity(
-      isDark ? 0.4 : 0.2,
-    );
-    final Color tierShadowColor =
-        isDark ? Colors.black.withOpacity(0.3) : Colors.black.withOpacity(0.03);
-    final Color deleteButtonBackgroundColor =
-        isDark ? Colors.red.withOpacity(0.2) : Colors.red[50]!;
-    final Color deleteIconColor =
-        isDark ? Colors.redAccent[100]! : Colors.red[400]!;
+  // =========================
+  // TIERS PRICING
+  // =========================
+  Widget _buildPriceTiers(
+    BuildContext context, {
+    required Color warningTone,
+    required Color dangerTone,
+  }) {
+    final theme = Theme.of(context);
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
 
     return Column(
       key: const ValueKey('tiers'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: infoBoxColor,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: infoBoxBorderColor),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.info_outline, color: infoBoxTextColor, size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Create multiple pricing tiers for different age ranges',
-                  style: TextStyle(
-                    color: infoBoxTextColor,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
+        _InfoBanner(
+          icon: Icons.info_outline_rounded,
+          tone: warningTone,
+          text: 'Buat beberapa tier untuk rentang usia yang berbeda.',
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: spacing.lg),
         Obx(
           () => Column(
             children: [
@@ -989,205 +636,130 @@ class ServiceFormView extends GetView<ServiceController> {
                   _initializePriceTierControllers(index);
                 }
                 final currentTierControllers = priceTierControllers[index]!;
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: tierCardBackgroundColor,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: tierCardBorderColor),
-                    boxShadow: [
-                      BoxShadow(
-                        color: tierShadowColor,
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
+                return _TierCard(
+                  index: index,
+                  canDelete: priceTiers.length > 1,
+                  dangerTone: dangerTone,
+                  onDelete: () {
+                    priceTiers.removeAt(index);
+
+                    final tempControllers =
+                        Map<int, Map<String, TextEditingController>>.from(
+                          priceTierControllers,
+                        );
+                    priceTierControllers.clear();
+                    tempControllers.remove(index);
+
+                    int newKey = 0;
+                    for (var oldKey in tempControllers.keys.toList()..sort()) {
+                      final controllerSet = tempControllers[oldKey];
+                      if (controllerSet != null) {
+                        priceTierControllers[newKey] = controllerSet;
+                        newKey++;
+                      }
+                    }
+                  },
+                  child: Column(
+                    children: [
+                      AppTextField(
+                        label: 'Usia minimum (bulan)',
+                        placeholder: 'Contoh: 0',
+                        keyboardType: TextInputType.number,
+                        controller: currentTierControllers['minAge'],
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Wajib diisi';
+                          }
+                          final parsed = int.tryParse(value);
+                          if (parsed == null || parsed < 0) {
+                            return 'Tidak valid';
+                          }
+                          return null;
+                        },
+                        onChanged: (value) {
+                          final parsed = int.tryParse(value);
+                          if (parsed != null) {
+                            priceTiers[index]['minAge'] = parsed;
+                          }
+                        },
+                      ),
+                      SizedBox(height: spacing.md),
+                      AppTextField(
+                        label: 'Usia maksimum (bulan)',
+                        placeholder: 'Contoh: 12',
+                        keyboardType: TextInputType.number,
+                        controller: currentTierControllers['maxAge'],
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Wajib diisi';
+                          }
+                          final minAgeText =
+                              currentTierControllers['minAge']!.text;
+                          final minParsed = int.tryParse(minAgeText);
+                          if (minParsed == null) {
+                            return 'Isi minimum dulu';
+                          }
+                          final maxParsed = int.tryParse(value);
+                          if (maxParsed == null || maxParsed <= minParsed) {
+                            return 'Harus > minimum';
+                          }
+                          return null;
+                        },
+                        onChanged: (value) {
+                          final parsed = int.tryParse(value);
+                          if (parsed != null) {
+                            priceTiers[index]['maxAge'] = parsed;
+                          }
+                        },
+                      ),
+                      SizedBox(height: spacing.md),
+                      AppTextField(
+                        label: 'Harga (Rp)',
+                        placeholder: 'Contoh: 150000',
+                        keyboardType: TextInputType.number,
+                        controller: currentTierControllers['price'],
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Wajib diisi';
+                          }
+                          final parsed = double.tryParse(value);
+                          if (parsed == null || parsed < 0) {
+                            return 'Tidak valid';
+                          }
+                          return null;
+                        },
+                        onChanged: (value) {
+                          final parsed = double.tryParse(value);
+                          if (parsed != null) {
+                            priceTiers[index]['price'] = parsed;
+                          }
+                        },
                       ),
                     ],
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: ColorTheme.primary.withOpacity(
-                                  isDark ? 0.3 : 0.1,
-                                ),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                'Tier ${index + 1}',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: ColorTheme.primary,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                            const Spacer(),
-                            if (priceTiers.length > 1)
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: deleteButtonBackgroundColor,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: IconButton(
-                                  icon: Icon(
-                                    Icons.delete_outline,
-                                    color: deleteIconColor,
-                                    size: 20,
-                                  ),
-                                  onPressed: () {
-                                    priceTiers.removeAt(index);
-                                    final tempControllers = Map<
-                                      int,
-                                      Map<String, TextEditingController>
-                                    >.from(priceTierControllers);
-                                    priceTierControllers.clear();
-                                    tempControllers.remove(index);
-                                    int newKey = 0;
-                                    for (var oldKey
-                                        in tempControllers.keys.toList()
-                                          ..sort()) {
-                                      final controllerSet =
-                                          tempControllers[oldKey];
-                                      if (controllerSet != null) {
-                                        priceTierControllers[newKey] =
-                                            controllerSet;
-                                        newKey++;
-                                      }
-                                    }
-                                  },
-                                ),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        // ✨ --- PERBAIKAN DI SINI JUGA --- ✨
-                        Column(
-                          children: [
-                            AppTextField(
-                              placeholder: 'Min Age (months)',
-                              keyboardType: TextInputType.number,
-                              controller: currentTierControllers['minAge'],
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Required';
-                                }
-                                if (int.tryParse(value) == null ||
-                                    int.parse(value) < 0) {
-                                  return 'Invalid age';
-                                }
-                                return null;
-                              },
-                              onChanged: (value) {
-                                if (value.isNotEmpty &&
-                                    int.tryParse(value) != null) {
-                                  priceTiers[index]['minAge'] = int.parse(
-                                    value,
-                                  );
-                                }
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            AppTextField(
-                              placeholder: 'Max Age (months)',
-                              keyboardType: TextInputType.number,
-                              controller: currentTierControllers['maxAge'],
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Required';
-                                }
-                                final minAgeText =
-                                    currentTierControllers['minAge']!.text;
-                                if (minAgeText.isEmpty ||
-                                    int.tryParse(minAgeText) == null) {
-                                  return 'Min age first';
-                                }
-                                if (int.tryParse(value) == null ||
-                                    int.parse(value) <= int.parse(minAgeText)) {
-                                  return '> min age';
-                                }
-                                return null;
-                              },
-                              onChanged: (value) {
-                                if (value.isNotEmpty &&
-                                    int.tryParse(value) != null) {
-                                  priceTiers[index]['maxAge'] = int.parse(
-                                    value,
-                                  );
-                                }
-                              },
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        AppTextField(
-                          placeholder: 'Price (Rp)',
-                          keyboardType: TextInputType.number,
-                          controller: currentTierControllers['price'],
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Required';
-                            }
-                            if (double.tryParse(value) == null ||
-                                double.parse(value) < 0) {
-                              return 'Invalid price';
-                            }
-                            return null;
-                          },
-                          onChanged: (value) {
-                            if (value.isNotEmpty &&
-                                double.tryParse(value) != null) {
-                              priceTiers[index]['price'] = double.parse(value);
-                            }
-                          },
-                        ),
-                      ],
-                    ),
                   ),
                 );
               }),
             ],
           ),
         ),
-        const SizedBox(height: 16),
-        Center(
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: ColorTheme.primary.withValues(
-                    alpha: isDark ? 0.2 : 0.1,
-                  ),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: AppButton(
-              text: 'Add Price Tier',
-              type: AppButtonType.outline,
-              icon: Icons.add,
-              onPressed: () {
-                final lastMaxAge =
-                    priceTiers.isNotEmpty ? priceTiers.last['maxAge'] ?? 0 : 0;
-                final newIndex = priceTiers.length;
-                priceTiers.add({
-                  'minAge': lastMaxAge + 1,
-                  'maxAge': lastMaxAge + 12,
-                  'price': 0.0,
-                });
-                _initializePriceTierControllers(newIndex);
-              },
-            ),
+        SizedBox(height: spacing.md),
+        Align(
+          alignment: Alignment.center,
+          child: AppButton(
+            text: 'Tambah Tier',
+            type: AppButtonType.outline,
+            icon: Icons.add_rounded,
+            onPressed: () {
+              final lastMaxAge =
+                  priceTiers.isNotEmpty ? priceTiers.last['maxAge'] ?? 0 : 0;
+              final newIndex = priceTiers.length;
+              priceTiers.add({
+                'minAge': lastMaxAge + 1,
+                'maxAge': lastMaxAge + 12,
+                'price': 0.0,
+              });
+              _initializePriceTierControllers(newIndex);
+            },
           ),
         ),
       ],
@@ -1235,11 +807,14 @@ class ServiceFormView extends GetView<ServiceController> {
         }
 
         if (!isValid) {
+          final theme = Theme.of(Get.context!);
+          final cs = theme.colorScheme;
+
           Get.snackbar(
-            'Validation Error',
-            'Please complete all price tier fields correctly.',
-            backgroundColor: Colors.red,
-            colorText: Colors.white,
+            'Validasi gagal',
+            'Lengkapi semua field tier dengan benar.',
+            backgroundColor: cs.error,
+            colorText: cs.onError,
             snackPosition: SnackPosition.BOTTOM,
           );
           return;
@@ -1280,13 +855,437 @@ class ServiceFormView extends GetView<ServiceController> {
         );
       }
     } else {
+      final theme = Theme.of(Get.context!);
+      final cs = theme.colorScheme;
+
       Get.snackbar(
-        'Validation Error',
-        'Please fill all required fields correctly.',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+        'Validasi gagal',
+        'Periksa kembali field yang wajib diisi.',
+        backgroundColor: cs.error,
+        colorText: cs.onError,
         snackPosition: SnackPosition.BOTTOM,
       );
     }
+  }
+}
+
+// =========================
+// UI PARTS (theme-only)
+// =========================
+
+class _HeaderCard extends StatelessWidget {
+  const _HeaderCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tt = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    final border = cs.primary.withValues(alpha: 0.22);
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(spacing.lg),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+        border: Border.all(color: border, width: 1),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            cs.primary.withValues(alpha: 0.14),
+            cs.primary.withValues(alpha: 0.05),
+          ],
+        ),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: EdgeInsets.all(spacing.sm),
+            decoration: BoxDecoration(
+              color: cs.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(AppRadii.lg),
+              border: Border.all(color: cs.primary.withValues(alpha: 0.20)),
+            ),
+            child: Icon(icon, size: 26, color: cs.primary),
+          ),
+          SizedBox(height: spacing.sm),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: tt.titleLarge?.copyWith(
+              fontWeight: FontWeight.w900,
+              color: cs.onSurface,
+            ),
+          ),
+          SizedBox(height: spacing.xs),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: tt.bodyMedium?.copyWith(
+              color: cs.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionCard extends StatelessWidget {
+  const _SectionCard({
+    required this.title,
+    required this.subtitle,
+    required this.leadingIcon,
+    required this.child,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData leadingIcon;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tt = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    final border = cs.outlineVariant.withValues(alpha: 0.65);
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(spacing.lg),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+        border: Border.all(color: border, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: cs.shadow.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(spacing.sm),
+                decoration: BoxDecoration(
+                  color: cs.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppRadii.md),
+                  border: Border.all(color: cs.primary.withValues(alpha: 0.20)),
+                ),
+                child: Icon(leadingIcon, color: cs.primary, size: 20),
+              ),
+              SizedBox(width: spacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: tt.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: cs.onSurface,
+                      ),
+                    ),
+                    SizedBox(height: spacing.xs),
+                    Text(
+                      subtitle,
+                      style: tt.bodySmall?.copyWith(
+                        color: cs.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: spacing.lg),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoBanner extends StatelessWidget {
+  const _InfoBanner({
+    required this.icon,
+    required this.tone,
+    required this.text,
+  });
+
+  final IconData icon;
+  final Color tone;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tt = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    return Container(
+      padding: EdgeInsets.all(spacing.md),
+      decoration: BoxDecoration(
+        color: tone.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        border: Border.all(color: tone.withValues(alpha: 0.25), width: 1),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: tone, size: 20),
+          SizedBox(width: spacing.sm),
+          Expanded(
+            child: Text(
+              text,
+              style: tt.bodySmall?.copyWith(
+                color: cs.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TierCard extends StatelessWidget {
+  const _TierCard({
+    required this.index,
+    required this.canDelete,
+    required this.dangerTone,
+    required this.onDelete,
+    required this.child,
+  });
+
+  final int index;
+  final bool canDelete;
+  final Color dangerTone;
+  final VoidCallback onDelete;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tt = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    final border = cs.outlineVariant.withValues(alpha: 0.65);
+
+    return Container(
+      margin: EdgeInsets.only(bottom: spacing.md),
+      padding: EdgeInsets.all(spacing.lg),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+        border: Border.all(color: border, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: cs.shadow.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: spacing.md,
+                  vertical: spacing.xs,
+                ),
+                decoration: BoxDecoration(
+                  color: cs.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppRadii.xl),
+                  border: Border.all(color: cs.primary.withValues(alpha: 0.20)),
+                ),
+                child: Text(
+                  'Tier ${index + 1}',
+                  style: tt.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: cs.primary,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              if (canDelete)
+                IconButton(
+                  onPressed: onDelete,
+                  tooltip: 'Hapus tier',
+                  icon: Icon(Icons.delete_outline_rounded, color: dangerTone),
+                ),
+            ],
+          ),
+          SizedBox(height: spacing.md),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _LoadingState extends StatelessWidget {
+  const _LoadingState({required this.title, required this.subtitle});
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tt = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    return Center(
+      child: Container(
+        padding: EdgeInsets.all(spacing.lg),
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: BorderRadius.circular(AppRadii.xl),
+          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.65)),
+          boxShadow: [
+            BoxShadow(
+              color: cs.shadow.withValues(alpha: 0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(cs.primary),
+            ),
+            SizedBox(height: spacing.md),
+            Text(
+              title,
+              style: tt.titleSmall?.copyWith(
+                fontWeight: FontWeight.w900,
+                color: cs.onSurface,
+              ),
+            ),
+            SizedBox(height: spacing.xs),
+            Text(
+              subtitle,
+              style: tt.bodySmall?.copyWith(
+                color: cs.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MessageState extends StatelessWidget {
+  const _MessageState({
+    required this.icon,
+    required this.title,
+    required this.message,
+    required this.buttonLabel,
+    required this.onPressed,
+    required this.tone,
+  });
+
+  final IconData icon;
+  final String title;
+  final String message;
+  final String buttonLabel;
+  final VoidCallback onPressed;
+  final Color tone;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tt = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    return Center(
+      child: Container(
+        margin: EdgeInsets.all(spacing.lg),
+        padding: EdgeInsets.all(spacing.lg),
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: BorderRadius.circular(AppRadii.xl),
+          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.65)),
+          boxShadow: [
+            BoxShadow(
+              color: cs.shadow.withValues(alpha: 0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: EdgeInsets.all(spacing.md),
+              decoration: BoxDecoration(
+                color: tone.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(AppRadii.lg),
+                border: Border.all(color: tone.withValues(alpha: 0.22)),
+              ),
+              child: Icon(icon, color: tone, size: 40),
+            ),
+            SizedBox(height: spacing.md),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: tt.titleMedium?.copyWith(
+                fontWeight: FontWeight.w900,
+                color: cs.onSurface,
+              ),
+            ),
+            SizedBox(height: spacing.xs),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: tt.bodySmall?.copyWith(
+                color: cs.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            SizedBox(height: spacing.lg),
+            AppButton(
+              text: buttonLabel,
+              onPressed: onPressed,
+              type: AppButtonType.primary,
+              icon: Icons.arrow_forward_rounded,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

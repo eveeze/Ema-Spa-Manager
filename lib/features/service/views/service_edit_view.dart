@@ -1,14 +1,19 @@
+// lib/features/service/views/service_edit_view.dart
 import 'dart:io';
+import 'dart:math' as math;
+import 'dart:ui';
+
+import 'package:emababyspa/common/layouts/main_layout.dart';
+import 'package:emababyspa/common/theme/app_theme.dart';
+import 'package:emababyspa/common/theme/semantic_colors.dart';
+import 'package:emababyspa/common/widgets/app_button.dart';
+import 'package:emababyspa/common/widgets/app_text_field.dart';
+import 'package:emababyspa/features/service/controllers/service_controller.dart';
+import 'package:emababyspa/features/theme/controllers/theme_controller.dart';
 import 'package:emababyspa/utils/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:emababyspa/common/theme/color_theme.dart';
-import 'package:emababyspa/common/layouts/main_layout.dart';
-import 'package:emababyspa/features/service/controllers/service_controller.dart';
-import 'package:emababyspa/common/widgets/app_button.dart';
-import 'package:emababyspa/common/widgets/app_text_field.dart';
-import 'package:emababyspa/features/theme/controllers/theme_controller.dart';
 
 class ServiceEditView extends GetView<ServiceController> {
   ServiceEditView({super.key});
@@ -39,26 +44,27 @@ class ServiceEditView extends GetView<ServiceController> {
     _fetchServiceIfNeeded();
 
     return MainLayout.subPage(
-      title: 'Edit Service',
+      title: 'Edit Layanan',
       parentRoute: AppRoutes.services,
       child: Obx(() {
-        if (controller.isFetchingServiceDetail.value) {
-          return _buildLoadingState();
-        }
-
-        if (controller.isLoadingCategories.value) {
-          return _buildLoadingState();
+        if (controller.isFetchingServiceDetail.value ||
+            controller.isLoadingCategories.value) {
+          return const _LoadingState(
+            title: 'Memuat layanan…',
+            subtitle: 'Menyiapkan editor layanan untuk kamu.',
+          );
         }
 
         if (controller.selectedService.value == null) {
-          return _buildErrorState(
-            icon: Icons.error_outline,
-            title: 'Service Not Found',
-            message: 'No service selected or service not found.',
+          return _MessageState(
+            icon: Icons.error_outline_rounded,
+            title: 'Layanan tidak ditemukan',
+            message:
+                'Tidak ada layanan yang dipilih atau data layanan tidak ada.',
             actions: [
               AppButton(
-                text: 'Refresh',
-                icon: Icons.refresh,
+                text: 'Muat Ulang',
+                icon: Icons.refresh_rounded,
                 onPressed: () => _fetchServiceIfNeeded(),
                 type: AppButtonType.primary,
                 isFullWidth: true,
@@ -66,8 +72,8 @@ class ServiceEditView extends GetView<ServiceController> {
               ),
               const SizedBox(height: 12),
               AppButton(
-                text: 'Go Back',
-                icon: Icons.arrow_back,
+                text: 'Kembali',
+                icon: Icons.arrow_back_rounded,
                 onPressed: () => Get.back(),
                 type: AppButtonType.outline,
                 isFullWidth: true,
@@ -78,14 +84,14 @@ class ServiceEditView extends GetView<ServiceController> {
         }
 
         if (controller.categoryError.isNotEmpty) {
-          return _buildErrorState(
-            icon: Icons.warning_amber_outlined,
-            title: 'Error Loading Categories',
+          return _MessageState(
+            icon: Icons.warning_amber_rounded,
+            title: 'Gagal memuat kategori',
             message: controller.categoryError.value,
             actions: [
               AppButton(
-                text: 'Refresh',
-                icon: Icons.refresh,
+                text: 'Coba Lagi',
+                icon: Icons.refresh_rounded,
                 onPressed: controller.fetchCategories,
                 type: AppButtonType.primary,
                 isFullWidth: true,
@@ -96,14 +102,15 @@ class ServiceEditView extends GetView<ServiceController> {
         }
 
         if (controller.serviceCategories.isEmpty) {
-          return _buildErrorState(
+          return _MessageState(
             icon: Icons.category_outlined,
-            title: 'No Categories Found',
-            message: 'Please add categories first before editing services.',
+            title: 'Kategori belum tersedia',
+            message:
+                'Tambahkan kategori terlebih dahulu agar kamu bisa mengedit layanan.',
             actions: [
               AppButton(
-                text: 'Go to Categories',
-                icon: Icons.add_box,
+                text: 'Kelola Kategori',
+                icon: Icons.add_box_rounded,
                 onPressed: () => Get.toNamed(AppRoutes.serviceCategoryList),
                 type: AppButtonType.primary,
                 isFullWidth: true,
@@ -113,243 +120,39 @@ class ServiceEditView extends GetView<ServiceController> {
           );
         }
 
-        return _buildForm(context);
+        final theme = Theme.of(context);
+        final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+        // ✅ Bulatan background dihilangkan total (sesuai request)
+        return Stack(
+          children: [
+            Padding(
+              padding: EdgeInsets.only(bottom: spacing.xxl + spacing.lg),
+              child: _buildEditor(context),
+            ),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: _GlassBottomBar(child: _buildSubmitButton(context)),
+            ),
+          ],
+        );
       }),
     );
   }
 
-  Widget _buildLoadingState() {
-    return Container(
-      color:
-          themeController.isDarkMode
-              ? ColorTheme.backgroundDark
-              : ColorTheme.background,
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                color:
-                    themeController.isDarkMode
-                        ? ColorTheme.surfaceDark
-                        : ColorTheme.surface,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: (themeController.isDarkMode
-                            ? ColorTheme.primaryDark
-                            : ColorTheme.primary)
-                        .withValues(alpha: 0.08),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                    spreadRadius: 0,
-                  ),
-                  BoxShadow(
-                    color: (themeController.isDarkMode
-                            ? ColorTheme.textPrimaryDark
-                            : ColorTheme.textPrimary)
-                        .withValues(alpha: 0.02),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                    spreadRadius: 0,
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          (themeController.isDarkMode
-                                  ? ColorTheme.primaryDark
-                                  : ColorTheme.primary)
-                              .withValues(alpha: 0.1),
-                          (themeController.isDarkMode
-                                  ? ColorTheme.primaryDark
-                                  : ColorTheme.primary)
-                              .withValues(alpha: 0.05),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: SizedBox(
-                        width: 32,
-                        height: 32,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 3,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            themeController.isDarkMode
-                                ? ColorTheme.primaryDark
-                                : ColorTheme.primary,
-                          ),
-                          strokeCap: StrokeCap.round,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Loading service data...',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color:
-                          themeController.isDarkMode
-                              ? ColorTheme.textSecondaryDark
-                              : ColorTheme.textPrimary,
-                      fontFamily: 'JosefinSans',
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Please wait while we fetch the service details',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color:
-                          themeController.isDarkMode
-                              ? ColorTheme.textTertiaryDark
-                              : ColorTheme.textSecondary,
-                      fontFamily: 'JosefinSans',
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildErrorState({
-    required IconData icon,
-    required String title,
-    required String message,
-    required List<Widget> actions,
-  }) {
-    return Container(
-      color:
-          themeController.isDarkMode
-              ? ColorTheme.backgroundDark
-              : ColorTheme.background,
-      child: Center(
-        child: Container(
-          margin: const EdgeInsets.all(24),
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color:
-                themeController.isDarkMode
-                    ? ColorTheme.surfaceDark
-                    : ColorTheme.surface,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: (themeController.isDarkMode
-                        ? ColorTheme.primaryDark
-                        : ColorTheme.primary)
-                    .withValues(alpha: 0.08),
-                blurRadius: 24,
-                offset: const Offset(0, 12),
-                spreadRadius: 0,
-              ),
-              BoxShadow(
-                color: (themeController.isDarkMode
-                        ? ColorTheme.textPrimaryDark
-                        : ColorTheme.textPrimary)
-                    .withValues(alpha: 0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
-                spreadRadius: 0,
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      (themeController.isDarkMode
-                              ? ColorTheme.primaryDark
-                              : ColorTheme.primary)
-                          .withValues(alpha: 0.1),
-                      (themeController.isDarkMode
-                              ? ColorTheme.primaryDark
-                              : ColorTheme.primary)
-                          .withValues(alpha: 0.05),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  icon,
-                  size: 48,
-                  color:
-                      themeController.isDarkMode
-                          ? ColorTheme.primaryDark
-                          : ColorTheme.primary,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color:
-                      themeController.isDarkMode
-                          ? ColorTheme.textPrimaryDark
-                          : ColorTheme.textPrimary,
-                  fontFamily: 'JosefinSans',
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                message,
-                style: TextStyle(
-                  fontSize: 15,
-                  color:
-                      themeController.isDarkMode
-                          ? ColorTheme.textTertiaryDark
-                          : ColorTheme.textSecondary,
-                  fontFamily: 'JosefinSans',
-                  height: 1.5,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
-              ...actions,
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
+  // =========================
+  // Data init (DO NOT CHANGE LOGIC)
+  // =========================
   Future<void> _fetchServiceIfNeeded() async {
     if (serviceId.isEmpty) {
+      final cs = Theme.of(Get.context!).colorScheme;
       Get.snackbar(
         'Error',
         'No service ID provided',
-        backgroundColor:
-            themeController.isDarkMode
-                ? ColorTheme.errorDark
-                : ColorTheme.error,
-        colorText: ColorTheme.textInverse,
+        backgroundColor: cs.error,
+        colorText: cs.onError,
       );
       return;
     }
@@ -422,195 +225,220 @@ class ServiceEditView extends GetView<ServiceController> {
     };
   }
 
-  Widget _buildForm(BuildContext context) {
-    return Container(
-      color:
-          themeController.isDarkMode
-              ? ColorTheme.backgroundDark
-              : ColorTheme.background,
-      child: Form(
-        key: formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildSectionHeader('Service Details', Icons.edit_outlined),
-              const SizedBox(height: 24),
-              _buildProgressIndicator(),
-              const SizedBox(height: 32),
-              _buildImagePickerCard(),
-              const SizedBox(height: 24),
-              _buildCard(
+  // =========================
+  // UI: Editor layout (UI ONLY)
+  // =========================
+  Widget _buildEditor(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+    final semantic = theme.extension<AppSemanticColors>();
+
+    final infoTone = semantic?.info ?? cs.secondary;
+    final warningTone = semantic?.warning ?? cs.tertiary;
+    final dangerTone = semantic?.danger ?? cs.error;
+
+    return Form(
+      key: formKey,
+      child: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(
+              spacing.lg,
+              spacing.lg,
+              spacing.lg,
+              spacing.md,
+            ),
+            sliver: const SliverToBoxAdapter(
+              child: _EditorHero(
+                title: 'Edit Layanan',
+                subtitle:
+                    'Perbarui detail, foto, dan harga—biar tampil rapi & profesional.',
+                leading: Icons.tune_rounded,
+              ),
+            ),
+          ),
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(spacing.lg, 0, spacing.lg, spacing.lg),
+            sliver: SliverToBoxAdapter(
+              child: _InfoPill(
+                tone: infoTone,
+                icon: Icons.tips_and_updates_outlined,
+                text:
+                    'Tips: aktifkan “Harga bertingkat” kalau tarif berbeda berdasarkan usia bayi.',
+              ),
+            ),
+          ),
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(spacing.lg, 0, spacing.lg, spacing.lg),
+            sliver: SliverToBoxAdapter(
+              child: LayoutBuilder(
+                builder: (context, c) {
+                  final isWide = c.maxWidth >= 520;
+                  final gap = SizedBox(height: spacing.md, width: spacing.md);
+
+                  final imageCard = _SectionCard(
+                    title: 'Foto Layanan',
+                    subtitle: 'Tap untuk memilih / mengganti foto.',
+                    icon: Icons.image_outlined,
+                    child: _buildImagePicker(context),
+                  );
+
+                  final summaryCard = _SectionCard(
+                    title: 'Ringkasan',
+                    subtitle: 'Sekilas status konfigurasi layanan.',
+                    icon: Icons.insights_outlined,
+                    child: Obx(
+                      () => _SummaryTiles(
+                        tiles: [
+                          _SummaryTile(
+                            label: 'Nama',
+                            value:
+                                nameController.text.isEmpty
+                                    ? '—'
+                                    : nameController.text,
+                            icon: Icons.badge_outlined,
+                          ),
+                          _SummaryTile(
+                            label: 'Durasi',
+                            value:
+                                durationController.text.isEmpty
+                                    ? '—'
+                                    : '${durationController.text} menit',
+                            icon: Icons.schedule_rounded,
+                          ),
+                          _SummaryTile(
+                            label: 'Mode Harga',
+                            value:
+                                hasPriceTiers.value ? 'Bertingkat' : 'Tunggal',
+                            icon: Icons.payments_outlined,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+
+                  if (!isWide) {
+                    return Column(children: [imageCard, gap, summaryCard]);
+                  }
+
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: imageCard),
+                      gap,
+                      Expanded(child: summaryCard),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(spacing.lg, 0, spacing.lg, spacing.lg),
+            sliver: SliverToBoxAdapter(
+              child: _SectionCard(
+                title: 'Informasi Dasar',
+                subtitle: 'Nama, deskripsi, kategori, dan durasi.',
+                icon: Icons.info_outline_rounded,
                 child: Column(
                   children: [
-                    _buildSectionTitle('Basic Information'),
-                    const SizedBox(height: 24),
                     AppTextField(
                       controller: nameController,
-                      label: 'Service Name',
-                      placeholder: 'Enter service name',
+                      label: 'Nama layanan',
+                      placeholder: 'Contoh: Baby Spa Premium',
                       isRequired: true,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Service name is required';
+                          return 'Nama layanan wajib diisi';
                         }
                         return null;
                       },
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: spacing.lg),
                     AppTextField(
                       controller: descriptionController,
-                      label: 'Description',
-                      placeholder: 'Enter service description',
+                      label: 'Deskripsi',
+                      placeholder:
+                          'Tulis singkat: manfaat, durasi, dan highlight layanan',
                       maxLines: 3,
                     ),
-                    const SizedBox(height: 20),
-                    _buildCategoryDropdown(),
-                    const SizedBox(height: 20),
+                    SizedBox(height: spacing.lg),
+                    _buildCategoryDropdown(context),
+                    SizedBox(height: spacing.lg),
                     AppTextField(
                       controller: durationController,
-                      label: 'Duration (minutes)',
-                      placeholder: 'Enter service duration',
+                      label: 'Durasi (menit)',
+                      placeholder: 'Contoh: 60',
                       keyboardType: TextInputType.number,
                       isRequired: true,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Duration is required';
+                          return 'Durasi wajib diisi';
                         }
                         if (int.tryParse(value) == null ||
                             int.parse(value) <= 0) {
-                          return 'Please enter a valid duration';
+                          return 'Masukkan durasi yang valid';
                         }
                         return null;
                       },
                     ),
+                    SizedBox(height: spacing.md),
+                    _InlineHint(
+                      icon: Icons.check_circle_outline_rounded,
+                      tone: cs.primary,
+                      text: 'Pastikan durasi sesuai paket agar jadwal akurat.',
+                    ),
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
-              _buildCard(
+            ),
+          ),
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(spacing.lg, 0, spacing.lg, spacing.xl),
+            sliver: SliverToBoxAdapter(
+              child: _SectionCard(
+                title: 'Harga',
+                subtitle: 'Tunggal atau bertingkat per rentang usia.',
+                icon: Icons.payments_outlined,
                 child: Column(
                   children: [
-                    _buildSectionTitle('Pricing Configuration'),
-                    const SizedBox(height: 24),
-                    _buildPriceTierSwitch(),
-                    const SizedBox(height: 24),
+                    _buildPriceTierSwitch(context),
+                    SizedBox(height: spacing.lg),
                     Obx(
                       () => AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 400),
+                        duration: const Duration(milliseconds: 260),
+                        switchInCurve: Curves.easeOutCubic,
+                        switchOutCurve: Curves.easeIn,
                         transitionBuilder: (child, animation) {
                           return FadeTransition(
                             opacity: animation,
                             child: SlideTransition(
                               position: Tween<Offset>(
-                                begin: const Offset(0, 0.1),
+                                begin: const Offset(0, 0.07),
                                 end: Offset.zero,
-                              ).animate(
-                                CurvedAnimation(
-                                  parent: animation,
-                                  curve: Curves.easeOutCubic,
-                                ),
-                              ),
+                              ).animate(animation),
                               child: child,
                             ),
                           );
                         },
                         child:
                             !hasPriceTiers.value
-                                ? _buildSimplePricing()
-                                : _buildPriceTiers(),
+                                ? _buildSimplePricing(
+                                  context,
+                                  infoTone: infoTone,
+                                )
+                                : _buildPriceTiers(
+                                  context,
+                                  warningTone: warningTone,
+                                  dangerTone: dangerTone,
+                                ),
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 32),
-              _buildSubmitButton(),
-              const SizedBox(height: 24),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProgressIndicator() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors:
-              themeController.isDarkMode
-                  ? [
-                    (ColorTheme.primaryDark).withValues(alpha: 0.1),
-                    (ColorTheme.primaryDark).withValues(alpha: 0.05),
-                  ]
-                  : [
-                    ColorTheme.primary.withValues(alpha: 0.05),
-                    ColorTheme.primary.withValues(alpha: 0.02),
-                  ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: (themeController.isDarkMode
-                  ? ColorTheme.primaryDark
-                  : ColorTheme.primary)
-              .withValues(alpha: 0.1),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: (themeController.isDarkMode
-                      ? ColorTheme.primaryDark
-                      : ColorTheme.primary)
-                  .withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              Icons.settings_outlined,
-              color:
-                  themeController.isDarkMode
-                      ? ColorTheme.primaryDark
-                      : ColorTheme.primary,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Editing Service',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color:
-                        themeController.isDarkMode
-                            ? ColorTheme.textSecondaryDark
-                            : ColorTheme.textPrimary,
-                    fontFamily: 'JosefinSans',
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Update your service details and pricing information',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color:
-                        themeController.isDarkMode
-                            ? ColorTheme.textTertiaryDark
-                            : ColorTheme.textSecondary,
-                    fontFamily: 'JosefinSans',
-                  ),
-                ),
-              ],
             ),
           ),
         ],
@@ -618,433 +446,165 @@ class ServiceEditView extends GetView<ServiceController> {
     );
   }
 
-  Widget _buildSectionHeader(String title, IconData icon) {
-    final primaryCurrent =
-        themeController.isDarkMode
-            ? ColorTheme.primaryDark
-            : ColorTheme.primary;
-    final primaryDarkCurrent =
-        themeController.isDarkMode
-            ? ColorTheme.primary
-            : ColorTheme.primaryDark;
+  // ✅ Fix overflow + request: bagian foto dibuat LEBIH TINGGI
+  Widget _buildImagePicker(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tt = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
 
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  primaryCurrent.withValues(alpha: 0.15),
-                  primaryCurrent.withValues(alpha: 0.08),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, size: 24, color: primaryCurrent),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color:
-                        themeController.isDarkMode
-                            ? ColorTheme.textPrimaryDark
-                            : ColorTheme.textPrimary,
-                    fontFamily: 'JosefinSans',
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Container(
-                  height: 3,
-                  width: 40,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [primaryCurrent, primaryDarkCurrent],
-                    ),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+    return LayoutBuilder(
+      builder: (context, c) {
+        final maxW = c.maxWidth.isFinite ? c.maxWidth : double.infinity;
 
-  Widget _buildCard({required Widget child}) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color:
-            themeController.isDarkMode
-                ? ColorTheme.surfaceDark
-                : ColorTheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: (themeController.isDarkMode
-                    ? ColorTheme.primaryDark
-                    : ColorTheme.primary)
-                .withValues(alpha: 0.06),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-            spreadRadius: 0,
-          ),
-          BoxShadow(
-            color: (themeController.isDarkMode
-                    ? ColorTheme.textPrimaryDark
-                    : ColorTheme.textPrimary)
-                .withValues(alpha: 0.03),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-            spreadRadius: 0,
-          ),
-        ],
-      ),
-      child: child,
-    );
-  }
+        // Ukuran dasar dari token spacing (tanpa angka literal)
+        final base = spacing.xxl + spacing.xxl + spacing.xl;
+        final ratio = (spacing.xl / (spacing.sm == 0 ? 1 : spacing.sm));
+        final desired = base * ratio;
 
-  Widget _buildSectionTitle(String title) {
-    final primaryCurrent =
-        themeController.isDarkMode
-            ? ColorTheme.primaryDark
-            : ColorTheme.primary;
-    final primaryDarkCurrent =
-        themeController.isDarkMode
-            ? ColorTheme.primary
-            : ColorTheme.primaryDark;
-    return Row(
-      children: [
-        Container(
-          width: 4,
-          height: 24,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [primaryCurrent, primaryDarkCurrent],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color:
-                themeController.isDarkMode
-                    ? ColorTheme.textSecondaryDark
-                    : ColorTheme.textPrimary,
-            fontFamily: 'JosefinSans',
-          ),
-        ),
-      ],
-    );
-  }
+        // Minimum aman supaya placeholder nggak kepaksa jadi super kecil
+        final minSide = spacing.xxl + spacing.xxl + spacing.xl + spacing.lg;
 
-  Widget _buildImagePickerCard() {
-    final primaryCurrent =
-        themeController.isDarkMode
-            ? ColorTheme.primaryDark
-            : ColorTheme.primary;
-    return _buildCard(
-      child: Column(
-        children: [
-          _buildSectionTitle('Service Image'),
-          const SizedBox(height: 24),
-          Center(
-            child: GestureDetector(
-              onTap: _pickImage,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOutCubic,
-                width: 200,
-                height: 200,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors:
-                        themeController.isDarkMode
-                            ? [ColorTheme.borderDark, ColorTheme.surfaceDark]
-                            : [ColorTheme.surface, ColorTheme.background],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: primaryCurrent.withValues(alpha: 0.2),
-                    width: 2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: primaryCurrent.withValues(alpha: 0.08),
-                      blurRadius: 16,
-                      offset: const Offset(0, 8),
-                    ),
-                    BoxShadow(
-                      color: (themeController.isDarkMode
-                              ? ColorTheme.textPrimaryDark
-                              : ColorTheme.textPrimary)
-                          .withValues(alpha: 0.04),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Obx(() {
-                  if (imageFile.value != null) {
-                    return Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(22),
-                          child: Image.file(
-                            imageFile.value!,
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            height: double.infinity,
-                          ),
-                        ),
-                        Positioned(
-                          top: 12,
-                          right: 12,
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  Colors.black.withValues(alpha: 0.7),
-                                  Colors.black.withValues(alpha: 0.5),
-                                ],
-                              ),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.edit,
-                              color: ColorTheme.textInverse,
-                              size: 18,
-                            ),
-                          ),
+        final raw = maxW.isFinite ? math.min(desired, maxW) : desired;
+        final size =
+            maxW.isFinite
+                ? math.max(math.min(minSide, maxW), raw)
+                : math.max(minSide, raw);
+
+        // ✅ Tinggi ekstra (request: "tambahkan tingginya")
+        final extraHeight = spacing.xl + spacing.lg;
+
+        return Column(
+          children: [
+            Center(
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _pickImage,
+                  borderRadius: BorderRadius.circular(AppRadii.xl),
+                  child: Ink(
+                    width: size,
+                    height: size + extraHeight,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(AppRadii.xl),
+                      border: Border.all(
+                        color: cs.outlineVariant.withValues(alpha: 0.65),
+                      ),
+                      color: cs.surfaceContainerHighest.withValues(alpha: 0.26),
+                      boxShadow: [
+                        BoxShadow(
+                          color: cs.shadow.withValues(alpha: 0.08),
+                          blurRadius: spacing.lg,
+                          offset: Offset(0, spacing.xs),
                         ),
                       ],
-                    );
-                  } else if (currentImageUrl.value.isNotEmpty) {
-                    return Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(22),
-                          child: Image.network(
-                            currentImageUrl.value,
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            height: double.infinity,
-                            errorBuilder: (context, error, stackTrace) {
-                              return _buildImagePlaceholder(
-                                icon: Icons.image_not_supported_outlined,
-                                text: 'Image not available',
-                              );
-                            },
-                          ),
-                        ),
-                        Positioned(
-                          top: 12,
-                          right: 12,
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  Colors.black.withValues(alpha: 0.7),
-                                  Colors.black.withValues(alpha: 0.5),
-                                ],
-                              ),
-                              shape: BoxShape.circle,
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(AppRadii.xl),
+                      child: Obx(() {
+                        if (imageFile.value != null) {
+                          return _ImageStage(
+                            child: Image.file(
+                              imageFile.value!,
+                              fit: BoxFit.cover,
                             ),
-                            child: const Icon(
-                              Icons.edit,
-                              color: ColorTheme.textInverse,
-                              size: 18,
+                          );
+                        }
+                        if (currentImageUrl.value.isNotEmpty) {
+                          return _ImageStage(
+                            child: Image.network(
+                              currentImageUrl.value,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const _ImagePlaceholder(
+                                  icon: Icons.image_not_supported_outlined,
+                                  title: 'Gambar tidak tersedia',
+                                  subtitle: 'Tap untuk pilih ulang',
+                                );
+                              },
                             ),
-                          ),
-                        ),
-                      ],
-                    );
-                  } else {
-                    return _buildImagePlaceholder(
-                      icon: Icons.add_photo_alternate_outlined,
-                      text: 'Add Service Image',
-                    );
-                  }
-                }),
+                          );
+                        }
+                        return const _ImagePlaceholder(
+                          icon: Icons.add_photo_alternate_outlined,
+                          title: 'Tambah foto',
+                          subtitle: 'Tap untuk memilih dari galeri',
+                        );
+                      }),
+                    ),
+                  ),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Tap to select or change image',
-            style: TextStyle(
-              fontSize: 13,
-              color:
-                  themeController.isDarkMode
-                      ? ColorTheme.textTertiaryDark
-                      : ColorTheme.textSecondary,
-              fontFamily: 'JosefinSans',
-              fontStyle: FontStyle.italic,
+            SizedBox(height: spacing.md),
+            Text(
+              'Foto yang bagus bikin layanan terlihat premium.',
+              textAlign: TextAlign.center,
+              style: tt.bodySmall?.copyWith(
+                color: cs.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        );
+      },
     );
   }
 
-  Widget _buildImagePlaceholder({
-    required IconData icon,
-    required String text,
-  }) {
-    final primaryCurrent =
-        themeController.isDarkMode
-            ? ColorTheme.primaryDark
-            : ColorTheme.primary;
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                primaryCurrent.withValues(alpha: 0.1),
-                primaryCurrent.withValues(alpha: 0.05),
-              ],
-            ),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            icon,
-            size: 48,
-            color: primaryCurrent.withValues(alpha: 0.8),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          text,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: primaryCurrent,
-            fontWeight: FontWeight.w600,
-            fontSize: 15,
-            fontFamily: 'JosefinSans',
-          ),
-        ),
-      ],
-    );
-  }
+  Widget _buildCategoryDropdown(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tt = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
 
-  Widget _buildCategoryDropdown() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
             Text(
-              'Category',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color:
-                    themeController.isDarkMode
-                        ? ColorTheme.textSecondaryDark
-                        : ColorTheme.textPrimary,
-                fontFamily: 'JosefinSans',
+              'Kategori',
+              style: tt.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: cs.onSurface,
               ),
             ),
             Text(
-              " *",
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: ColorTheme.error,
-                fontFamily: 'JosefinSans',
+              ' *',
+              style: tt.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w900,
+                color: cs.error,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: spacing.sm),
         Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadii.lg),
             border: Border.all(
-              color:
-                  themeController.isDarkMode
-                      ? ColorTheme.borderDark
-                      : ColorTheme.border.withValues(alpha: 0.3),
+              color: cs.outlineVariant.withValues(alpha: 0.65),
             ),
-            gradient: LinearGradient(
-              colors:
-                  themeController.isDarkMode
-                      ? [
-                        ColorTheme.borderDark,
-                        ColorTheme.surfaceDark.withValues(alpha: 0.8),
-                      ]
-                      : [
-                        ColorTheme.surface,
-                        ColorTheme.background.withValues(alpha: 0.3),
-                      ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: (themeController.isDarkMode
-                        ? ColorTheme.textPrimaryDark
-                        : ColorTheme.textPrimary)
-                    .withValues(alpha: 0.02),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            color: cs.surfaceContainerHighest.withValues(alpha: 0.26),
           ),
           child: DropdownButtonFormField<String>(
-            decoration: InputDecoration(
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
-              border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
-              hintStyle: TextStyle(
-                color:
-                    themeController.isDarkMode
-                        ? ColorTheme.textTertiaryDark
-                        : Colors.grey.shade500,
-              ),
+            dropdownColor: cs.surface,
+            style: tt.bodyMedium?.copyWith(
+              color: cs.onSurface,
+              fontWeight: FontWeight.w700,
             ),
-            dropdownColor:
-                themeController.isDarkMode
-                    ? ColorTheme.borderDark
-                    : ColorTheme.surface,
-            style: TextStyle(
-              color:
-                  themeController.isDarkMode
-                      ? ColorTheme.textPrimaryDark
-                      : ColorTheme.textPrimary,
-              fontFamily: 'JosefinSans',
-              fontSize: 16,
+            decoration: InputDecoration(
+              labelText: 'Pilih kategori',
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: spacing.lg,
+                vertical: spacing.md,
+              ),
+              prefixIcon: Icon(
+                Icons.category_outlined,
+                color: cs.primary,
+                size: 20,
+              ),
             ),
             value:
                 selectedCategoryId.value.isEmpty
@@ -1057,7 +617,7 @@ class ServiceEditView extends GetView<ServiceController> {
             },
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Please select a category';
+                return 'Kategori wajib dipilih';
               }
               return null;
             },
@@ -1074,657 +634,360 @@ class ServiceEditView extends GetView<ServiceController> {
     );
   }
 
-  Widget _buildPriceTierSwitch() {
-    final primaryCurrent =
-        themeController.isDarkMode
-            ? ColorTheme.primaryDark
-            : ColorTheme.primary;
+  Widget _buildPriceTierSwitch(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tt = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(spacing.lg),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            primaryCurrent.withValues(alpha: 0.06),
-            primaryCurrent.withValues(alpha: 0.03),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: primaryCurrent.withValues(alpha: 0.1)),
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.65)),
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.20),
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(spacing.sm),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  primaryCurrent.withValues(alpha: 0.15),
-                  primaryCurrent.withValues(alpha: 0.08),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadii.md),
+              color: cs.primary.withValues(alpha: 0.12),
+              border: Border.all(color: cs.primary.withValues(alpha: 0.22)),
             ),
-            child: Icon(Icons.tune_outlined, color: primaryCurrent, size: 24),
+            child: Icon(Icons.layers_outlined, color: cs.primary, size: 20),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: spacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Multiple Price Tiers',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                    color:
-                        themeController.isDarkMode
-                            ? ColorTheme.textSecondaryDark
-                            : ColorTheme.textPrimary,
-                    fontFamily: 'JosefinSans',
+                  'Harga bertingkat',
+                  style: tt.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: cs.onSurface,
                   ),
                 ),
-                const SizedBox(height: 6),
+                SizedBox(height: spacing.xs),
                 Text(
-                  'Enable different pricing for different age groups',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color:
-                        themeController.isDarkMode
-                            ? ColorTheme.textTertiaryDark
-                            : ColorTheme.textSecondary,
-                    fontFamily: 'JosefinSans',
-                    height: 1.4,
+                  'Buat beberapa tier untuk rentang usia berbeda.',
+                  style: tt.bodySmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                    height: 1.35,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 12),
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: primaryCurrent.withValues(alpha: 0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Switch(
-              value: hasPriceTiers.value,
-              onChanged: (value) {
-                hasPriceTiers.value = value;
-                if (value && priceTiers.isEmpty) {
-                  _addInitialPriceTier();
-                }
-              },
-              activeColor: primaryCurrent,
-              activeTrackColor: primaryCurrent.withValues(alpha: 0.3),
-              inactiveThumbColor:
-                  themeController.isDarkMode
-                      ? ColorTheme.textTertiaryDark.withValues(alpha: 0.6)
-                      : Colors.grey.shade400,
-              inactiveTrackColor:
-                  themeController.isDarkMode
-                      ? ColorTheme.borderDark
-                      : Colors.grey.shade300,
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSimplePricing() {
-    final simplePricingAccent =
-        themeController.isDarkMode
-            ? ColorTheme.successDark
-            : ColorTheme.success;
-    return Container(
-      key: const ValueKey('simple_pricing'),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            simplePricingAccent.withValues(alpha: 0.03),
-            simplePricingAccent.withValues(alpha: 0.01),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: simplePricingAccent.withValues(alpha: 0.1)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      simplePricingAccent.withValues(alpha: 0.15),
-                      simplePricingAccent.withValues(alpha: 0.08),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  Icons.attach_money_outlined,
-                  color: simplePricingAccent,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Simple Pricing',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color:
-                      themeController.isDarkMode
-                          ? ColorTheme.textSecondaryDark
-                          : ColorTheme.textPrimary,
-                  fontFamily: 'JosefinSans',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          AppTextField(
-            controller: priceController,
-            label: 'Price (Rp)',
-            placeholder: 'Enter service price',
-            keyboardType: TextInputType.number,
-            isRequired: true,
-            validator: (value) {
-              if (value == null || value.isEmpty) return 'Price is required';
-              if (double.tryParse(value) == null || double.parse(value) < 0) {
-                return 'Please enter a valid price';
+          Switch(
+            value: hasPriceTiers.value,
+            onChanged: (value) {
+              hasPriceTiers.value = value;
+              if (value && priceTiers.isEmpty) {
+                _addInitialPriceTier();
               }
-              return null;
             },
-          ),
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      (themeController.isDarkMode
-                              ? ColorTheme.primaryDark
-                              : ColorTheme.primary)
-                          .withValues(alpha: 0.15),
-                      (themeController.isDarkMode
-                              ? ColorTheme.primaryDark
-                              : ColorTheme.primary)
-                          .withValues(alpha: 0.08),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  Icons.child_care_outlined,
-                  color:
-                      themeController.isDarkMode
-                          ? ColorTheme.primaryDark
-                          : ColorTheme.primary,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Age Range',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color:
-                      themeController.isDarkMode
-                          ? ColorTheme.textSecondaryDark
-                          : ColorTheme.textPrimary,
-                  fontFamily: 'JosefinSans',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          // ✨ --- PERBAIKAN DI SINI --- ✨
-          // Mengubah Row menjadi Column untuk mencegah overflow horizontal.
-          Column(
-            children: [
-              AppTextField(
-                controller: minAgeController,
-                label: 'Min Age (months)',
-                placeholder: 'Min',
-                keyboardType: TextInputType.number,
-                isRequired: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) return 'Required';
-                  if (int.tryParse(value) == null || int.parse(value) < 0) {
-                    return 'Invalid';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 20), // Memberi jarak vertikal antar field
-              AppTextField(
-                controller: maxAgeController,
-                label: 'Max Age (months)',
-                placeholder: 'Max',
-                keyboardType: TextInputType.number,
-                isRequired: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) return 'Required';
-                  final minAgeText = minAgeController.text;
-                  if (minAgeText.isEmpty || int.tryParse(minAgeText) == null) {
-                    return 'Enter min age first';
-                  }
-                  if (int.tryParse(value) == null ||
-                      int.parse(value) <= int.parse(minAgeText)) {
-                    return 'Invalid';
-                  }
-                  return null;
-                },
-              ),
-            ],
+            activeColor: cs.primary,
+            activeTrackColor: cs.primary.withValues(alpha: 0.30),
+            inactiveThumbColor: cs.onSurfaceVariant.withValues(alpha: 0.70),
+            inactiveTrackColor: cs.outlineVariant.withValues(alpha: 0.55),
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildPriceTiers() {
-    final priceTierAccent =
-        themeController.isDarkMode ? ColorTheme.infoDark : ColorTheme.info;
-    final primaryCurrent =
-        themeController.isDarkMode
-            ? ColorTheme.primaryDark
-            : ColorTheme.primary;
+  Widget _buildSimplePricing(BuildContext context, {required Color infoTone}) {
+    final theme = Theme.of(context);
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
 
-    return Container(
-      key: const ValueKey('price_tiers'),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  priceTierAccent.withValues(alpha: 0.03),
-                  priceTierAccent.withValues(alpha: 0.01),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: priceTierAccent.withValues(alpha: 0.1)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        priceTierAccent.withValues(alpha: 0.15),
-                        priceTierAccent.withValues(alpha: 0.08),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    Icons.layers_outlined,
-                    color: priceTierAccent,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'Price Tiers',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color:
-                        themeController.isDarkMode
-                            ? ColorTheme.textSecondaryDark
-                            : ColorTheme.textPrimary,
-                    fontFamily: 'JosefinSans',
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          Obx(
-            () => Column(
-              children: [
-                ...List.generate(priceTiers.length, (index) {
-                  if (!priceTierControllers.containsKey(index)) {
-                    _initializePriceTierControllers(index);
-                  }
-                  final controllers = priceTierControllers[index]!;
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 400),
-                    curve: Curves.easeInOutCubic,
-                    margin: const EdgeInsets.only(bottom: 20),
-                    child: Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color:
-                            themeController.isDarkMode
-                                ? ColorTheme.borderDark
-                                : ColorTheme.surface,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: primaryCurrent.withValues(alpha: 0.15),
-                          width: 1.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: primaryCurrent.withValues(alpha: 0.08),
-                            blurRadius: 16,
-                            offset: const Offset(0, 6),
-                          ),
-                          BoxShadow(
-                            color: (themeController.isDarkMode
-                                    ? ColorTheme.textPrimaryDark
-                                    : ColorTheme.textPrimary)
-                                .withValues(alpha: 0.02),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      primaryCurrent.withValues(alpha: 0.15),
-                                      primaryCurrent.withValues(alpha: 0.08),
-                                    ],
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  'Tier ${index + 1}',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    color: primaryCurrent,
-                                    fontSize: 14,
-                                    fontFamily: 'JosefinSans',
-                                  ),
-                                ),
-                              ),
-                              const Spacer(),
-                              if (priceTiers.length > 1)
-                                Container(
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        ColorTheme.error.withValues(alpha: 0.1),
-                                        ColorTheme.error.withValues(
-                                          alpha: 0.05,
-                                        ),
-                                      ],
-                                    ),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: IconButton(
-                                    icon: Icon(
-                                      Icons.delete_outline,
-                                      color: ColorTheme.error,
-                                      size: 22,
-                                    ),
-                                    onPressed: () {
-                                      priceTiers.removeAt(index);
-                                      priceTierControllers.remove(index);
-                                      final newControllers =
-                                          <
-                                            int,
-                                            Map<String, TextEditingController>
-                                          >{};
-                                      for (
-                                        int i = 0;
-                                        i < priceTierControllers.length;
-                                        i++
-                                      ) {
-                                        if (priceTierControllers.containsKey(
-                                          i < index ? i : i + 1,
-                                        )) {
-                                          newControllers[i] =
-                                              priceTierControllers[i < index
-                                                  ? i
-                                                  : i + 1]!;
-                                        }
-                                      }
-                                      priceTierControllers.value =
-                                          newControllers;
-                                    },
-                                  ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color:
-                                  themeController.isDarkMode
-                                      ? ColorTheme.surfaceDark.withValues(
-                                        alpha: 0.5,
-                                      )
-                                      : ColorTheme.background.withValues(
-                                        alpha: 0.6,
-                                      ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Age Range (months)',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w600,
-                                    color:
-                                        themeController.isDarkMode
-                                            ? ColorTheme.textSecondaryDark
-                                            : ColorTheme.textPrimary,
-                                    fontFamily: 'JosefinSans',
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                // ✨ --- PERBAIKAN DI SINI JUGA --- ✨
-                                // Mengubah Row menjadi Column di dalam price tier.
-                                Column(
-                                  children: [
-                                    AppTextField(
-                                      placeholder: 'Min Age',
-                                      keyboardType: TextInputType.number,
-                                      controller: controllers['minAge'],
-                                      validator:
-                                          (v) =>
-                                              (v == null || v.isEmpty)
-                                                  ? 'Required'
-                                                  : (int.tryParse(v) == null ||
-                                                      int.parse(v) < 0)
-                                                  ? 'Invalid'
-                                                  : null,
-                                      onChanged:
-                                          (v) =>
-                                              priceTiers[index]['minAge'] =
-                                                  int.tryParse(v) ?? 0,
-                                    ),
-                                    const SizedBox(height: 20),
-                                    AppTextField(
-                                      placeholder: 'Max Age',
-                                      keyboardType: TextInputType.number,
-                                      controller: controllers['maxAge'],
-                                      validator: (v) {
-                                        if (v == null || v.isEmpty) {
-                                          return 'Required';
-                                        }
-                                        final minAge = int.tryParse(
-                                          controllers['minAge']!.text,
-                                        );
-                                        if (minAge == null) {
-                                          return 'Min Invalid';
-                                        }
-                                        return (int.tryParse(v) == null ||
-                                                int.parse(v) <= minAge)
-                                            ? 'Invalid'
-                                            : null;
-                                      },
-                                      onChanged:
-                                          (v) =>
-                                              priceTiers[index]['maxAge'] =
-                                                  int.tryParse(v) ?? 0,
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  (themeController.isDarkMode
-                                          ? ColorTheme.successDark
-                                          : ColorTheme.success)
-                                      .withValues(alpha: 0.05),
-                                  (themeController.isDarkMode
-                                          ? ColorTheme.successDark
-                                          : ColorTheme.success)
-                                      .withValues(alpha: 0.02),
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Price (Rp)',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w600,
-                                    color:
-                                        themeController.isDarkMode
-                                            ? ColorTheme.textSecondaryDark
-                                            : ColorTheme.textPrimary,
-                                    fontFamily: 'JosefinSans',
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                AppTextField(
-                                  placeholder: 'Enter price for this tier',
-                                  keyboardType: TextInputType.number,
-                                  controller: controllers['price'],
-                                  validator:
-                                      (v) =>
-                                          (v == null || v.isEmpty)
-                                              ? 'Required'
-                                              : (double.tryParse(v) == null ||
-                                                  double.parse(v) < 0)
-                                              ? 'Invalid'
-                                              : null,
-                                  onChanged:
-                                      (v) =>
-                                          priceTiers[index]['price'] =
-                                              double.tryParse(v) ?? 0.0,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          Center(
-            child: AppButton(
-              text: 'Add Price Tier',
-              icon: Icons.add,
-              onPressed: () {
-                final lastMaxAge =
-                    priceTiers.isNotEmpty ? priceTiers.last['maxAge'] : -1;
-                final newIndex = priceTiers.length;
-                priceTiers.add({
-                  'minAge': lastMaxAge + 1,
-                  'maxAge': lastMaxAge + 13,
-                  'price': 0.0,
-                  'tierName': 'Tier ${newIndex + 1}',
-                });
-                _initializePriceTierControllers(newIndex);
+    return Column(
+      key: const ValueKey('simple_pricing'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _InlineHint(
+          icon: Icons.info_outline_rounded,
+          tone: infoTone,
+          text: 'Harga tunggal berlaku untuk semua rentang usia.',
+        ),
+        SizedBox(height: spacing.lg),
+        AppTextField(
+          controller: priceController,
+          label: 'Harga (Rp)',
+          placeholder: 'Contoh: 150000',
+          keyboardType: TextInputType.number,
+          isRequired: true,
+          validator: (value) {
+            if (value == null || value.isEmpty) return 'Harga wajib diisi';
+            if (double.tryParse(value) == null || double.parse(value) < 0) {
+              return 'Masukkan harga yang valid';
+            }
+            return null;
+          },
+        ),
+        SizedBox(height: spacing.lg),
+        Column(
+          children: [
+            AppTextField(
+              controller: minAgeController,
+              label: 'Usia minimum (bulan)',
+              placeholder: 'Contoh: 0',
+              keyboardType: TextInputType.number,
+              isRequired: true,
+              validator: (value) {
+                if (value == null || value.isEmpty) return 'Wajib diisi';
+                if (int.tryParse(value) == null || int.parse(value) < 0) {
+                  return 'Tidak valid';
+                }
+                return null;
               },
-              type: AppButtonType.outline,
-              isFullWidth: true,
-              size: AppButtonSize.medium,
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSubmitButton() {
-    final primaryCurrent =
-        themeController.isDarkMode
-            ? ColorTheme.primaryDark
-            : ColorTheme.primary;
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            primaryCurrent.withValues(alpha: 0.1),
-            primaryCurrent.withValues(alpha: 0.05),
+            SizedBox(height: spacing.lg),
+            AppTextField(
+              controller: maxAgeController,
+              label: 'Usia maksimum (bulan)',
+              placeholder: 'Contoh: 12',
+              keyboardType: TextInputType.number,
+              isRequired: true,
+              validator: (value) {
+                if (value == null || value.isEmpty) return 'Wajib diisi';
+                final minAgeText = minAgeController.text;
+                if (minAgeText.isEmpty || int.tryParse(minAgeText) == null) {
+                  return 'Isi usia minimum dulu';
+                }
+                if (int.tryParse(value) == null ||
+                    int.parse(value) <= int.parse(minAgeText)) {
+                  return 'Harus lebih besar dari minimum';
+                }
+                return null;
+              },
+            ),
           ],
         ),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Obx(
-        () => AppButton(
-          text:
-              controller.isUpdatingService.value
-                  ? 'Updating Service...'
-                  : 'Update Service',
-          icon: controller.isUpdatingService.value ? null : Icons.save_outlined,
-          onPressed: controller.isUpdatingService.value ? null : _submitForm,
-          type: AppButtonType.primary,
-          isFullWidth: true,
-          size: AppButtonSize.large,
-          isLoading: controller.isUpdatingService.value,
+      ],
+    );
+  }
+
+  Widget _buildPriceTiers(
+    BuildContext context, {
+    required Color warningTone,
+    required Color dangerTone,
+  }) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tt = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    return Column(
+      key: const ValueKey('price_tiers'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _InlineHint(
+          icon: Icons.info_outline_rounded,
+          tone: warningTone,
+          text: 'Setiap tier punya rentang usia dan harga sendiri.',
         ),
+        SizedBox(height: spacing.lg),
+        Obx(
+          () => Column(
+            children: [
+              ...List.generate(priceTiers.length, (index) {
+                if (!priceTierControllers.containsKey(index)) {
+                  _initializePriceTierControllers(index);
+                }
+                final ctrls = priceTierControllers[index]!;
+
+                return Container(
+                  margin: EdgeInsets.only(bottom: spacing.md),
+                  padding: EdgeInsets.all(spacing.lg),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(AppRadii.xl),
+                    border: Border.all(
+                      color: cs.outlineVariant.withValues(alpha: 0.65),
+                    ),
+                    color: cs.surface,
+                    boxShadow: [
+                      BoxShadow(
+                        color: cs.shadow.withValues(alpha: 0.06),
+                        blurRadius: spacing.lg,
+                        offset: Offset(0, spacing.xs),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: spacing.md,
+                              vertical: spacing.xs,
+                            ),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(AppRadii.xl),
+                              color: cs.primary.withValues(alpha: 0.12),
+                              border: Border.all(
+                                color: cs.primary.withValues(alpha: 0.20),
+                              ),
+                            ),
+                            child: Text(
+                              'Tier ${index + 1}',
+                              style: tt.labelLarge?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                color: cs.primary,
+                              ),
+                            ),
+                          ),
+                          const Spacer(),
+                          if (priceTiers.length > 1)
+                            IconButton(
+                              onPressed: () {
+                                priceTiers.removeAt(index);
+                                priceTierControllers.remove(index);
+
+                                final newControllers =
+                                    <int, Map<String, TextEditingController>>{};
+                                for (
+                                  int i = 0;
+                                  i < priceTierControllers.length;
+                                  i++
+                                ) {
+                                  final key = i < index ? i : i + 1;
+                                  if (priceTierControllers.containsKey(key)) {
+                                    newControllers[i] =
+                                        priceTierControllers[key]!;
+                                  }
+                                }
+                                priceTierControllers.value = newControllers;
+                              },
+                              tooltip: 'Hapus tier',
+                              icon: Icon(
+                                Icons.delete_outline_rounded,
+                                color: dangerTone,
+                              ),
+                            ),
+                        ],
+                      ),
+                      SizedBox(height: spacing.md),
+                      Divider(color: cs.outlineVariant.withValues(alpha: 0.55)),
+                      SizedBox(height: spacing.md),
+                      Column(
+                        children: [
+                          AppTextField(
+                            label: 'Usia minimum (bulan)',
+                            placeholder: 'Contoh: 0',
+                            keyboardType: TextInputType.number,
+                            controller: ctrls['minAge'],
+                            validator: (v) {
+                              if (v == null || v.isEmpty) return 'Wajib diisi';
+                              if (int.tryParse(v) == null || int.parse(v) < 0) {
+                                return 'Tidak valid';
+                              }
+                              return null;
+                            },
+                            onChanged:
+                                (v) =>
+                                    priceTiers[index]['minAge'] =
+                                        int.tryParse(v) ?? 0,
+                          ),
+                          SizedBox(height: spacing.md),
+                          AppTextField(
+                            label: 'Usia maksimum (bulan)',
+                            placeholder: 'Contoh: 12',
+                            keyboardType: TextInputType.number,
+                            controller: ctrls['maxAge'],
+                            validator: (v) {
+                              if (v == null || v.isEmpty) return 'Wajib diisi';
+                              final minAge = int.tryParse(
+                                ctrls['minAge']!.text,
+                              );
+                              if (minAge == null) return 'Minimum tidak valid';
+                              return (int.tryParse(v) == null ||
+                                      int.parse(v) <= minAge)
+                                  ? 'Harus > minimum'
+                                  : null;
+                            },
+                            onChanged:
+                                (v) =>
+                                    priceTiers[index]['maxAge'] =
+                                        int.tryParse(v) ?? 0,
+                          ),
+                          SizedBox(height: spacing.md),
+                          AppTextField(
+                            label: 'Harga (Rp)',
+                            placeholder: 'Contoh: 150000',
+                            keyboardType: TextInputType.number,
+                            controller: ctrls['price'],
+                            validator: (v) {
+                              if (v == null || v.isEmpty) return 'Wajib diisi';
+                              if (double.tryParse(v) == null ||
+                                  double.parse(v) < 0) {
+                                return 'Tidak valid';
+                              }
+                              return null;
+                            },
+                            onChanged:
+                                (v) =>
+                                    priceTiers[index]['price'] =
+                                        double.tryParse(v) ?? 0.0,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+        SizedBox(height: spacing.md),
+        AppButton(
+          text: 'Tambah Tier',
+          icon: Icons.add_rounded,
+          onPressed: () {
+            final lastMaxAge =
+                priceTiers.isNotEmpty ? priceTiers.last['maxAge'] : -1;
+            final newIndex = priceTiers.length;
+            priceTiers.add({
+              'minAge': lastMaxAge + 1,
+              'maxAge': lastMaxAge + 13,
+              'price': 0.0,
+              'tierName': 'Tier ${newIndex + 1}',
+            });
+            _initializePriceTierControllers(newIndex);
+          },
+          type: AppButtonType.outline,
+          isFullWidth: true,
+          size: AppButtonSize.medium,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSubmitButton(BuildContext context) {
+    return Obx(
+      () => AppButton(
+        text:
+            controller.isUpdatingService.value
+                ? 'Menyimpan…'
+                : 'Simpan Perubahan',
+        icon: controller.isUpdatingService.value ? null : Icons.save_outlined,
+        onPressed: controller.isUpdatingService.value ? null : _submitForm,
+        type: AppButtonType.primary,
+        isFullWidth: true,
+        size: AppButtonSize.large,
+        isLoading: controller.isUpdatingService.value,
       ),
     );
   }
 
+  // =========================
+  // Actions (DO NOT CHANGE LOGIC)
+  // =========================
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
@@ -1765,19 +1028,17 @@ class ServiceEditView extends GetView<ServiceController> {
         }
 
         if (!isValid) {
+          final cs = Theme.of(Get.context!).colorScheme;
           Get.snackbar(
             'Validation Error',
             'Please complete all price tier fields with valid numbers.',
-            backgroundColor:
-                themeController.isDarkMode
-                    ? ColorTheme.errorDark
-                    : ColorTheme.error,
-            colorText: ColorTheme.textInverse,
+            backgroundColor: cs.error,
+            colorText: cs.onError,
           );
           return;
         }
 
-        List<Map<String, dynamic>> formattedPriceTiers =
+        final formattedPriceTiers =
             priceTiers.map((tier) {
               return {
                 'minBabyAge': tier['minAge'],
@@ -1827,5 +1088,660 @@ class ServiceEditView extends GetView<ServiceController> {
             });
       }
     }
+  }
+}
+
+// =========================
+// UI Blocks (theme-only)
+// =========================
+
+class _GlassBottomBar extends StatelessWidget {
+  const _GlassBottomBar({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    return ClipRRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: spacing.sm, sigmaY: spacing.sm),
+        child: Container(
+          padding: EdgeInsets.fromLTRB(
+            spacing.lg,
+            spacing.md,
+            spacing.lg,
+            spacing.md,
+          ),
+          decoration: BoxDecoration(
+            color: cs.surface.withValues(alpha: 0.78),
+            border: Border(
+              top: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.55)),
+            ),
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+class _EditorHero extends StatelessWidget {
+  const _EditorHero({
+    required this.title,
+    required this.subtitle,
+    required this.leading,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData leading;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tt = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    return Container(
+      padding: EdgeInsets.all(spacing.lg),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+        border: Border.all(color: cs.primary.withValues(alpha: 0.22)),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            cs.primary.withValues(alpha: 0.16),
+            cs.primary.withValues(alpha: 0.06),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: cs.shadow.withValues(alpha: 0.06),
+            blurRadius: spacing.lg,
+            offset: Offset(0, spacing.xs),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(spacing.md),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadii.lg),
+              color: cs.primary.withValues(alpha: 0.14),
+              border: Border.all(color: cs.primary.withValues(alpha: 0.22)),
+            ),
+            child: Icon(leading, color: cs.primary, size: 24),
+          ),
+          SizedBox(width: spacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: tt.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: cs.onSurface,
+                  ),
+                ),
+                SizedBox(height: spacing.xs),
+                Text(
+                  subtitle,
+                  style: tt.bodySmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoPill extends StatelessWidget {
+  const _InfoPill({required this.tone, required this.icon, required this.text});
+
+  final Color tone;
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tt = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    return Container(
+      padding: EdgeInsets.all(spacing.md),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+        color: tone.withValues(alpha: 0.10),
+        border: Border.all(color: tone.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: tone, size: 20),
+          SizedBox(width: spacing.sm),
+          Expanded(
+            child: Text(
+              text,
+              style: tt.bodySmall?.copyWith(
+                color: cs.onSurfaceVariant,
+                fontWeight: FontWeight.w700,
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionCard extends StatelessWidget {
+  const _SectionCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.child,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tt = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    return Container(
+      padding: EdgeInsets.all(spacing.lg),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.65)),
+        color: cs.surface,
+        boxShadow: [
+          BoxShadow(
+            color: cs.shadow.withValues(alpha: 0.06),
+            blurRadius: spacing.lg,
+            offset: Offset(0, spacing.xs),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(spacing.sm),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppRadii.md),
+                  color: cs.primary.withValues(alpha: 0.12),
+                  border: Border.all(color: cs.primary.withValues(alpha: 0.20)),
+                ),
+                child: Icon(icon, color: cs.primary, size: 20),
+              ),
+              SizedBox(width: spacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: tt.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: cs.onSurface,
+                      ),
+                    ),
+                    SizedBox(height: spacing.xs),
+                    Text(
+                      subtitle,
+                      style: tt.bodySmall?.copyWith(
+                        color: cs.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: spacing.lg),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _InlineHint extends StatelessWidget {
+  const _InlineHint({
+    required this.icon,
+    required this.tone,
+    required this.text,
+  });
+
+  final IconData icon;
+  final Color tone;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tt = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(spacing.md),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        color: tone.withValues(alpha: 0.10),
+        border: Border.all(color: tone.withValues(alpha: 0.22)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: tone, size: 18),
+          SizedBox(width: spacing.sm),
+          Expanded(
+            child: Text(
+              text,
+              style: tt.bodySmall?.copyWith(
+                color: cs.onSurfaceVariant,
+                fontWeight: FontWeight.w700,
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ImageStage extends StatelessWidget {
+  const _ImageStage({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadii.xl),
+          child: child,
+        ),
+        Positioned(
+          left: spacing.sm,
+          right: spacing.sm,
+          bottom: spacing.sm,
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: spacing.md,
+              vertical: spacing.xs,
+            ),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadii.xl),
+              color: cs.surface.withValues(alpha: 0.80),
+              border: Border.all(
+                color: cs.outlineVariant.withValues(alpha: 0.55),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.edit_rounded, size: 16, color: cs.primary),
+                SizedBox(width: spacing.xs),
+                Expanded(
+                  child: Text(
+                    'Ganti foto',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: cs.onSurface,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ✅ Fix overflow: placeholder adaptif. Kalau ruang kecil, tampilkan versi “compact”.
+class _ImagePlaceholder extends StatelessWidget {
+  const _ImagePlaceholder({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tt = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    return LayoutBuilder(
+      builder: (context, c) {
+        final w = c.maxWidth;
+        final h = c.maxHeight;
+
+        // Compact jika area terlalu kecil untuk Column + padding.
+        final compactThreshold = spacing.xxl + spacing.xxl + spacing.xl;
+        final isCompact =
+            (w.isFinite && w < compactThreshold) ||
+            (h.isFinite && h < compactThreshold);
+
+        if (isCompact) {
+          return Center(
+            child: Icon(
+              icon,
+              size: math.max(spacing.lg, spacing.xl),
+              color: cs.primary,
+            ),
+          );
+        }
+
+        return Center(
+          child: Padding(
+            padding: EdgeInsets.all(spacing.lg),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(spacing.md),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(AppRadii.lg),
+                    color: cs.primary.withValues(alpha: 0.12),
+                    border: Border.all(
+                      color: cs.primary.withValues(alpha: 0.22),
+                    ),
+                  ),
+                  child: Icon(icon, size: spacing.xxl, color: cs.primary),
+                ),
+                SizedBox(height: spacing.md),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: tt.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: cs.onSurface,
+                  ),
+                ),
+                SizedBox(height: spacing.xs),
+                Text(
+                  subtitle,
+                  textAlign: TextAlign.center,
+                  style: tt.bodySmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SummaryTiles extends StatelessWidget {
+  const _SummaryTiles({required this.tiles});
+  final List<_SummaryTile> tiles;
+
+  @override
+  Widget build(BuildContext context) {
+    final spacing =
+        Theme.of(context).extension<AppSpacing>() ?? const AppSpacing();
+    return Column(
+      children: [
+        for (int i = 0; i < tiles.length; i++) ...[
+          tiles[i],
+          if (i != tiles.length - 1) SizedBox(height: spacing.md),
+        ],
+      ],
+    );
+  }
+}
+
+class _SummaryTile extends StatelessWidget {
+  const _SummaryTile({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tt = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    return Container(
+      padding: EdgeInsets.all(spacing.md),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.55)),
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.18),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(spacing.sm),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadii.md),
+              color: cs.primary.withValues(alpha: 0.12),
+            ),
+            child: Icon(icon, size: 18, color: cs.primary),
+          ),
+          SizedBox(width: spacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: tt.bodySmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                SizedBox(height: spacing.xs),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: tt.titleSmall?.copyWith(
+                    color: cs.onSurface,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LoadingState extends StatelessWidget {
+  const _LoadingState({required this.title, required this.subtitle});
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tt = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    return Center(
+      child: Container(
+        margin: EdgeInsets.all(spacing.lg),
+        padding: EdgeInsets.all(spacing.lg),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadii.xl),
+          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.65)),
+          color: cs.surface,
+          boxShadow: [
+            BoxShadow(
+              color: cs.shadow.withValues(alpha: 0.06),
+              blurRadius: spacing.lg,
+              offset: Offset(0, spacing.xs),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(cs.primary),
+            ),
+            SizedBox(height: spacing.md),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: tt.titleSmall?.copyWith(
+                fontWeight: FontWeight.w900,
+                color: cs.onSurface,
+              ),
+            ),
+            SizedBox(height: spacing.xs),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: tt.bodySmall?.copyWith(
+                color: cs.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MessageState extends StatelessWidget {
+  const _MessageState({
+    required this.icon,
+    required this.title,
+    required this.message,
+    required this.actions,
+  });
+
+  final IconData icon;
+  final String title;
+  final String message;
+  final List<Widget> actions;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tt = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    return Center(
+      child: Container(
+        margin: EdgeInsets.all(spacing.lg),
+        padding: EdgeInsets.all(spacing.lg),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadii.xl),
+          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.65)),
+          color: cs.surface,
+          boxShadow: [
+            BoxShadow(
+              color: cs.shadow.withValues(alpha: 0.06),
+              blurRadius: spacing.lg,
+              offset: Offset(0, spacing.xs),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: EdgeInsets.all(spacing.md),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(AppRadii.lg),
+                color: cs.primary.withValues(alpha: 0.12),
+                border: Border.all(color: cs.primary.withValues(alpha: 0.22)),
+              ),
+              child: Icon(icon, size: spacing.xxl, color: cs.primary),
+            ),
+            SizedBox(height: spacing.md),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: tt.titleMedium?.copyWith(
+                fontWeight: FontWeight.w900,
+                color: cs.onSurface,
+              ),
+            ),
+            SizedBox(height: spacing.xs),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: tt.bodySmall?.copyWith(
+                color: cs.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+                height: 1.35,
+              ),
+            ),
+            SizedBox(height: spacing.lg),
+            ..._withGaps(actions, gap: spacing.sm),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _withGaps(List<Widget> items, {required double gap}) {
+    final out = <Widget>[];
+    for (int i = 0; i < items.length; i++) {
+      out.add(items[i]);
+      if (i != items.length - 1) out.add(SizedBox(height: gap));
+    }
+    return out;
   }
 }
