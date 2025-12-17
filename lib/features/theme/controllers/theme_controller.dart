@@ -28,14 +28,16 @@ class ThemeController extends GetxController with WidgetsBindingObserver {
   int get themeTick => _themeTick.value;
 
   bool get isDarkMode {
-    if (_themeMode.value == ThemeMode.system)
+    if (_themeMode.value == ThemeMode.system) {
       return _systemBrightnessDark.value;
+    }
     return _themeMode.value == ThemeMode.dark;
   }
 
   bool get isLightMode {
-    if (_themeMode.value == ThemeMode.system)
+    if (_themeMode.value == ThemeMode.system) {
       return !_systemBrightnessDark.value;
+    }
     return _themeMode.value == ThemeMode.light;
   }
 
