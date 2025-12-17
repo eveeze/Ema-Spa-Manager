@@ -1,6 +1,8 @@
+// lib/features/operating_scheudle/widgets/operating_schedule_dialog.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:emababyspa/common/theme/app_theme.dart';
 import 'package:emababyspa/common/widgets/app_button.dart';
 import 'package:emababyspa/features/operating_schedule/controllers/operating_schedule_controller.dart';
 
@@ -64,25 +66,30 @@ class _OperatingScheduleDialogState extends State<OperatingScheduleDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
     return Dialog(
-      shape: Theme.of(context).dialogTheme.shape,
-      elevation: Theme.of(context).dialogTheme.elevation ?? 8,
-      backgroundColor: Theme.of(context).dialogTheme.backgroundColor,
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 400),
-        padding: const EdgeInsets.all(24),
-        child: SingleChildScrollView(
-          // <--- Wrap with SingleChildScrollView
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(context),
-              const SizedBox(height: 24),
-              _buildForm(context),
-              const SizedBox(height: 24),
-              _buildActionButtons(context),
-            ],
+      shape: theme.dialogTheme.shape,
+      elevation: theme.dialogTheme.elevation ?? 8,
+      backgroundColor: theme.dialogTheme.backgroundColor,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 440),
+        child: Padding(
+          padding: EdgeInsets.all(spacing.lg),
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(context),
+                SizedBox(height: spacing.lg),
+                _buildForm(context),
+                SizedBox(height: spacing.lg),
+                _buildActionButtons(context),
+              ],
+            ),
           ),
         ),
       ),
@@ -90,8 +97,12 @@ class _OperatingScheduleDialogState extends State<OperatingScheduleDialog> {
   }
 
   Widget _buildHeader(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    final outlineSoft = colorScheme.outlineVariant.withValues(alpha: 0.70);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -100,34 +111,39 @@ class _OperatingScheduleDialogState extends State<OperatingScheduleDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              height: 44,
+              width: 44,
               decoration: BoxDecoration(
-                color: colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(12),
+                color: colorScheme.primaryContainer.withValues(alpha: 0.70),
+                borderRadius: BorderRadius.circular(AppRadii.md),
+                border: Border.all(
+                  color: colorScheme.primary.withValues(alpha: 0.12),
+                ),
               ),
               child: Icon(
                 Icons.event_note_rounded,
-                color: colorScheme.primary,
-                size: 28,
+                color: colorScheme.onPrimaryContainer,
+                size: 22,
               ),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: spacing.sm),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Buat Jadwal Operasional',
+                    'Buat Hari Operasional',
                     style: textTheme.titleLarge?.copyWith(
                       color: colorScheme.onSurface,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w900,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: spacing.xxs),
                   Text(
                     _formatDateIndonesian(widget.selectedDate),
                     style: textTheme.bodyMedium?.copyWith(
                       color: colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
@@ -135,6 +151,7 @@ class _OperatingScheduleDialogState extends State<OperatingScheduleDialog> {
             ),
             IconButton(
               onPressed: () => Navigator.of(context).pop(),
+              tooltip: 'Tutup',
               icon: Icon(
                 Icons.close_rounded,
                 color: colorScheme.onSurfaceVariant,
@@ -142,15 +159,19 @@ class _OperatingScheduleDialogState extends State<OperatingScheduleDialog> {
             ),
           ],
         ),
-        const SizedBox(height: 16),
-        const Divider(),
+        SizedBox(height: spacing.md),
+        Divider(height: 1, color: outlineSoft),
       ],
     );
   }
 
   Widget _buildForm(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+    final colorScheme = theme.colorScheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    final outlineSoft = colorScheme.outlineVariant.withValues(alpha: 0.70);
 
     return Form(
       key: _formKey,
@@ -158,32 +179,36 @@ class _OperatingScheduleDialogState extends State<OperatingScheduleDialog> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Tipe Jadwal',
+            'Tipe Hari',
             style: textTheme.titleMedium?.copyWith(
               color: colorScheme.onSurface,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 12),
-          Card(
-            margin: EdgeInsets.zero,
+          SizedBox(height: spacing.sm),
+          Container(
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              borderRadius: BorderRadius.circular(AppRadii.lg),
+              border: Border.all(color: outlineSoft),
+            ),
             clipBehavior: Clip.antiAlias,
             child: Column(
               children: [
                 _buildScheduleTypeOption(
                   context: context,
                   title: 'Hari Buka',
-                  subtitle: 'Spa buka dan beroperasi normal',
+                  subtitle: 'Spa beroperasi seperti biasa.',
                   icon: Icons.event_available_rounded,
                   isSelected: !_isHoliday,
                   onTap: () => setState(() => _isHoliday = false),
                   color: colorScheme.primary,
                 ),
-                const Divider(height: 1),
+                Divider(height: 1, color: outlineSoft),
                 _buildScheduleTypeOption(
                   context: context,
                   title: 'Hari Libur',
-                  subtitle: 'Spa tutup atau tidak beroperasi',
+                  subtitle: 'Spa tutup atau tidak menerima sesi.',
                   icon: Icons.event_busy_rounded,
                   isSelected: _isHoliday,
                   onTap: () => setState(() => _isHoliday = true),
@@ -192,23 +217,31 @@ class _OperatingScheduleDialogState extends State<OperatingScheduleDialog> {
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: spacing.lg),
           Text(
-            'Catatan (Opsional)',
+            'Catatan',
             style: textTheme.titleMedium?.copyWith(
               color: colorScheme.onSurface,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          SizedBox(height: spacing.xs),
+          Text(
+            'Opsional — isi alasan atau info penting untuk hari ini.',
+            style: textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: spacing.sm),
           TextFormField(
             controller: _notesController,
             maxLines: 3,
             decoration: InputDecoration(
               hintText:
                   _isHoliday
-                      ? 'Contoh: Libur Nasional - Hari Raya Nyepi'
-                      : 'Contoh: Operasional normal, staff lengkap',
+                      ? 'Contoh: Libur nasional / acara keluarga'
+                      : 'Contoh: Operasional normal, tim lengkap',
               prefixIcon: const Icon(Icons.sticky_note_2_outlined),
             ),
           ),
@@ -226,60 +259,73 @@ class _OperatingScheduleDialogState extends State<OperatingScheduleDialog> {
     required VoidCallback onTap,
     required Color color,
   }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-    final unselectedColor = colorScheme.onSurfaceVariant;
-    final unselectedBorderColor = colorScheme.outline;
-    final unselectedIconBg = colorScheme.surfaceContainerHighest;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    final outlineSoft = colorScheme.outlineVariant.withValues(alpha: 0.70);
+    final iconBg = colorScheme.surfaceContainerHighest;
+    final unselectedIcon = colorScheme.onSurfaceVariant;
 
     return Material(
-      color: isSelected ? color.withValues(alpha: 0.05) : Colors.transparent,
+      color: isSelected ? color.withValues(alpha: 0.06) : Colors.transparent,
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(spacing.md),
           child: Row(
             children: [
+              // Radio-like indicator
               Container(
                 width: 20,
                 height: 20,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: isSelected ? color : unselectedBorderColor,
+                    color: isSelected ? color : outlineSoft,
                     width: 2,
                   ),
                 ),
                 child:
                     isSelected
-                        ? Container(
-                          margin: const EdgeInsets.all(3),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: color,
+                        ? Center(
+                          child: Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: color,
+                            ),
                           ),
                         )
                         : null,
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: spacing.md),
+              // Icon chip
               Container(
-                padding: const EdgeInsets.all(8),
+                height: 36,
+                width: 36,
                 decoration: BoxDecoration(
                   color:
                       isSelected
-                          ? color.withValues(
-                            alpha: 0.1,
-                          ) // Changed .withValues to .withOpacity
-                          : unselectedIconBg,
-                  borderRadius: BorderRadius.circular(8),
+                          ? color.withValues(alpha: 0.10)
+                          : iconBg.withValues(alpha: 0.70),
+                  borderRadius: BorderRadius.circular(AppRadii.md),
+                  border: Border.all(
+                    color:
+                        isSelected
+                            ? color.withValues(alpha: 0.18)
+                            : outlineSoft,
+                  ),
                 ),
                 child: Icon(
                   icon,
-                  color: isSelected ? color : unselectedColor,
                   size: 20,
+                  color: isSelected ? color : unselectedIcon,
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: spacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -287,19 +333,39 @@ class _OperatingScheduleDialogState extends State<OperatingScheduleDialog> {
                     Text(
                       title,
                       style: textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w900,
                         color: isSelected ? color : colorScheme.onSurface,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    SizedBox(height: spacing.xxs),
                     Text(
                       subtitle,
                       style: textTheme.bodySmall?.copyWith(
                         color: colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
                 ),
+              ),
+              SizedBox(width: spacing.sm),
+              // Subtle check
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 180),
+                child:
+                    isSelected
+                        ? Icon(
+                          Icons.check_circle_rounded,
+                          key: const ValueKey('selected'),
+                          color: color,
+                        )
+                        : Icon(
+                          Icons.radio_button_unchecked_rounded,
+                          key: const ValueKey('unselected'),
+                          color: colorScheme.onSurfaceVariant.withValues(
+                            alpha: 0.55,
+                          ),
+                        ),
               ),
             ],
           ),
@@ -309,8 +375,12 @@ class _OperatingScheduleDialogState extends State<OperatingScheduleDialog> {
   }
 
   Widget _buildActionButtons(BuildContext context) {
+    final theme = Theme.of(context);
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
     return Obx(() {
       final isLoading = _controller.isFormSubmitting.value;
+
       return Row(
         children: [
           Expanded(
@@ -319,11 +389,11 @@ class _OperatingScheduleDialogState extends State<OperatingScheduleDialog> {
               child: const Text('Batal'),
             ),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: spacing.sm),
           Expanded(
             child: AppButton(
-              text: 'Buat Jadwal',
-              icon: isLoading ? null : Icons.add_rounded,
+              text: 'Simpan',
+              icon: isLoading ? null : Icons.check_rounded,
               onPressed: isLoading ? null : _submitForm,
               isLoading: isLoading,
             ),
