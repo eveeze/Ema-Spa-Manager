@@ -2,13 +2,17 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+
 import 'package:emababyspa/common/layouts/main_layout.dart';
+import 'package:emababyspa/common/theme/app_theme.dart';
+import 'package:emababyspa/common/theme/semantic_colors.dart';
+import 'package:emababyspa/common/theme/text_theme.dart';
 import 'package:emababyspa/common/widgets/app_button.dart';
+
 import 'package:emababyspa/features/time_slot/controllers/time_slot_controller.dart';
 import 'package:emababyspa/data/models/time_slot.dart';
 import 'package:emababyspa/utils/timezone_utils.dart';
 import 'package:emababyspa/features/theme/controllers/theme_controller.dart';
-import 'package:emababyspa/common/theme/text_theme.dart';
 
 class TimeSlotEditView extends GetView<TimeSlotController> {
   const TimeSlotEditView({super.key});
@@ -17,11 +21,13 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
   Widget build(BuildContext context) {
     final args = Get.arguments as Map<String, dynamic>;
     final TimeSlot timeSlot = args['timeSlot'];
+
     final formKey = GlobalKey<FormState>();
     final startDateController = TextEditingController();
     final endDateController = TextEditingController();
     final startTimeController = TextEditingController();
     final endTimeController = TextEditingController();
+
     final selectedStartDate = Rx<DateTime?>(null);
     final selectedEndDate = Rx<DateTime?>(null);
     final selectedStartTime = Rx<TimeOfDay?>(null);
@@ -97,11 +103,17 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
   PreferredSizeWidget _buildAppBar(BuildContext context) {
     final theme = Theme.of(context);
     Get.find<ThemeController>();
+
     return AppBar(
-      title: Text('Edit Time Slot', style: theme.appBarTheme.titleTextStyle),
+      title: Text('Ubah Slot Waktu', style: theme.appBarTheme.titleTextStyle),
       backgroundColor: theme.appBarTheme.backgroundColor,
       elevation: theme.appBarTheme.elevation,
       iconTheme: theme.appBarTheme.iconTheme,
+
+      // ✅ Disable M3 "scroll under" color shift
+      scrolledUnderElevation: 0,
+      surfaceTintColor: Colors.transparent,
+      shadowColor: Colors.transparent,
     );
   }
 
@@ -119,15 +131,17 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
     Rx<TimeOfDay?> selectedEndTime,
   ) {
     final theme = Theme.of(context);
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
     return Container(
       color: theme.scaffoldBackgroundColor,
       child: Form(
         key: formKey,
         child: ListView(
-          padding: const EdgeInsets.all(16.0),
+          padding: EdgeInsets.all(spacing.md),
           children: [
             _buildInfoCard(context, timeSlot),
-            const SizedBox(height: 24),
+            SizedBox(height: spacing.lg),
             _buildFormSection(
               context,
               startDateController,
@@ -139,7 +153,7 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
               selectedStartTime,
               selectedEndTime,
             ),
-            const SizedBox(height: 32),
+            SizedBox(height: spacing.xl),
             _buildActionButtons(
               context,
               formKey,
@@ -149,6 +163,7 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
               selectedStartTime,
               selectedEndTime,
             ),
+            SizedBox(height: spacing.xxl),
           ],
         ),
       ),
@@ -158,6 +173,9 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
   Widget _buildInfoCard(BuildContext context, TimeSlot timeSlot) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
     final String currentDate = TimeZoneUtil.formatDate(
       timeSlot.startTime,
       format: 'EEEE, d MMMM yyyy',
@@ -165,77 +183,78 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
     final String currentTimeRange =
         '${TimeZoneUtil.formatIndonesiaTime(timeSlot.startTime)} - ${TimeZoneUtil.formatIndonesiaTime(timeSlot.endTime)}';
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: theme.shadowColor.withValues(alpha: 0.1),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
+    return Card(
+      elevation: 0,
+      color: colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+        side: BorderSide(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.70),
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.info_outline,
-                  color: colorScheme.primary,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Current Time Slot',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      currentDate,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      currentTimeRange,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
-                        color: colorScheme.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Indonesia Time (GMT+7)',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontStyle: FontStyle.italic,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: EdgeInsets.all(spacing.lg),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              height: 48,
+              width: 48,
+              decoration: BoxDecoration(
+                color: colorScheme.primaryContainer.withValues(alpha: 0.70),
+                borderRadius: BorderRadius.circular(AppRadii.md),
+                border: Border.all(
+                  color: colorScheme.primary.withValues(alpha: 0.12),
                 ),
               ),
-            ],
-          ),
-        ],
+              child: Icon(
+                Icons.info_outline_rounded,
+                color: colorScheme.onPrimaryContainer,
+              ),
+            ),
+            SizedBox(width: spacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Slot Saat Ini',
+                    style: textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                  SizedBox(height: spacing.xxs),
+                  Text(
+                    currentDate,
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  SizedBox(height: spacing.xxs),
+                  Text(
+                    currentTimeRange,
+                    style: textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                  SizedBox(height: spacing.xs),
+                  Text(
+                    'Waktu Indonesia (GMT+7)',
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -253,153 +272,189 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
   ) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
     Get.find<ThemeController>();
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: theme.shadowColor.withValues(alpha: 0.1),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
+    return Card(
+      elevation: 0,
+      color: colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+        side: BorderSide(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.70),
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Edit Time Slot Details', style: theme.textTheme.titleLarge),
-          const SizedBox(height: 8),
-          Text(
-            'All times are in Indonesia Time (GMT+7)',
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontStyle: FontStyle.italic,
-              color: colorScheme.onSurfaceVariant,
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: EdgeInsets.all(spacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Ubah Detail Slot Waktu',
+              style: textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w900,
+                color: colorScheme.onSurface,
+              ),
             ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Start Date & Time',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
+            SizedBox(height: spacing.xs),
+            Text(
+              'Semua waktu menggunakan Waktu Indonesia (GMT+7).',
+              style: textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+                fontStyle: FontStyle.italic,
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                flex: 2,
-                child: _buildDateField(
-                  context,
-                  'Start Date',
-                  startDateController,
-                  selectedStartDate,
-                  Icons.calendar_today,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildTimeField(
-                  context,
-                  'Start Time',
-                  startTimeController,
-                  selectedStartTime,
-                  selectedStartDate,
-                  Icons.access_time,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'End Date & Time',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                flex: 2,
-                child: _buildDateField(
-                  context,
-                  'End Date',
-                  endDateController,
-                  selectedEndDate,
-                  Icons.calendar_today,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildTimeField(
-                  context,
-                  'End Time',
-                  endTimeController,
-                  selectedEndTime,
-                  selectedEndDate,
-                  Icons.access_time,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Obx(() {
-            if (selectedStartDate.value != null &&
-                selectedEndDate.value != null &&
-                selectedStartTime.value != null &&
-                selectedEndTime.value != null) {
-              final startDateTime = DateTime(
-                selectedStartDate.value!.year,
-                selectedStartDate.value!.month,
-                selectedStartDate.value!.day,
-                selectedStartTime.value!.hour,
-                selectedStartTime.value!.minute,
-              );
-              final endDateTime = DateTime(
-                selectedEndDate.value!.year,
-                selectedEndDate.value!.month,
-                selectedEndDate.value!.day,
-                selectedEndTime.value!.hour,
-                selectedEndTime.value!.minute,
-              );
+            SizedBox(height: spacing.lg),
 
-              if (endDateTime.isBefore(startDateTime) ||
-                  endDateTime.isAtSameMomentAs(startDateTime)) {
-                return Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: colorScheme.errorContainer.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: colorScheme.error),
+            _buildSectionLabel(context, 'Waktu Mulai'),
+            SizedBox(height: spacing.sm),
+            Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: _buildDateField(
+                    context,
+                    'Tanggal Mulai',
+                    startDateController,
+                    selectedStartDate,
+                    Icons.calendar_today_rounded,
                   ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        color: colorScheme.error,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'End time must be after start time',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.error,
-                          ),
-                        ),
-                      ),
-                    ],
+                ),
+                SizedBox(width: spacing.sm),
+                Expanded(
+                  child: _buildTimeField(
+                    context,
+                    'Jam Mulai',
+                    startTimeController,
+                    selectedStartTime,
+                    selectedStartDate,
+                    Icons.access_time_rounded,
                   ),
+                ),
+              ],
+            ),
+
+            SizedBox(height: spacing.lg),
+
+            _buildSectionLabel(context, 'Waktu Selesai'),
+            SizedBox(height: spacing.sm),
+            Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: _buildDateField(
+                    context,
+                    'Tanggal Selesai',
+                    endDateController,
+                    selectedEndDate,
+                    Icons.calendar_today_rounded,
+                  ),
+                ),
+                SizedBox(width: spacing.sm),
+                Expanded(
+                  child: _buildTimeField(
+                    context,
+                    'Jam Selesai',
+                    endTimeController,
+                    selectedEndTime,
+                    selectedEndDate,
+                    Icons.access_time_rounded,
+                  ),
+                ),
+              ],
+            ),
+
+            SizedBox(height: spacing.md),
+
+            Obx(() {
+              if (selectedStartDate.value != null &&
+                  selectedEndDate.value != null &&
+                  selectedStartTime.value != null &&
+                  selectedEndTime.value != null) {
+                final startDateTime = DateTime(
+                  selectedStartDate.value!.year,
+                  selectedStartDate.value!.month,
+                  selectedStartDate.value!.day,
+                  selectedStartTime.value!.hour,
+                  selectedStartTime.value!.minute,
                 );
+                final endDateTime = DateTime(
+                  selectedEndDate.value!.year,
+                  selectedEndDate.value!.month,
+                  selectedEndDate.value!.day,
+                  selectedEndTime.value!.hour,
+                  selectedEndTime.value!.minute,
+                );
+
+                if (endDateTime.isBefore(startDateTime) ||
+                    endDateTime.isAtSameMomentAs(startDateTime)) {
+                  return _buildInlineAlert(
+                    context,
+                    icon: Icons.error_outline_rounded,
+                    toneColor: colorScheme.error,
+                    background: colorScheme.errorContainer.withValues(
+                      alpha: 0.35,
+                    ),
+                    text: 'Waktu selesai harus setelah waktu mulai.',
+                  );
+                }
               }
-            }
-            return const SizedBox.shrink();
-          }),
+              return const SizedBox.shrink();
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionLabel(BuildContext context, String text) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Text(
+      text,
+      style: theme.textTheme.titleMedium?.copyWith(
+        fontWeight: FontWeight.w800,
+        color: colorScheme.onSurface,
+      ),
+    );
+  }
+
+  Widget _buildInlineAlert(
+    BuildContext context, {
+    required IconData icon,
+    required Color toneColor,
+    required Color background,
+    required String text,
+  }) {
+    final theme = Theme.of(context);
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    return Container(
+      margin: EdgeInsets.only(top: spacing.sm),
+      padding: EdgeInsets.all(spacing.sm),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        border: Border.all(color: toneColor.withValues(alpha: 0.55)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: toneColor, size: 20),
+          SizedBox(width: spacing.sm),
+          Expanded(
+            child: Text(
+              text,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: toneColor,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -414,6 +469,7 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
   ) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+
     return TextFormField(
       controller: controller,
       readOnly: true,
@@ -426,7 +482,7 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
       ),
       validator: (value) {
         if (value == null || value.isEmpty) {
-          return 'Please select $label';
+          return 'Silakan pilih $label';
         }
         return null;
       },
@@ -462,6 +518,7 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
   ) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+
     return TextFormField(
       controller: controller,
       readOnly: true,
@@ -474,7 +531,7 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
       ),
       validator: (value) {
         if (value == null || value.isEmpty) {
-          return 'Please select $label';
+          return 'Silakan pilih $label';
         }
         return null;
       },
@@ -514,11 +571,14 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
     Rx<TimeOfDay?> selectedEndTime,
   ) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
     return Column(
       children: [
         Obx(() {
           return AppButton(
-            text: 'Update Time Slot',
+            text: 'Simpan Perubahan',
             onPressed:
                 controller.isUpdating.value
                     ? null
@@ -532,22 +592,22 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
                       selectedEndTime,
                     ),
             isLoading: controller.isUpdating.value,
-            icon: Icons.save,
+            icon: Icons.save_rounded,
           );
         }),
-        const SizedBox(height: 12),
+        SizedBox(height: spacing.sm),
         OutlinedButton(
           onPressed: () => Get.back(),
           style: theme.outlinedButtonTheme.style,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.cancel_outlined, color: theme.colorScheme.primary),
-              const SizedBox(width: 8),
+              Icon(Icons.close_rounded, color: colorScheme.primary),
+              SizedBox(width: spacing.sm),
               Text(
-                'Cancel',
+                'Batal',
                 style: SpecialTextStyles.buttonSecondary.copyWith(
-                  color: theme.colorScheme.primary,
+                  color: colorScheme.primary,
                 ),
               ),
             ],
@@ -574,12 +634,15 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
         selectedEndDate.value == null ||
         selectedStartTime.value == null ||
         selectedEndTime.value == null) {
+      final theme = Theme.of(context);
+      final colorScheme = theme.colorScheme;
       Get.snackbar(
-        'Error',
-        'Please select all date and time fields',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+        'Gagal',
+        'Silakan lengkapi semua kolom tanggal dan waktu.',
+        backgroundColor: colorScheme.error.withValues(alpha: 0.14),
+        colorText: theme.colorScheme.onSurface,
         snackPosition: SnackPosition.BOTTOM,
+        icon: Icon(Icons.error_outline_rounded, color: colorScheme.error),
       );
       return;
     }
@@ -602,12 +665,15 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
 
     if (endDateTimeIndonesia.isBefore(startDateTimeIndonesia) ||
         endDateTimeIndonesia.isAtSameMomentAs(startDateTimeIndonesia)) {
+      final theme = Theme.of(context);
+      final colorScheme = theme.colorScheme;
       Get.snackbar(
-        'Error',
-        'End time must be after start time',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+        'Gagal',
+        'Waktu selesai harus setelah waktu mulai.',
+        backgroundColor: colorScheme.error.withValues(alpha: 0.14),
+        colorText: theme.colorScheme.onSurface,
         snackPosition: SnackPosition.BOTTOM,
+        icon: Icon(Icons.error_outline_rounded, color: colorScheme.error),
       );
       return;
     }
@@ -627,12 +693,15 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
 
     if (startDateTimeIndonesia.isAtSameMomentAs(initialStartTimeIndonesia) &&
         endDateTimeIndonesia.isAtSameMomentAs(initialEndTimeIndonesia)) {
+      final theme = Theme.of(context);
+      final colorScheme = theme.colorScheme;
       Get.snackbar(
-        'No Changes',
-        'No changes detected in the time slot',
-        backgroundColor: Colors.orange,
-        colorText: Colors.white,
+        'Tidak Ada Perubahan',
+        'Tidak ada perubahan pada slot waktu.',
+        backgroundColor: colorScheme.secondary.withValues(alpha: 0.14),
+        colorText: theme.colorScheme.onSurface,
         snackPosition: SnackPosition.BOTTOM,
+        icon: Icon(Icons.info_outline_rounded, color: colorScheme.secondary),
       );
       return;
     }
@@ -646,32 +715,45 @@ class TimeSlotEditView extends GetView<TimeSlotController> {
 
       if (updatedTimeSlot != null) {
         Get.back(result: updatedTimeSlot);
+
+        final theme = Theme.of(context);
+        final colorScheme = theme.colorScheme;
+        final semantic = theme.extension<AppSemanticColors>();
+        final successColor = semantic?.success ?? colorScheme.tertiary;
+
         Get.snackbar(
-          'Success',
-          'Time slot updated successfully',
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
+          'Berhasil',
+          'Slot waktu berhasil diperbarui.',
+          backgroundColor: successColor.withValues(alpha: 0.14),
+          colorText: theme.colorScheme.onSurface,
           snackPosition: SnackPosition.BOTTOM,
+          icon: Icon(Icons.check_circle_rounded, color: successColor),
         );
       } else {
         final errorMessage = controller.errorMessage.value;
         if (errorMessage.isNotEmpty) {
+          final theme = Theme.of(context);
+          final colorScheme = theme.colorScheme;
           Get.snackbar(
-            'Error',
+            'Gagal',
             errorMessage,
-            backgroundColor: Colors.red,
-            colorText: Colors.white,
+            backgroundColor: colorScheme.error.withValues(alpha: 0.14),
+            colorText: theme.colorScheme.onSurface,
             snackPosition: SnackPosition.BOTTOM,
+            icon: Icon(Icons.error_outline_rounded, color: colorScheme.error),
           );
         }
       }
     } catch (e) {
+      final theme = Theme.of(context);
+      final colorScheme = theme.colorScheme;
       Get.snackbar(
-        'Error',
-        'Failed to update time slot: $e',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+        'Gagal',
+        'Gagal memperbarui slot waktu: $e',
+        backgroundColor: colorScheme.error.withValues(alpha: 0.14),
+        colorText: theme.colorScheme.onSurface,
         snackPosition: SnackPosition.BOTTOM,
+        icon: Icon(Icons.error_outline_rounded, color: colorScheme.error),
       );
     }
   }

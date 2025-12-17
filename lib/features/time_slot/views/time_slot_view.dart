@@ -1,14 +1,15 @@
+// lib/features/time_slot/views/time_slot_view.dart
 import 'package:emababyspa/features/schedule/controllers/schedule_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:emababyspa/common/theme/color_theme.dart';
 import 'package:emababyspa/common/layouts/main_layout.dart';
+import 'package:emababyspa/common/theme/app_theme.dart';
+import 'package:emababyspa/common/theme/semantic_colors.dart';
 import 'package:emababyspa/common/widgets/app_button.dart';
 import 'package:emababyspa/features/time_slot/controllers/time_slot_controller.dart';
 import 'package:emababyspa/features/session/controllers/session_controller.dart';
 import 'package:emababyspa/utils/app_routes.dart';
 import 'package:emababyspa/utils/timezone_utils.dart';
-import 'package:emababyspa/common/theme/text_theme.dart';
 import 'package:emababyspa/common/widgets/custom_appbar.dart';
 
 class TimeSlotView extends StatefulWidget {
@@ -22,19 +23,27 @@ class _TimeSlotViewState extends State<TimeSlotView> {
   final controller = Get.find<TimeSlotController>();
   final sessionController = Get.find<SessionController>();
 
+  dynamic _initialTimeSlot;
+
   @override
   void initState() {
     super.initState();
-    final args = Get.arguments as Map<String, dynamic>;
-    final timeSlot = args['timeSlot'];
-    if (controller.selectedTimeSlot.value == null) {
-      controller.selectedTimeSlot.value = timeSlot;
-    }
 
-    // --- PERBAIKAN #1: Mencegah error "setState called during build" ---
+    final args = Get.arguments as Map<String, dynamic>;
+    _initialTimeSlot = args['timeSlot'];
+
+    // ✅ FIX: lakukan update Rx + fetch setelah frame pertama selesai
+    // untuk menghindari "markNeedsBuild called during build" pada Obx.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        sessionController.fetchSessions(timeSlotId: timeSlot.id);
+      if (!mounted) return;
+
+      if (controller.selectedTimeSlot.value == null) {
+        controller.selectedTimeSlot.value = _initialTimeSlot;
+      }
+
+      final slot = controller.selectedTimeSlot.value ?? _initialTimeSlot;
+      if (slot != null) {
+        sessionController.fetchSessions(timeSlotId: slot.id);
       }
     });
   }
@@ -61,17 +70,17 @@ class _TimeSlotViewState extends State<TimeSlotView> {
         );
       }
 
+      final theme = Theme.of(context);
+      final colorScheme = theme.colorScheme;
+
       return Scaffold(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        backgroundColor: theme.scaffoldBackgroundColor,
         appBar: CustomAppBar(
-          title: 'Time Slot Details',
-          backgroundColor: Theme.of(context).colorScheme.surface,
+          title: 'Detail Slot Waktu',
+          backgroundColor: colorScheme.surface,
           actions: [
             PopupMenuButton<String>(
-              icon: Icon(
-                Icons.more_vert,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+              icon: Icon(Icons.more_vert, color: colorScheme.onSurfaceVariant),
               onSelected: (value) {
                 if (value == 'edit') {
                   _onEditTimeSlot(currentTimeSlot);
@@ -84,30 +93,27 @@ class _TimeSlotViewState extends State<TimeSlotView> {
                     PopupMenuItem<String>(
                       value: 'edit',
                       child: ListTile(
+                        contentPadding: EdgeInsets.zero,
                         leading: Icon(
                           Icons.edit_outlined,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          color: colorScheme.onSurfaceVariant,
                         ),
-                        title: Text(
-                          'Edit',
-                          style: Theme.of(context).textTheme.bodyLarge,
-                        ),
+                        title: Text('Ubah', style: theme.textTheme.bodyLarge),
                       ),
                     ),
                     const PopupMenuDivider(),
                     PopupMenuItem<String>(
                       value: 'delete',
                       child: ListTile(
+                        contentPadding: EdgeInsets.zero,
                         leading: Icon(
                           Icons.delete_outline,
-                          color: Theme.of(context).colorScheme.error,
+                          color: colorScheme.error,
                         ),
                         title: Text(
-                          'Delete',
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodyLarge?.copyWith(
-                            color: Theme.of(context).colorScheme.error,
+                          'Hapus',
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: colorScheme.error,
                           ),
                         ),
                       ),
@@ -119,7 +125,10 @@ class _TimeSlotViewState extends State<TimeSlotView> {
         body: MainLayout(
           child: SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: M3Spacing.lg),
+              padding: EdgeInsets.symmetric(
+                horizontal:
+                    (theme.extension<AppSpacing>() ?? const AppSpacing()).lg,
+              ),
               child: _buildBody(context, currentTimeSlot),
             ),
           ),
@@ -141,6 +150,9 @@ class _TimeSlotViewState extends State<TimeSlotView> {
   }
 
   Widget _buildBody(BuildContext context, dynamic timeSlot) {
+    final theme = Theme.of(context);
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
     return RefreshIndicator(
       onRefresh: () async {
         await controller.refreshSelectedTimeSlot(timeSlot.id);
@@ -151,7 +163,8 @@ class _TimeSlotViewState extends State<TimeSlotView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: M3Spacing.md),
+            SizedBox(height: spacing.md),
+            // Obx di sini aman, karena update Rx utama sudah dipindah ke postFrame.
             Obx(
               () => _buildTimeSlotHeader(
                 context,
@@ -159,9 +172,9 @@ class _TimeSlotViewState extends State<TimeSlotView> {
                 sessionController.sessions,
               ),
             ),
-            const SizedBox(height: M3Spacing.xl),
+            SizedBox(height: spacing.xl),
             _buildSessionsSection(context, timeSlot),
-            const SizedBox(height: M3Spacing.xxl),
+            SizedBox(height: spacing.xxl),
           ],
         ),
       ),
@@ -173,6 +186,12 @@ class _TimeSlotViewState extends State<TimeSlotView> {
     dynamic timeSlot,
     List<dynamic> sessions,
   ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+    final semantic = theme.extension<AppSemanticColors>();
+
     final String dateFormatted = TimeZoneUtil.formatISOToIndonesiaTime(
       timeSlot.startTime.toIso8601String(),
       format: 'EEEE, d MMMM yyyy',
@@ -189,37 +208,60 @@ class _TimeSlotViewState extends State<TimeSlotView> {
     final int availableSessions = totalSessions - bookedSessions;
     final bool allBooked = totalSessions > 0 && bookedSessions == totalSessions;
 
+    final successColor = semantic?.success ?? colorScheme.tertiary;
+
     return Card(
       elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainerLowest,
+      color: colorScheme.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+        side: BorderSide(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.70),
+        ),
       ),
+      clipBehavior: Clip.antiAlias,
       child: Padding(
-        padding: const EdgeInsets.all(M3Spacing.lg),
+        padding: EdgeInsets.all(spacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.calendar_today,
-                  size: 16,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: M3Spacing.sm),
-                Text(
-                  dateFormatted,
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                Container(
+                  height: 36,
+                  padding: EdgeInsets.symmetric(horizontal: spacing.sm),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.55,
+                    ),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: colorScheme.outlineVariant.withValues(alpha: 0.70),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.calendar_today,
+                        size: 16,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      SizedBox(width: spacing.xs),
+                      Text(
+                        dateFormatted,
+                        style: textTheme.labelLarge?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: M3Spacing.md),
-            Divider(color: Theme.of(context).colorScheme.outlineVariant),
-            const SizedBox(height: M3Spacing.md),
+            SizedBox(height: spacing.md),
+            Divider(color: colorScheme.outlineVariant.withValues(alpha: 0.70)),
+            SizedBox(height: spacing.md),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -228,19 +270,18 @@ class _TimeSlotViewState extends State<TimeSlotView> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Time Slot',
-                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        'Rentang Waktu',
+                        style: textTheme.labelLarge?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(height: M3Spacing.xs),
+                      SizedBox(height: spacing.xs),
                       Text(
                         '$startTime - $endTime',
-                        style: Theme.of(
-                          context,
-                        ).textTheme.headlineSmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface,
-                          fontWeight: FontWeight.bold,
+                        style: textTheme.headlineSmall?.copyWith(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w900,
                         ),
                       ),
                     ],
@@ -249,35 +290,61 @@ class _TimeSlotViewState extends State<TimeSlotView> {
                 _buildStatusBadge(context, allBooked),
               ],
             ),
-            const SizedBox(height: M3Spacing.md),
-            Divider(color: Theme.of(context).colorScheme.outlineVariant),
-            const SizedBox(height: M3Spacing.md),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildStatItem(
-                  context: context,
-                  title: 'Total',
-                  value: '$totalSessions',
-                  color: Theme.of(context).colorScheme.primary,
+            SizedBox(height: spacing.md),
+            Divider(color: colorScheme.outlineVariant.withValues(alpha: 0.70)),
+            SizedBox(height: spacing.md),
+            Container(
+              padding: EdgeInsets.symmetric(vertical: spacing.sm),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.35,
                 ),
-                _buildStatItem(
-                  context: context,
-                  title: 'Booked',
-                  value: '$bookedSessions',
-                  color: Theme.of(context).colorScheme.error,
+                borderRadius: BorderRadius.circular(AppRadii.lg),
+                border: Border.all(
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.70),
                 ),
-                _buildStatItem(
-                  context: context,
-                  title: 'Available',
-                  value: '$availableSessions',
-                  color: ColorTheme.success,
-                ),
-              ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildStatItem(
+                    context: context,
+                    title: 'Total',
+                    value: '$totalSessions',
+                    color: colorScheme.primary,
+                  ),
+                  _buildStatDivider(context),
+                  _buildStatItem(
+                    context: context,
+                    title: 'Terpesan',
+                    value: '$bookedSessions',
+                    color: colorScheme.error,
+                  ),
+                  _buildStatDivider(context),
+                  _buildStatItem(
+                    context: context,
+                    title: 'Tersedia',
+                    value: '$availableSessions',
+                    color: successColor,
+                  ),
+                ],
+              ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildStatDivider(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    return Container(
+      height: spacing.xl,
+      width: 1,
+      color: colorScheme.outlineVariant.withValues(alpha: 0.70),
     );
   }
 
@@ -287,20 +354,26 @@ class _TimeSlotViewState extends State<TimeSlotView> {
     required String value,
     required Color color,
   }) {
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+    final colorScheme = theme.colorScheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
     return Column(
       children: [
         Text(
           value,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
+          style: textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w900,
             color: color,
           ),
         ),
-        const SizedBox(height: M3Spacing.xs),
+        SizedBox(height: spacing.xxs),
         Text(
           title,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          style: textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
@@ -308,46 +381,56 @@ class _TimeSlotViewState extends State<TimeSlotView> {
   }
 
   Widget _buildStatusBadge(BuildContext context, bool allBooked) {
-    final textColor =
-        allBooked
-            ? Theme.of(context).colorScheme.onErrorContainer
-            : ColorTheme.activeTagText;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+    final semantic = theme.extension<AppSemanticColors>();
+    final successColor = semantic?.success ?? colorScheme.tertiary;
+
     final bgColor =
         allBooked
-            ? Theme.of(context).colorScheme.errorContainer
-            : ColorTheme.activeTagBackground;
+            ? colorScheme.errorContainer.withValues(alpha: 0.85)
+            : successColor.withValues(alpha: 0.12);
+    final fgColor = allBooked ? colorScheme.onErrorContainer : successColor;
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: M3Spacing.md,
-        vertical: M3Spacing.xs,
+      padding: EdgeInsets.symmetric(
+        horizontal: spacing.md,
+        vertical: spacing.xs,
       ),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(100),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: fgColor.withValues(alpha: 0.22)),
       ),
       child: Text(
-        allBooked ? 'Fully Booked' : 'Available',
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-          color: textColor,
-          fontWeight: FontWeight.bold,
+        allBooked ? 'Penuh' : 'Tersedia',
+        style: textTheme.labelMedium?.copyWith(
+          color: fgColor,
+          fontWeight: FontWeight.w900,
         ),
       ),
     );
   }
 
   Widget _buildSessionsSection(BuildContext context, dynamic timeSlot) {
+    final theme = Theme.of(context);
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader(context, 'Sessions', timeSlot),
-        const SizedBox(height: M3Spacing.md),
+        _buildSectionHeader(context, 'Sesi', timeSlot),
+        SizedBox(height: spacing.md),
         Obx(() {
           if (sessionController.isLoading.value) {
-            return const Center(
+            return Center(
               child: Padding(
-                padding: EdgeInsets.all(M3Spacing.xl),
-                child: CircularProgressIndicator(),
+                padding: EdgeInsets.all(spacing.xl),
+                child: CircularProgressIndicator(
+                  color: Theme.of(context).colorScheme.primary,
+                ),
               ),
             );
           }
@@ -361,7 +444,7 @@ class _TimeSlotViewState extends State<TimeSlotView> {
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: sessions.length,
                 separatorBuilder:
-                    (context, index) => const SizedBox(height: M3Spacing.md),
+                    (context, index) => SizedBox(height: spacing.md),
                 itemBuilder: (context, index) {
                   final session = sessions[index];
                   return _buildSessionItem(context, session);
@@ -377,17 +460,22 @@ class _TimeSlotViewState extends State<TimeSlotView> {
     String title,
     dynamic timeSlot,
   ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           title,
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          style: textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w900,
+            color: colorScheme.onSurface,
+          ),
         ),
         AppButton(
-          text: 'Add Session',
+          text: 'Tambah Sesi',
           type: AppButtonType.text,
           size: AppButtonSize.small,
           icon: Icons.add_circle_outline,
@@ -398,40 +486,65 @@ class _TimeSlotViewState extends State<TimeSlotView> {
   }
 
   Widget _buildEmptySessions(BuildContext context, dynamic timeSlot) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+
     return Card(
       elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainer,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+        side: BorderSide(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.70),
+        ),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(M3Spacing.xl),
+        padding: EdgeInsets.all(spacing.xl),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.event_note_outlined,
-                size: 48,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              Container(
+                height: 84,
+                width: 84,
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.55,
+                  ),
+                  borderRadius: BorderRadius.circular(AppRadii.xl),
+                  border: Border.all(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.70),
+                  ),
+                ),
+                child: Icon(
+                  Icons.event_note_outlined,
+                  size: 44,
+                  color: colorScheme.onSurfaceVariant,
+                ),
               ),
-              const SizedBox(height: M3Spacing.md),
+              SizedBox(height: spacing.md),
               Text(
-                'No Sessions Yet',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                'Belum Ada Sesi',
+                style: textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: colorScheme.onSurface,
+                ),
               ),
-              const SizedBox(height: M3Spacing.sm),
+              SizedBox(height: spacing.sm),
               Text(
-                'Add sessions to this time slot to manage bookings.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                'Tambahkan sesi pada slot waktu ini untuk mengatur ketersediaan dan pemesanan.',
+                style: textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: M3Spacing.lg),
+              SizedBox(height: spacing.lg),
               AppButton(
                 icon: Icons.add,
-                text: 'Add First Session',
+                text: 'Tambah Sesi Pertama',
                 onPressed: () => _showAddSessionDialog(context, timeSlot),
                 type: AppButtonType.primary,
                 size: AppButtonSize.medium,
@@ -444,20 +557,26 @@ class _TimeSlotViewState extends State<TimeSlotView> {
   }
 
   Widget _buildSessionItem(BuildContext context, dynamic session) {
-    final bool isBooked = session.isBooked ?? false;
-    final Color statusColor =
-        isBooked ? Theme.of(context).colorScheme.error : ColorTheme.success;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final spacing = theme.extension<AppSpacing>() ?? const AppSpacing();
+    final semantic = theme.extension<AppSemanticColors>();
+    final successColor = semantic?.success ?? colorScheme.tertiary;
 
-    String customerName = "Available Slot";
+    final bool isBooked = session.isBooked ?? false;
+    final Color statusColor = isBooked ? colorScheme.error : successColor;
+
+    String customerName = "Slot Tersedia";
     if (isBooked &&
         session.reservation?.babyName != null &&
         session.reservation!.babyName.isNotEmpty) {
       customerName = session.reservation!.babyName;
     }
 
-    String staffName = "Staff: Not Assigned";
+    String staffName = "Terapis: Belum ditentukan";
     if (session.staff != null && session.staff?.name != null) {
-      staffName = "Staff: ${session.staff!.name}";
+      staffName = "Terapis: ${session.staff!.name}";
     }
 
     return Dismissible(
@@ -468,23 +587,21 @@ class _TimeSlotViewState extends State<TimeSlotView> {
       },
       background: Container(
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: M3Spacing.lg),
+        padding: EdgeInsets.only(right: spacing.lg),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.errorContainer,
-          borderRadius: BorderRadius.circular(12),
+          color: colorScheme.errorContainer.withValues(alpha: 0.85),
+          borderRadius: BorderRadius.circular(AppRadii.lg),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.delete_outline,
-              color: Theme.of(context).colorScheme.onErrorContainer,
-            ),
-            const SizedBox(height: M3Spacing.xs),
+            Icon(Icons.delete_outline, color: colorScheme.onErrorContainer),
+            SizedBox(height: spacing.xxs),
             Text(
-              'Delete',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onErrorContainer,
+              'Hapus',
+              style: textTheme.bodySmall?.copyWith(
+                color: colorScheme.onErrorContainer,
+                fontWeight: FontWeight.w800,
               ),
             ),
           ],
@@ -493,12 +610,18 @@ class _TimeSlotViewState extends State<TimeSlotView> {
       child: Card(
         elevation: 0,
         margin: EdgeInsets.zero,
-        color: Theme.of(context).colorScheme.surfaceContainerHigh,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        color: colorScheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+          side: BorderSide(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.70),
+          ),
+        ),
+        clipBehavior: Clip.antiAlias,
         child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: M3Spacing.lg,
-            vertical: M3Spacing.sm,
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: spacing.lg,
+            vertical: spacing.sm,
           ),
           onTap: () {
             Get.toNamed(
@@ -506,8 +629,14 @@ class _TimeSlotViewState extends State<TimeSlotView> {
               arguments: {'session': session},
             );
           },
-          leading: CircleAvatar(
-            backgroundColor: statusColor.withValues(alpha: 0.15),
+          leading: Container(
+            height: 44,
+            width: 44,
+            decoration: BoxDecoration(
+              color: statusColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(AppRadii.md),
+              border: Border.all(color: statusColor.withValues(alpha: 0.18)),
+            ),
             child: Icon(
               isBooked ? Icons.person_rounded : Icons.person_add_alt_1_rounded,
               color: statusColor,
@@ -515,21 +644,26 @@ class _TimeSlotViewState extends State<TimeSlotView> {
           ),
           title: Text(
             customerName,
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            style: textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w900,
+              color: colorScheme.onSurface,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          subtitle: Text(
-            staffName,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+          subtitle: Padding(
+            padding: EdgeInsets.only(top: spacing.xxs),
+            child: Text(
+              staffName,
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           trailing: Switch(
             value: isBooked,
-            activeColor: Theme.of(context).colorScheme.primary,
+            activeColor: colorScheme.primary,
             onChanged:
                 isBooked
                     ? null
@@ -547,22 +681,34 @@ class _TimeSlotViewState extends State<TimeSlotView> {
     dynamic session,
     bool newBookingStatus,
   ) async {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
     return showDialog<void>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Mark as Booked?'),
-          content: const Text(
-            'This will manually mark the session as booked. This action should be used if a booking was made outside the app. Continue?',
+          icon: Icon(Icons.info_outline_rounded, color: colorScheme.primary),
+          title: Text(
+            'Tandai sebagai Terpesan?',
+            style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+          ),
+          content: Text(
+            'Sesi ini akan ditandai sebagai terpesan secara manual. Gunakan opsi ini jika pemesanan dilakukan di luar aplikasi. Lanjutkan?',
+            style: textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           actions: [
             AppButton(
-              text: 'Cancel',
+              text: 'Batal',
               type: AppButtonType.text,
               onPressed: () => Navigator.of(context).pop(),
             ),
             AppButton(
-              text: 'Mark as Booked',
+              text: 'Tandai Terpesan',
               onPressed: () {
                 Navigator.of(context).pop();
                 sessionController.updateSessionBookingStatus(
@@ -577,31 +723,38 @@ class _TimeSlotViewState extends State<TimeSlotView> {
     );
   }
 
-  // --- PERBAIKAN #2: Logika hapus yang benar ---
   Future<bool> _showDeleteSessionConfirmation(
     BuildContext context,
     dynamic session,
   ) async {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
     final result = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          icon: Icon(
-            Icons.warning_amber_rounded,
-            color: Theme.of(context).colorScheme.error,
+          icon: Icon(Icons.warning_amber_rounded, color: colorScheme.error),
+          title: Text(
+            'Hapus Sesi?',
+            style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
           ),
-          title: const Text('Delete Session?'),
-          content: const Text(
-            'This action is permanent and cannot be undone. Are you sure?',
+          content: Text(
+            'Tindakan ini bersifat permanen dan tidak bisa dibatalkan. Yakin ingin menghapus sesi ini?',
+            style: textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           actions: [
             AppButton(
-              text: 'Cancel',
+              text: 'Batal',
               type: AppButtonType.text,
               onPressed: () => Navigator.of(context).pop(false),
             ),
             AppButton(
-              text: 'Delete',
+              text: 'Hapus',
               onPressed: () => Navigator.of(context).pop(true),
             ),
           ],
@@ -609,17 +762,10 @@ class _TimeSlotViewState extends State<TimeSlotView> {
       },
     );
 
-    // Hanya jika pengguna menekan "Delete"
     if (result == true) {
-      // Panggil controller untuk menghapus, dan tunggu hasilnya
       final success = await sessionController.deleteSession(session.id);
-      // Kembalikan status suksesnya ke widget Dismissible.
-      // Jika true, item akan hilang. Jika false, item akan kembali.
-      // Tidak perlu panggil fetch ulang di sini.
       return success;
     }
-
-    // Jika pengguna menekan "Cancel"
     return false;
   }
 
@@ -634,26 +780,34 @@ class _TimeSlotViewState extends State<TimeSlotView> {
   }
 
   void _showDeleteConfirmation(BuildContext context, dynamic timeSlot) async {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          icon: Icon(
-            Icons.delete_forever_rounded,
-            color: Theme.of(context).colorScheme.error,
+          icon: Icon(Icons.delete_forever_rounded, color: colorScheme.error),
+          title: Text(
+            'Hapus Slot Waktu?',
+            style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
           ),
-          title: const Text('Delete Time Slot?'),
-          content: const Text(
-            'This will delete the entire time slot and all its associated sessions. This action cannot be undone.',
+          content: Text(
+            'Ini akan menghapus seluruh slot waktu beserta semua sesi di dalamnya. Tindakan ini tidak bisa dibatalkan.',
+            style: textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           actions: [
             AppButton(
-              text: 'Cancel',
+              text: 'Batal',
               type: AppButtonType.text,
               onPressed: () => Navigator.of(context).pop(),
             ),
             AppButton(
-              text: 'Delete Permanently',
+              text: 'Hapus Permanen',
               onPressed: () async {
                 Navigator.of(context).pop();
 
@@ -664,31 +818,34 @@ class _TimeSlotViewState extends State<TimeSlotView> {
                 if (success) {
                   controller.clearSelectedTimeSlot();
 
-                  // ✅ FIX: refresh schedule memakai method baru
                   final scheduleController = Get.find<ScheduleController>();
                   await scheduleController.refreshScheduleData(
                     scheduleController.selectedDate.value,
                   );
 
-                  // balik dari halaman detail time slot
                   Get.back();
 
+                  final semantic =
+                      Theme.of(Get.context!).extension<AppSemanticColors>();
+                  final successColor =
+                      semantic?.success ?? colorScheme.tertiary;
+
                   Get.snackbar(
-                    'Success',
-                    'Time slot deleted successfully',
-                    backgroundColor: ColorTheme.success.withValues(alpha: 0.12),
-                    colorText: ColorTheme.success,
+                    'Berhasil',
+                    'Slot waktu berhasil dihapus.',
+                    backgroundColor: successColor.withValues(alpha: 0.14),
+                    colorText: colorScheme.onSurface,
+                    icon: Icon(Icons.check_circle, color: successColor),
                   );
                 } else {
                   Get.snackbar(
-                    'Error',
+                    'Gagal',
                     controller.errorMessage.value.isNotEmpty
                         ? controller.errorMessage.value
-                        : 'Failed to delete time slot',
-                    backgroundColor: Theme.of(
-                      context,
-                    ).colorScheme.error.withValues(alpha: 0.12),
-                    colorText: Theme.of(context).colorScheme.error,
+                        : 'Slot waktu gagal dihapus.',
+                    backgroundColor: colorScheme.error.withValues(alpha: 0.14),
+                    colorText: colorScheme.onSurface,
+                    icon: Icon(Icons.error_outline, color: colorScheme.error),
                   );
                 }
               },
