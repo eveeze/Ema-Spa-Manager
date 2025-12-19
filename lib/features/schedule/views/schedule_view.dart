@@ -47,8 +47,13 @@ class _ScheduleViewState extends State<ScheduleView> {
   Widget build(BuildContext context) {
     return MainLayout(
       child: Obx(() {
-        final isDark = themeController.isDarkMode;
-        final bg = isDark ? ColorTheme.backgroundDark : ColorTheme.background;
+        final theme = Theme.of(context);
+        final cs = theme.colorScheme;
+
+        // ✅ Background FLAT (no blue, no blob), consistent with other pages.
+        // UI only: we don't touch any logic / controller flow.
+        final bg =
+            themeController.isDarkMode ? cs.surfaceContainerLowest : cs.surface;
 
         final isBusy =
             controller.isLoading.value || controller.isGenerating.value;
@@ -57,38 +62,40 @@ class _ScheduleViewState extends State<ScheduleView> {
         return Scaffold(
           backgroundColor: bg,
           floatingActionButton: _buildFab(context),
-          body:
-              isBusy
-                  ? const Center(
-                    child: LoadingWidget(
-                      color: ColorTheme.primary,
-                      fullScreen: true,
-                      message: "Memuat jadwal…",
-                      size: LoadingSize.medium,
-                    ),
-                  )
-                  : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildCalendarCard(context),
-                      const SizedBox(height: M3Spacing.md),
-                      Expanded(
-                        child:
-                            isDetailsLoading
-                                ? const Center(
-                                  child: LoadingWidget(
-                                    color: ColorTheme.primary,
-                                    size: LoadingSize.small,
-                                    message: "Menyiapkan detail hari…",
-                                  ),
-                                )
-                                : _buildDailySchedule(
-                                  context,
-                                  controller.selectedDate.value,
-                                ),
+          body: SafeArea(
+            child:
+                isBusy
+                    ? const Center(
+                      child: LoadingWidget(
+                        color: ColorTheme.primary,
+                        fullScreen: true,
+                        message: "Memuat jadwal…",
+                        size: LoadingSize.medium,
                       ),
-                    ],
-                  ),
+                    )
+                    : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildCalendarCard(context),
+                        const SizedBox(height: M3Spacing.md),
+                        Expanded(
+                          child:
+                              isDetailsLoading
+                                  ? const Center(
+                                    child: LoadingWidget(
+                                      color: ColorTheme.primary,
+                                      size: LoadingSize.small,
+                                      message: "Menyiapkan detail hari…",
+                                    ),
+                                  )
+                                  : _buildDailySchedule(
+                                    context,
+                                    controller.selectedDate.value,
+                                  ),
+                        ),
+                      ],
+                    ),
+          ),
         );
       }),
     );

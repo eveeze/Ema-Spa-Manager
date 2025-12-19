@@ -114,7 +114,7 @@ class AnalyticsView extends GetView<AnalyticsController> {
     final cs = theme.colorScheme;
     final sp = theme.extension<AppSpacing>() ?? const AppSpacing();
 
-    final radius = BorderRadius.circular(18);
+    final radius = BorderRadius.circular(AppRadii.xl);
 
     return Obx(() {
       final selected = controller.selectedFilter.value;
@@ -136,8 +136,8 @@ class AnalyticsView extends GetView<AnalyticsController> {
           boxShadow: [
             BoxShadow(
               color: cs.shadow.withValues(alpha: 0.04),
-              blurRadius: 14,
-              offset: const Offset(0, 8),
+              blurRadius: sp.xl,
+              offset: Offset(0, sp.sm),
             ),
           ],
         ),
@@ -183,12 +183,11 @@ class AnalyticsView extends GetView<AnalyticsController> {
   }
 
   // =========================================================
-  // STATS GRID (IMPROVED CARDS)
+  // STATS GRID (FIX: NUMBER MUST SHOW, NO TRUNCATION)
   // =========================================================
   Widget _buildStatsGrid(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final sp = theme.extension<AppSpacing>() ?? const AppSpacing();
 
     final stats = controller.detailsData.value!.reservationStats;
     final totalRevenue = controller.detailsData.value!.revenueChartData.fold(
@@ -200,48 +199,58 @@ class AnalyticsView extends GetView<AnalyticsController> {
 
     final width = MediaQuery.of(context).size.width;
     final crossAxisCount = width > 600 ? 4 : 2;
-    final childAspectRatio = width > 600 ? 1.45 : 1.25;
+
+    // Make cards taller on phones so currency can fit comfortably
+    final childAspectRatio = width > 600 ? 1.60 : 1.05;
 
     final cRevenue = cs.primary;
     final cTotal = cs.secondary;
     final cDone = cs.tertiary;
     final cRating = cs.primary;
 
+    final revenueText = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    ).format(totalRevenue);
+
     return GridView.count(
       crossAxisCount: crossAxisCount,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: sp.sm,
-      mainAxisSpacing: sp.sm,
+      crossAxisSpacing:
+          (theme.extension<AppSpacing>() ?? const AppSpacing()).sm,
+      mainAxisSpacing: (theme.extension<AppSpacing>() ?? const AppSpacing()).sm,
       childAspectRatio: childAspectRatio,
       children: [
         _StatCard(
           title: 'Total Pendapatan',
-          value: NumberFormat.currency(
-            locale: 'id_ID',
-            symbol: 'Rp ',
-            decimalDigits: 0,
-          ).format(totalRevenue),
+          value: revenueText,
           icon: Icons.monetization_on_outlined,
           accent: cRevenue,
+          // ✅ allow 2 lines, scale down safely
+          valueStyle: _StatValueStyle.currency,
         ),
         _StatCard(
           title: 'Total Reservasi',
           value: stats.total.toString(),
           icon: Icons.event_available_outlined,
           accent: cTotal,
+          valueStyle: _StatValueStyle.bigNumber,
         ),
         _StatCard(
           title: 'Sesi Selesai',
           value: stats.completed.toString(),
           icon: Icons.check_circle_outline_rounded,
           accent: cDone,
+          valueStyle: _StatValueStyle.bigNumber,
         ),
         _StatCard(
           title: 'Rata-Rata Rating',
           value: overallRating.toStringAsFixed(2),
           icon: Icons.star_outline_rounded,
           accent: cRating,
+          valueStyle: _StatValueStyle.bigNumber,
         ),
       ],
     );
@@ -295,7 +304,7 @@ class AnalyticsView extends GetView<AnalyticsController> {
                     (value) => FlLine(
                       color: cs.outlineVariant.withValues(alpha: 0.35),
                       strokeWidth: 1,
-                      dashArray: [6, 6],
+                      dashArray: const [6, 6],
                     ),
               ),
               borderData: FlBorderData(show: false),
@@ -309,11 +318,11 @@ class AnalyticsView extends GetView<AnalyticsController> {
                 leftTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: true,
-                    reservedSize: 44,
+                    reservedSize: sp.xxl + sp.sm,
                     interval: yInterval,
                     getTitlesWidget: (value, meta) {
                       return Padding(
-                        padding: const EdgeInsets.only(right: 8),
+                        padding: EdgeInsets.only(right: sp.sm),
                         child: Text(
                           value == 0 ? '0' : _compactRupiah(value),
                           style: theme.textTheme.labelSmall?.copyWith(
@@ -328,7 +337,7 @@ class AnalyticsView extends GetView<AnalyticsController> {
                 bottomTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: true,
-                    reservedSize: 34,
+                    reservedSize: sp.xxl,
                     interval: intervalX.toDouble(),
                     getTitlesWidget: (value, meta) {
                       final idx = value.round();
@@ -360,7 +369,7 @@ class AnalyticsView extends GetView<AnalyticsController> {
                 LineChartBarData(
                   spots: spots,
                   isCurved: true,
-                  barWidth: 3.2,
+                  barWidth: sp.xs / 2,
                   isStrokeCapRound: true,
                   gradient: LinearGradient(
                     begin: Alignment.centerLeft,
@@ -374,9 +383,9 @@ class AnalyticsView extends GetView<AnalyticsController> {
                     },
                     getDotPainter: (spot, percent, barData, index) {
                       return FlDotCirclePainter(
-                        radius: 4.5,
+                        radius: sp.xs,
                         color: cs.primary,
-                        strokeWidth: 2,
+                        strokeWidth: sp.xxs / 2,
                         strokeColor: cs.surface,
                       );
                     },
@@ -401,7 +410,7 @@ class AnalyticsView extends GetView<AnalyticsController> {
                     horizontal: sp.md,
                     vertical: sp.sm,
                   ),
-                  tooltipMargin: 14,
+                  tooltipMargin: sp.md,
                   tooltipBorder: BorderSide(
                     color: cs.outlineVariant.withValues(alpha: 0.55),
                     width: 1,
@@ -474,7 +483,7 @@ class AnalyticsView extends GetView<AnalyticsController> {
           color: color,
           value: value.toDouble(),
           title: '$value',
-          radius: 56,
+          radius: sp.xxl + sp.md,
           titleStyle: theme.textTheme.labelLarge?.copyWith(
             fontWeight: FontWeight.w900,
             color: cs.onPrimary,
@@ -517,8 +526,8 @@ class AnalyticsView extends GetView<AnalyticsController> {
             child: PieChart(
               PieChartData(
                 sections: sections,
-                sectionsSpace: 3,
-                centerSpaceRadius: 44,
+                sectionsSpace: sp.xs,
+                centerSpaceRadius: sp.xxl,
               ),
             ),
           );
@@ -613,11 +622,11 @@ class AnalyticsView extends GetView<AnalyticsController> {
                       borderRadius: BorderRadius.circular(AppRadii.sm),
                       child: LinearProgressIndicator(
                         value: progress,
-                        backgroundColor: cs.surfaceVariant.withValues(
+                        backgroundColor: cs.surfaceContainerHighest.withValues(
                           alpha: 0.65,
                         ),
                         color: cs.primary,
-                        minHeight: 9,
+                        minHeight: sp.sm,
                       ),
                     ),
                   ],
@@ -705,7 +714,7 @@ class AnalyticsView extends GetView<AnalyticsController> {
                             Icon(
                               Icons.star_rounded,
                               color: cs.tertiary,
-                              size: 18,
+                              size: sp.lg,
                             ),
                             SizedBox(width: sp.xs),
                             Text(
@@ -724,11 +733,11 @@ class AnalyticsView extends GetView<AnalyticsController> {
                       borderRadius: BorderRadius.circular(AppRadii.sm),
                       child: LinearProgressIndicator(
                         value: (item.averageRating / 5.0).clamp(0.0, 1.0),
-                        backgroundColor: cs.surfaceVariant.withValues(
+                        backgroundColor: cs.surfaceContainerHighest.withValues(
                           alpha: 0.65,
                         ),
                         color: accent,
-                        minHeight: 9,
+                        minHeight: sp.sm,
                       ),
                     ),
                   ],
@@ -815,11 +824,11 @@ class _SectionShell extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                width: 6,
-                height: 22,
+                width: sp.xs,
+                height: sp.xxl,
                 decoration: BoxDecoration(
                   color: cs.primary,
-                  borderRadius: BorderRadius.circular(99),
+                  borderRadius: BorderRadius.circular(999),
                 ),
               ),
               SizedBox(width: sp.sm),
@@ -866,8 +875,8 @@ class _SectionShell extends StatelessWidget {
             boxShadow: [
               BoxShadow(
                 color: cs.shadow.withValues(alpha: 0.06),
-                blurRadius: 18,
-                offset: const Offset(0, 8),
+                blurRadius: sp.xl,
+                offset: Offset(0, sp.md),
               ),
             ],
           ),
@@ -888,11 +897,12 @@ class _EmptySection extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final sp = theme.extension<AppSpacing>() ?? const AppSpacing();
 
     return _SectionShell(
       title: title,
       child: SizedBox(
-        height: 180,
+        height: sp.xxl * 3,
         child: Center(
           child: Text(
             message,
@@ -924,8 +934,8 @@ class _LegendItem extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 14,
-            height: 14,
+            width: sp.sm,
+            height: sp.sm,
             decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           SizedBox(width: sp.sm),
@@ -941,17 +951,21 @@ class _LegendItem extends StatelessWidget {
   }
 }
 
+enum _StatValueStyle { currency, bigNumber }
+
 class _StatCard extends StatelessWidget {
   final String title;
   final String value;
   final IconData icon;
   final Color accent;
+  final _StatValueStyle valueStyle;
 
   const _StatCard({
     required this.title,
     required this.value,
     required this.icon,
     required this.accent,
+    required this.valueStyle,
   });
 
   @override
@@ -959,6 +973,9 @@ class _StatCard extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final sp = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    final baseBorder = accent.withValues(alpha: 0.22);
+    final glass = cs.surface.withValues(alpha: 0.92);
 
     return Container(
       padding: EdgeInsets.all(sp.md),
@@ -969,65 +986,124 @@ class _StatCard extends StatelessWidget {
           colors: [accent.withValues(alpha: 0.14), cs.surface],
         ),
         borderRadius: BorderRadius.circular(AppRadii.xl),
-        border: Border.all(color: accent.withValues(alpha: 0.22), width: 1.2),
+        border: Border.all(color: baseBorder, width: 1.2),
         boxShadow: [
           BoxShadow(
             color: accent.withValues(alpha: 0.10),
-            blurRadius: 18,
-            offset: const Offset(0, 10),
+            blurRadius: sp.xl,
+            offset: Offset(0, sp.md),
           ),
         ],
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: cs.surface.withValues(alpha: 0.90),
-              borderRadius: BorderRadius.circular(AppRadii.lg),
-              border: Border.all(color: accent.withValues(alpha: 0.22)),
-              boxShadow: [
-                BoxShadow(
-                  color: accent.withValues(alpha: 0.14),
-                  blurRadius: 10,
-                  offset: const Offset(0, 6),
+          // Header
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: sp.xxl,
+                height: sp.xxl,
+                decoration: BoxDecoration(
+                  color: glass,
+                  borderRadius: BorderRadius.circular(AppRadii.lg),
+                  border: Border.all(color: baseBorder),
+                  boxShadow: [
+                    BoxShadow(
+                      color: accent.withValues(alpha: 0.14),
+                      blurRadius: sp.lg,
+                      offset: Offset(0, sp.sm),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: Icon(icon, color: accent, size: 22),
+                child: Icon(icon, color: accent, size: sp.lg + sp.xs),
+              ),
+              SizedBox(width: sp.sm),
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(top: sp.xxs),
+                  child: Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: cs.onSurfaceVariant.withValues(alpha: 0.85),
+                      height: 1.15,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-          SizedBox(width: sp.md),
+
+          SizedBox(height: sp.sm),
+
+          // Value (NO TRUNCATION)
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: cs.onSurfaceVariant.withValues(alpha: 0.85),
-                    height: 1.15,
-                  ),
-                ),
-                SizedBox(height: sp.md),
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.6,
-                    color: cs.onSurface,
-                  ),
-                ),
-              ],
+            child: Align(
+              alignment: Alignment.bottomLeft,
+              child: _buildValue(context),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildValue(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final sp = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    if (valueStyle == _StatValueStyle.currency) {
+      // Split "Rp " prefix to avoid ellipsis on long amounts
+      final v = value.trim();
+      final isRp = v.startsWith('Rp');
+      final amount = isRp ? v.replaceFirst('Rp', '').trim() : v;
+
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Rp',
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w900,
+              color: cs.onSurfaceVariant.withValues(alpha: 0.90),
+              letterSpacing: 0.3,
+            ),
+          ),
+          SizedBox(height: sp.xxs),
+          // FittedBox ensures the full number is visible (scaleDown instead of "...").
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              amount.isEmpty ? '0' : amount,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.6,
+                color: cs.onSurface,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    // Big numbers (reservasi, sesi, rating) — still scaleDown just in case
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.centerLeft,
+      child: Text(
+        value,
+        style: theme.textTheme.headlineSmall?.copyWith(
+          fontWeight: FontWeight.w900,
+          letterSpacing: -0.6,
+          color: cs.onSurface,
+        ),
       ),
     );
   }
@@ -1058,7 +1134,7 @@ class _CenteredMessage extends StatelessWidget {
       child: Padding(
         padding: EdgeInsets.all(sp.lg),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420),
+          constraints: BoxConstraints(maxWidth: sp.xxl * 8),
           child: Container(
             padding: EdgeInsets.all(sp.lg),
             decoration: BoxDecoration(
@@ -1071,15 +1147,15 @@ class _CenteredMessage extends StatelessWidget {
               boxShadow: [
                 BoxShadow(
                   color: cs.shadow.withValues(alpha: 0.06),
-                  blurRadius: 18,
-                  offset: const Offset(0, 10),
+                  blurRadius: sp.xl,
+                  offset: Offset(0, sp.md),
                 ),
               ],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, size: 56, color: iconColor),
+                Icon(icon, size: sp.xxl * 2, color: iconColor),
                 SizedBox(height: sp.md),
                 Text(
                   title,

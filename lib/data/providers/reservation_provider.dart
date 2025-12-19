@@ -317,7 +317,7 @@ class ReservationProvider {
       return await _apiClient.postMultipartValidated(
         ApiEndpoints
             .manualReservationsPaymentProofById, // Ganti dengan endpoint yang sesuai
-        pathParams: {'reservationId': reservationId}, // <-- BENAR
+        pathParams: {'id': reservationId}, // <-- BENAR
         data: formData,
       );
     } catch (e) {
