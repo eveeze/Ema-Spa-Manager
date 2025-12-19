@@ -1,7 +1,9 @@
+// lib/features/reservation/views/reservation_edit_view.dart
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:emababyspa/common/layouts/main_layout.dart';
+import 'package:emababyspa/common/theme/app_theme.dart'; // ✅ AppSpacing & AppRadii
 import 'package:emababyspa/common/widgets/app_button.dart';
 import 'package:emababyspa/data/models/payment.dart';
 import 'package:emababyspa/data/models/reservation.dart';
@@ -27,7 +29,6 @@ class ReservationEditView extends GetView<ReservationController> {
       return;
     }
 
-    // Selalu fetch data baru saat halaman dibuka untuk memastikan data paling update
     controller.fetchReservationById(reservationId);
   }
 
@@ -36,7 +37,6 @@ class ReservationEditView extends GetView<ReservationController> {
     final theme = Theme.of(context);
     final String? reservationId = Get.parameters['id'];
 
-    // Menggunakan addPostFrameCallback untuk memanggil setelah frame pertama selesai build
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => _loadDataIfNeeded(reservationId, context),
     );
@@ -49,7 +49,6 @@ class ReservationEditView extends GetView<ReservationController> {
       child: Obx(() {
         final reservation = controller.selectedReservation.value;
         final payment = controller.selectedPaymentDetails.value;
-        // Gunakan isLoading dari controller. Jika true dan belum ada reservasi, tampilkan loading.
         final isLoading = controller.isLoading.value && reservation == null;
         final errorMessage = controller.errorMessage.value;
 
@@ -61,17 +60,17 @@ class ReservationEditView extends GetView<ReservationController> {
           return Center(
             child: Text(
               'Error: $errorMessage',
-              style: TextStyle(color: theme.colorScheme.error),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.error,
+              ),
             ),
           );
         }
 
         if (reservation == null) {
-          // Kondisi fallback jika data belum siap
           return const Center(child: Text('Loading reservation...'));
         }
 
-        // Kirim reservasi dan payment ke form
         return _ReservationEditForm(reservation: reservation, payment: payment);
       }),
     );
@@ -98,6 +97,7 @@ class _ReservationEditFormState extends State<_ReservationEditForm> {
   late TextEditingController _parentNamesController;
   late TextEditingController _notesController;
   late ReservationStatus _currentStatus;
+
   File? _paymentProofFile;
 
   @override
@@ -158,7 +158,6 @@ class _ReservationEditFormState extends State<_ReservationEditForm> {
     }
   }
 
-  // Untuk mengganti bukti bayar yang sudah ada
   Future<void> _pickAndUpdatePaymentProof() async {
     final XFile? pickedFile = await ImagePicker().pickImage(
       source: ImageSource.gallery,
@@ -173,7 +172,6 @@ class _ReservationEditFormState extends State<_ReservationEditForm> {
     }
   }
 
-  // Untuk memilih dan menyiapkan bukti bayar baru (sebelum di-upload)
   Future<void> _pickAndPrepareNewPaymentProof() async {
     final XFile? pickedFile = await ImagePicker().pickImage(
       source: ImageSource.gallery,
@@ -187,7 +185,6 @@ class _ReservationEditFormState extends State<_ReservationEditForm> {
     }
   }
 
-  // Untuk meng-upload bukti bayar yang baru dipilih
   void _uploadNewPaymentProof() {
     if (_paymentProofFile != null) {
       _reservationController.uploadManualPaymentProof(
@@ -202,6 +199,10 @@ class _ReservationEditFormState extends State<_ReservationEditForm> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tt = theme.textTheme;
+    final sp = theme.extension<AppSpacing>() ?? const AppSpacing();
+
     final sessionDate = widget.reservation.sessionDate;
 
     final availableTransitions = _reservationController
@@ -215,323 +216,465 @@ class _ReservationEditFormState extends State<_ReservationEditForm> {
       ),
     };
 
-    // ======================================================================
-    // ===== LOGIKA KONDISIONAL BARU UNTUK PEMBAYARAN =======================
-    // ======================================================================
-
     final payment = widget.payment;
 
-    // Kondisi 1: Ini adalah reservasi MANUAL yang statusnya PENDING dan metode bayarnya CASH.
-    // Aksi yang paling tepat adalah menandainya sebagai lunas.
     final bool isManualPendingCash =
         widget.reservation.reservationType == ReservationType.MANUAL &&
         widget.reservation.status == ReservationStatus.PENDING &&
         payment?.paymentMethod == 'CASH';
 
-    // Kondisi 2: Ini adalah reservasi MANUAL, status PENDING, dan metode bayarnya BUKAN CASH (misal, transfer).
-    // Owner perlu mengelola bukti bayar.
     final bool isManualPendingNonCash =
         widget.reservation.reservationType == ReservationType.MANUAL &&
         widget.reservation.status == ReservationStatus.PENDING &&
         payment != null &&
         payment.paymentMethod != 'CASH';
 
-    // Pengecekan apakah sudah ada URL bukti bayar di database.
     final bool hasPaymentProof =
         payment?.paymentProof != null && payment!.paymentProof!.isNotEmpty;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
+      padding: EdgeInsets.all(sp.lg),
       child: Form(
         key: _formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildSectionHeader(context, 'Reservation Status'),
-            const SizedBox(height: 16),
-            if (availableTransitions.isNotEmpty)
-              DropdownButtonFormField<ReservationStatus>(
-                value: _currentStatus,
-                decoration: const InputDecoration(
-                  labelText: 'Update Status',
-                  border: OutlineInputBorder(),
-                ),
-                items:
-                    dropdownStatuses.map((status) {
-                      return DropdownMenuItem(
-                        value: status,
-                        child: Text(
-                          _reservationController.getStatusDisplayName(
-                            status.name,
-                          ),
+            _buildTopIntro(context, widget.reservation),
+            SizedBox(height: sp.lg),
+
+            // =========================
+            // STATUS SECTION (CARD)
+            // =========================
+            _buildSectionCard(
+              context: context,
+              title: 'Status Reservasi',
+              icon: Icons.swap_horiz_rounded,
+              subtitle:
+                  availableTransitions.isNotEmpty
+                      ? 'Ubah status reservasi sesuai progres layanan.'
+                      : 'Status tidak dapat diubah saat ini.',
+              child: Column(
+                children: [
+                  if (availableTransitions.isNotEmpty)
+                    DropdownButtonFormField<ReservationStatus>(
+                      value: _currentStatus,
+                      decoration: InputDecoration(
+                        labelText: 'Update Status',
+                        prefixIcon: Icon(
+                          Icons.timeline_rounded,
+                          color: cs.primary,
                         ),
-                      );
-                    }).toList(),
-                onChanged: (newStatus) {
-                  if (newStatus != null && newStatus != _currentStatus) {
-                    Get.defaultDialog(
-                      title: "Confirm Status Change",
-                      middleText:
-                          "Change status from ${_reservationController.getStatusDisplayName(_currentStatus.name)} to ${_reservationController.getStatusDisplayName(newStatus.name)}?",
-                      textConfirm: "Yes, Change",
-                      textCancel: "Cancel",
-                      onConfirm: () {
-                        Get.back();
-                        _reservationController.updateReservationStatus(
-                          widget.reservation.id,
-                          newStatus.name,
-                        );
+                      ),
+                      items:
+                          dropdownStatuses
+                              .map(
+                                (status) => DropdownMenuItem(
+                                  value: status,
+                                  child: Text(
+                                    _reservationController.getStatusDisplayName(
+                                      status.name,
+                                    ),
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                      onChanged: (newStatus) {
+                        if (newStatus != null && newStatus != _currentStatus) {
+                          _showConfirmDialog(
+                            context: context,
+                            title: 'Konfirmasi',
+                            message:
+                                'Ubah status dari ${_reservationController.getStatusDisplayName(_currentStatus.name)} '
+                                'ke ${_reservationController.getStatusDisplayName(newStatus.name)}?',
+                            confirmText: 'Ya, Ubah',
+                            cancelText: 'Batal',
+                            icon: Icons.swap_horiz_rounded,
+                            onConfirm: () {
+                              _reservationController.updateReservationStatus(
+                                widget.reservation.id,
+                                newStatus.name,
+                              );
+                            },
+                          );
+                        }
                       },
-                    );
-                  }
-                },
-              )
-            else
-              _buildReadOnlyField(
-                'Status',
-                _reservationController.getStatusDisplayName(
-                  widget.reservation.status.name,
+                    )
+                  else
+                    _readOnlyField(
+                      context,
+                      'Status',
+                      _reservationController.getStatusDisplayName(
+                        widget.reservation.status.name,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+
+            SizedBox(height: sp.lg),
+
+            // =========================
+            // PAYMENT SECTION (CONDITIONAL)
+            // =========================
+            if (isManualPendingCash)
+              _buildSectionCard(
+                context: context,
+                title: 'Pembayaran (Cash)',
+                icon: Icons.payments_rounded,
+                subtitle:
+                    'Reservasi ini menunggu pembayaran tunai. Tandai lunas setelah pembayaran diterima.',
+                child: Obx(
+                  () => AppButton(
+                    text:
+                        _reservationController.isUpdatingManualPayment.value
+                            ? 'Processing...'
+                            : 'Tandai Sudah Bayar (Cash)',
+                    onPressed:
+                        _reservationController.isUpdatingManualPayment.value
+                            ? null
+                            : () {
+                              _showConfirmDialog(
+                                context: context,
+                                title: 'Konfirmasi Pembayaran',
+                                message:
+                                    'Anda yakin ingin menandai reservasi ini LUNAS?',
+                                confirmText: 'Ya, Lunas',
+                                cancelText: 'Batal',
+                                icon: Icons.check_circle_outline_rounded,
+                                onConfirm: () {
+                                  _reservationController
+                                      .updateManualReservationPaymentStatus(
+                                        widget.reservation.id,
+                                        paymentMethod: 'CASH',
+                                      );
+                                },
+                              );
+                            },
+                    icon: Icons.check_circle_outline,
+                  ),
                 ),
               ),
-            const SizedBox(height: 24),
 
-            // ==========================================================
-            // ===== BLOK TAMPILAN BERDASARKAN LOGIKA BARU ==============
-            // ==========================================================
+            if (isManualPendingCash) SizedBox(height: sp.lg),
 
-            // --- TAMPILKAN TOMBOL "MARK AS PAID" UNTUK PEMBAYARAN CASH ---
-            if (isManualPendingCash) ...[
-              _buildSectionHeader(context, 'Payment Action (Cash)'),
-              const SizedBox(height: 10),
-              Text(
-                'Reservasi ini menunggu pembayaran tunai. Tandai sebagai lunas jika pembayaran telah diterima.',
-                style: theme.textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 16),
-              Obx(
-                () => AppButton(
-                  text:
-                      _reservationController.isUpdatingManualPayment.value
-                          ? 'Processing...'
-                          : 'Tandai Sudah Bayar (Cash)',
-                  onPressed:
-                      _reservationController.isUpdatingManualPayment.value
-                          ? null
-                          : () {
-                            Get.defaultDialog(
-                              title: "Konfirmasi Pembayaran",
-                              middleText:
-                                  "Anda yakin ingin menandai reservasi ini LUNAS?",
-                              textConfirm: "Ya, Lunas",
-                              textCancel: "Batal",
-                              onConfirm: () {
-                                Get.back();
-                                _reservationController
-                                    .updateManualReservationPaymentStatus(
-                                      widget.reservation.id,
-                                      paymentMethod: 'CASH',
-                                    );
-                              },
-                            );
-                          },
-                  icon: Icons.check_circle_outline,
-                ),
-              ),
-              const SizedBox(height: 24),
-            ],
-
-            // --- TAMPILKAN LOGIKA UPLOAD/VERIFIKASI UNTUK NON-CASH ---
-            if (isManualPendingNonCash) ...[
-              _buildSectionHeader(context, 'Payment Verification (Non-Cash)'),
-              const SizedBox(height: 10),
-
-              // JIKA BUKTI SUDAH ADA: tampilkan bukti dan tombol verifikasi
-              if (hasPaymentProof) ...[
-                Text(
-                  'Bukti pembayaran telah di-upload. Silakan lakukan verifikasi.',
-                  style: theme.textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 16),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8.0),
-                  child: CachedNetworkImage(
-                    imageUrl: payment.paymentProof!,
-                    placeholder:
-                        (context, url) => const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(32.0),
-                            child: CircularProgressIndicator(),
+            if (isManualPendingNonCash)
+              _buildSectionCard(
+                context: context,
+                title: 'Verifikasi Pembayaran',
+                icon: Icons.verified_user_rounded,
+                subtitle:
+                    hasPaymentProof
+                        ? 'Bukti pembayaran tersedia. Verifikasi untuk melanjutkan.'
+                        : 'Reservasi menunggu bukti pembayaran. Anda dapat mengunggahnya atas nama customer.',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (hasPaymentProof) ...[
+                      SizedBox(
+                        height: sp.xxl * 3,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(AppRadii.lg),
+                          child: CachedNetworkImage(
+                            imageUrl: payment.paymentProof!,
+                            fit: BoxFit.cover,
+                            placeholder:
+                                (_, __) => const Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                            errorWidget:
+                                (_, __, ___) => Container(
+                                  color: cs.surfaceContainerHighest,
+                                  child: Icon(
+                                    Icons.broken_image,
+                                    color: cs.onSurfaceVariant,
+                                  ),
+                                ),
                           ),
                         ),
-                    errorWidget:
-                        (context, url, error) => Container(
-                          padding: const EdgeInsets.all(16),
-                          child: const Icon(Icons.error),
-                        ),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                AppButton(
-                  text: 'Ganti Bukti Pembayaran',
-                  onPressed: _pickAndUpdatePaymentProof,
-                  icon: Icons.edit,
-                  type: AppButtonType.secondary,
-                  isLoading: _reservationController.isPaymentUploading.value,
-                ),
-                const SizedBox(height: 10),
-                Obx(
-                  () => Row(
-                    children: [
-                      Expanded(
-                        child: AppButton(
-                          text: 'Verifikasi',
-                          onPressed:
-                              _reservationController.isStatusUpdating.value
-                                  ? null
-                                  : () => _reservationController
-                                      .verifyManualPayment(payment.id, true),
-                          icon: Icons.check_circle,
+                      ),
+                      SizedBox(height: sp.md),
+                      AppButton(
+                        text: 'Ganti Bukti Pembayaran',
+                        onPressed: _pickAndUpdatePaymentProof,
+                        icon: Icons.edit,
+                        type: AppButtonType.secondary,
+                        isLoading:
+                            _reservationController.isPaymentUploading.value,
+                      ),
+                      SizedBox(height: sp.sm),
+                      Obx(
+                        () => Row(
+                          children: [
+                            Expanded(
+                              child: AppButton(
+                                text: 'Verifikasi',
+                                onPressed:
+                                    _reservationController
+                                            .isStatusUpdating
+                                            .value
+                                        ? null
+                                        : () {
+                                          _showConfirmDialog(
+                                            context: context,
+                                            title: 'Verifikasi Pembayaran',
+                                            message:
+                                                'Setujui pembayaran ini dan tandai sebagai valid?',
+                                            confirmText: 'Ya, Verifikasi',
+                                            cancelText: 'Batal',
+                                            icon: Icons.check_circle_rounded,
+                                            onConfirm: () {
+                                              _reservationController
+                                                  .verifyManualPayment(
+                                                    payment.id,
+                                                    true,
+                                                  );
+                                            },
+                                          );
+                                        },
+                                icon: Icons.check_circle,
+                              ),
+                            ),
+                            SizedBox(width: sp.sm),
+                            Expanded(
+                              child: AppButton(
+                                text: 'Tolak',
+                                onPressed:
+                                    _reservationController
+                                            .isStatusUpdating
+                                            .value
+                                        ? null
+                                        : () {
+                                          _showConfirmDialog(
+                                            context: context,
+                                            title: 'Tolak Pembayaran',
+                                            message:
+                                                'Tolak bukti pembayaran ini? Customer perlu mengunggah ulang.',
+                                            confirmText: 'Ya, Tolak',
+                                            cancelText: 'Batal',
+                                            icon: Icons.cancel_rounded,
+                                            onConfirm: () {
+                                              _reservationController
+                                                  .verifyManualPayment(
+                                                    payment.id,
+                                                    false,
+                                                  );
+                                            },
+                                          );
+                                        },
+                                icon: Icons.cancel,
+                                type: AppButtonType.outline,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: AppButton(
-                          text: 'Tolak',
-                          onPressed:
-                              _reservationController.isStatusUpdating.value
-                                  ? null
-                                  : () => _reservationController
-                                      .verifyManualPayment(payment.id, false),
-                          icon: Icons.cancel,
-                          type: AppButtonType.outline,
+                    ] else ...[
+                      if (_paymentProofFile == null)
+                        OutlinedButton.icon(
+                          icon: const Icon(Icons.upload_file),
+                          label: const Text('Pilih File Bukti Bayar'),
+                          onPressed: _pickAndPrepareNewPaymentProof,
+                        )
+                      else ...[
+                        ListTile(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppRadii.lg),
+                            side: BorderSide(
+                              color: cs.outlineVariant.withValues(alpha: 0.75),
+                            ),
+                          ),
+                          tileColor: cs.surfaceContainerHighest.withValues(
+                            alpha: 0.55,
+                          ),
+                          leading: Icon(Icons.image, color: cs.primary),
+                          title: Text(
+                            _paymentProofFile!.path.split('/').last,
+                            style: tt.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed:
+                                () => setState(() => _paymentProofFile = null),
+                          ),
                         ),
-                      ),
+                        SizedBox(height: sp.md),
+                        Obx(
+                          () => AppButton(
+                            text:
+                                _reservationController.isPaymentUploading.value
+                                    ? 'Mengupload...'
+                                    : 'Upload Bukti Bayar',
+                            onPressed:
+                                _reservationController.isPaymentUploading.value
+                                    ? null
+                                    : () {
+                                      _showConfirmDialog(
+                                        context: context,
+                                        title: 'Upload Bukti Pembayaran',
+                                        message:
+                                            'Upload bukti pembayaran yang dipilih untuk reservasi ini?',
+                                        confirmText: 'Ya, Upload',
+                                        cancelText: 'Batal',
+                                        icon: Icons.cloud_upload_rounded,
+                                        onConfirm: _uploadNewPaymentProof,
+                                      );
+                                    },
+                            icon: Icons.cloud_upload,
+                            isLoading:
+                                _reservationController.isPaymentUploading.value,
+                          ),
+                        ),
+                      ],
                     ],
-                  ),
+                  ],
                 ),
-              ]
-              // JIKA BUKTI BELUM ADA: tampilkan opsi untuk upload
-              else ...[
-                Text(
-                  'Reservasi ini menunggu bukti pembayaran. Anda dapat meng-uploadnya atas nama pelanggan.',
-                  style: theme.textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 16),
-                if (_paymentProofFile == null)
-                  OutlinedButton.icon(
-                    icon: const Icon(Icons.upload_file),
-                    label: const Text('Pilih File Bukti Bayar'),
-                    onPressed: _pickAndPrepareNewPaymentProof,
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(50),
+              ),
+
+            if (isManualPendingNonCash) SizedBox(height: sp.lg),
+
+            // =========================
+            // CUSTOMER & BABY (CARD)
+            // =========================
+            _buildSectionCard(
+              context: context,
+              title: 'Customer & Bayi',
+              icon: Icons.child_care_rounded,
+              subtitle: 'Perbarui data customer dan detail bayi.',
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: _customerNameController,
+                    decoration: InputDecoration(
+                      labelText: 'Nama Customer',
+                      prefixIcon: Icon(
+                        Icons.person_outline_rounded,
+                        color: cs.primary,
+                      ),
                     ),
-                  )
-                else ...[
-                  ListTile(
-                    leading: const Icon(Icons.image, color: Colors.green),
-                    title: Text(_paymentProofFile!.path.split('/').last),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => setState(() => _paymentProofFile = null),
-                    ),
+                    validator:
+                        (value) =>
+                            (value == null || value.isEmpty)
+                                ? 'Customer name cannot be empty'
+                                : null,
                   ),
-                  const SizedBox(height: 16),
-                  Obx(
-                    () => AppButton(
-                      text:
-                          _reservationController.isPaymentUploading.value
-                              ? 'Mengupload...'
-                              : 'Upload Bukti Bayar',
-                      onPressed:
-                          _reservationController.isPaymentUploading.value
-                              ? null
-                              : _uploadNewPaymentProof,
-                      icon: Icons.cloud_upload,
-                      isLoading:
-                          _reservationController.isPaymentUploading.value,
+                  SizedBox(height: sp.md),
+                  TextFormField(
+                    controller: _babyNameController,
+                    decoration: InputDecoration(
+                      labelText: 'Nama Bayi',
+                      prefixIcon: Icon(
+                        Icons.child_care_outlined,
+                        color: cs.primary,
+                      ),
+                    ),
+                    validator:
+                        (value) =>
+                            (value == null || value.isEmpty)
+                                ? 'Baby name cannot be empty'
+                                : null,
+                  ),
+                  SizedBox(height: sp.md),
+                  TextFormField(
+                    controller: _babyAgeController,
+                    decoration: InputDecoration(
+                      labelText: 'Usia Bayi (bulan)',
+                      prefixIcon: Icon(Icons.cake_outlined, color: cs.primary),
+                    ),
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Baby age cannot be empty';
+                      }
+                      if (int.tryParse(value) == null) {
+                        return 'Please enter a valid number';
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: sp.md),
+                  TextFormField(
+                    controller: _parentNamesController,
+                    decoration: InputDecoration(
+                      labelText: 'Nama Orang Tua (Opsional)',
+                      prefixIcon: Icon(
+                        Icons.family_restroom_outlined,
+                        color: cs.primary,
+                      ),
                     ),
                   ),
                 ],
-              ],
-              const SizedBox(height: 24),
-            ],
+              ),
+            ),
 
-            // ========================================================
-            // ===== SISA FORM (TIDAK BERUBAH) ========================
-            // ========================================================
-            _buildSectionHeader(context, 'Customer & Baby Details'),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _customerNameController,
-              decoration: const InputDecoration(labelText: 'Customer Name'),
-              validator:
-                  (value) =>
-                      value!.isEmpty ? 'Customer name cannot be empty' : null,
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _babyNameController,
-              decoration: const InputDecoration(labelText: 'Baby Name'),
-              validator:
-                  (value) =>
-                      value!.isEmpty ? 'Baby name cannot be empty' : null,
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _babyAgeController,
-              decoration: const InputDecoration(labelText: 'Baby Age (months)'),
-              keyboardType: TextInputType.number,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Baby age cannot be empty';
-                }
-                if (int.tryParse(value) == null) {
-                  return 'Please enter a valid number';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _parentNamesController,
-              decoration: const InputDecoration(
-                labelText: 'Parent Names (Optional)',
+            SizedBox(height: sp.lg),
+
+            // =========================
+            // SESSION & SERVICE (CARD)
+            // =========================
+            _buildSectionCard(
+              context: context,
+              title: 'Sesi & Layanan',
+              icon: Icons.event_note_rounded,
+              subtitle: 'Informasi sesi tidak dapat diubah dari halaman ini.',
+              child: Column(
+                children: [
+                  _readOnlyField(
+                    context,
+                    'Layanan',
+                    widget.reservation.serviceName ?? 'N/A',
+                  ),
+                  SizedBox(height: sp.sm),
+                  _readOnlyField(
+                    context,
+                    'Terapis',
+                    widget.reservation.staffName ?? 'N/A',
+                  ),
+                  SizedBox(height: sp.sm),
+                  if (sessionDate != null)
+                    _readOnlyField(
+                      context,
+                      'Tanggal',
+                      TimeZoneUtil.formatDateTimeToIndonesiaDayDate(
+                        sessionDate,
+                      ),
+                    ),
+                  SizedBox(height: sp.sm),
+                  _readOnlyField(
+                    context,
+                    'Waktu',
+                    widget.reservation.sessionTime ?? 'N/A',
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 24),
-            _buildSectionHeader(context, 'Session & Service Details'),
-            const SizedBox(height: 16),
-            _buildReadOnlyField(
-              'Service',
-              widget.reservation.serviceName ?? 'N/A',
-            ),
-            const SizedBox(height: 16),
-            _buildReadOnlyField('Staff', widget.reservation.staffName ?? 'N/A'),
-            const SizedBox(height: 16),
-            if (sessionDate != null)
-              _buildReadOnlyField(
-                'Date',
-                TimeZoneUtil.formatDateTimeToIndonesiaDayDate(sessionDate),
+
+            SizedBox(height: sp.lg),
+
+            // =========================
+            // NOTES (CARD)
+            // =========================
+            _buildSectionCard(
+              context: context,
+              title: 'Catatan',
+              icon: Icons.notes_rounded,
+              subtitle:
+                  'Opsional. Tambahkan informasi penting atau permintaan.',
+              child: TextFormField(
+                controller: _notesController,
+                decoration: InputDecoration(
+                  labelText: 'Catatan (Opsional)',
+                  prefixIcon: Icon(Icons.note_outlined, color: cs.primary),
+                  alignLabelWithHint: true,
+                ),
+                maxLines: 4,
+                textCapitalization: TextCapitalization.sentences,
               ),
-            const SizedBox(height: 16),
-            _buildReadOnlyField(
-              'Time',
-              widget.reservation.sessionTime ?? 'N/A',
             ),
-            const SizedBox(height: 24),
-            _buildSectionHeader(context, 'Additional Notes'),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _notesController,
-              decoration: const InputDecoration(
-                labelText: 'Notes (Optional)',
-                alignLabelWithHint: true,
-              ),
-              maxLines: 4,
-              textCapitalization: TextCapitalization.sentences,
-            ),
-            const SizedBox(height: 32),
+
+            SizedBox(height: sp.xl),
+
             Obx(
               () => AppButton(
                 text:
@@ -545,34 +688,264 @@ class _ReservationEditFormState extends State<_ReservationEditForm> {
                 icon: Icons.save_alt_outlined,
               ),
             ),
+            SizedBox(height: sp.xxl),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, String title) {
+  // =========================
+  // UI HELPERS (CONSISTENT)
+  // =========================
+
+  Widget _buildTopIntro(BuildContext context, Reservation reservation) {
     final theme = Theme.of(context);
-    return Text(
-      title,
-      style: theme.textTheme.titleLarge?.copyWith(
-        fontWeight: FontWeight.bold,
-        color: theme.colorScheme.primary,
+    final cs = theme.colorScheme;
+    final sp = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    return Container(
+      padding: EdgeInsets.all(sp.lg),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.75)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            height: sp.xl + sp.xs,
+            width: sp.xl + sp.xs,
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerHighest.withValues(alpha: 0.55),
+              borderRadius: BorderRadius.circular(AppRadii.lg),
+              border: Border.all(
+                color: cs.outlineVariant.withValues(alpha: 0.75),
+              ),
+            ),
+            child: Icon(Icons.edit_note_rounded, color: cs.onSurfaceVariant),
+          ),
+          SizedBox(width: sp.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Edit Reservasi',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: cs.onSurface,
+                  ),
+                ),
+                SizedBox(height: sp.xs),
+                Text(
+                  'Perbarui data customer, bayi, catatan, dan (jika manual) kelola pembayaran & status.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: cs.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildReadOnlyField(String label, String value) {
-    return InputDecorator(
-      decoration: InputDecoration(
-        labelText: label,
-        contentPadding: const EdgeInsets.symmetric(
-          vertical: 8.0,
-          horizontal: 12.0,
-        ),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0)),
+  Widget _buildSectionCard({
+    required BuildContext context,
+    required String title,
+    required IconData icon,
+    required String subtitle,
+    required Widget child,
+  }) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final sp = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    return Card(
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      color: cs.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+        side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.75)),
       ),
-      child: Text(value, style: Theme.of(context).textTheme.bodyLarge),
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: EdgeInsets.all(sp.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  height: sp.xl,
+                  width: sp.xl,
+                  decoration: BoxDecoration(
+                    color: cs.surfaceContainerHighest.withValues(alpha: 0.55),
+                    borderRadius: BorderRadius.circular(AppRadii.lg),
+                    border: Border.all(
+                      color: cs.outlineVariant.withValues(alpha: 0.70),
+                    ),
+                  ),
+                  child: Icon(icon, size: 20, color: cs.onSurfaceVariant),
+                ),
+                SizedBox(width: sp.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          color: cs.onSurface,
+                        ),
+                      ),
+                      SizedBox(height: sp.xxs),
+                      Text(
+                        subtitle,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: cs.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: sp.md),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _readOnlyField(BuildContext context, String label, String value) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final sp = theme.extension<AppSpacing>() ?? const AppSpacing();
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: sp.md, vertical: sp.sm),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.75)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: cs.onSurfaceVariant,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          SizedBox(height: sp.xs),
+          Text(
+            value,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: cs.onSurface,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showConfirmDialog({
+    required BuildContext context,
+    required String title,
+    required String message,
+    required String confirmText,
+    required VoidCallback onConfirm,
+    String cancelText = 'Batal',
+    IconData icon = Icons.help_outline_rounded,
+  }) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    Get.dialog(
+      AlertDialog(
+        backgroundColor: cs.surface,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadii.xl),
+          side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.75)),
+        ),
+        titlePadding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
+        contentPadding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+        actionsPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+        title: Row(
+          children: [
+            Container(
+              height: 36,
+              width: 36,
+              decoration: BoxDecoration(
+                color: cs.surfaceContainerHighest.withValues(alpha: 0.55),
+                borderRadius: BorderRadius.circular(AppRadii.lg),
+                border: Border.all(
+                  color: cs.outlineVariant.withValues(alpha: 0.75),
+                ),
+              ),
+              child: Icon(icon, color: cs.onSurfaceVariant, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: cs.onSurface,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          message,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: cs.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            style: TextButton.styleFrom(
+              foregroundColor: cs.onSurface,
+              textStyle: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            child: Text(cancelText),
+          ),
+          FilledButton(
+            onPressed: () {
+              Get.back();
+              onConfirm();
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: cs.primary,
+              foregroundColor: cs.onPrimary,
+              textStyle: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            child: Text(confirmText),
+          ),
+        ],
+      ),
+      barrierDismissible: true,
     );
   }
 }
