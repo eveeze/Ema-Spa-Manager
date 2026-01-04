@@ -283,8 +283,9 @@ class _ReservationFormViewState extends State<ReservationFormView> {
             icon: Icons.person_outline_rounded,
             textInputAction: TextInputAction.next,
             validator: (value) {
-              if (value == null || value.trim().isEmpty)
+              if (value == null || value.trim().isEmpty) {
                 return 'Nama customer wajib diisi';
+              }
               if (value.trim().length < 2) return 'Nama minimal 2 karakter';
               return null;
             },
@@ -303,8 +304,9 @@ class _ReservationFormViewState extends State<ReservationFormView> {
               LengthLimitingTextInputFormatter(15),
             ],
             validator: (value) {
-              if (value == null || value.trim().isEmpty)
+              if (value == null || value.trim().isEmpty) {
                 return 'Nomor HP wajib diisi';
+              }
               if (value.trim().length < 10) return 'Minimal 10 digit';
               return null;
             },
@@ -353,8 +355,9 @@ class _ReservationFormViewState extends State<ReservationFormView> {
             icon: Icons.child_care_outlined,
             textInputAction: TextInputAction.next,
             validator: (value) {
-              if (value == null || value.trim().isEmpty)
+              if (value == null || value.trim().isEmpty) {
                 return 'Nama bayi wajib diisi';
+              }
               return null;
             },
           ),
@@ -372,11 +375,13 @@ class _ReservationFormViewState extends State<ReservationFormView> {
               LengthLimitingTextInputFormatter(3),
             ],
             validator: (value) {
-              if (value == null || value.trim().isEmpty)
+              if (value == null || value.trim().isEmpty) {
                 return 'Usia bayi wajib diisi';
+              }
               final age = int.tryParse(value.trim());
-              if (age == null || age < 0 || age > 60)
+              if (age == null || age < 0 || age > 60) {
                 return 'Usia valid 0–60 bulan';
+              }
               return null;
             },
           ),

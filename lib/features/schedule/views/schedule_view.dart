@@ -61,7 +61,6 @@ class _ScheduleViewState extends State<ScheduleView> {
 
         return Scaffold(
           backgroundColor: bg,
-          floatingActionButton: _buildFab(context),
           body: SafeArea(
             child:
                 isBusy
@@ -98,17 +97,6 @@ class _ScheduleViewState extends State<ScheduleView> {
           ),
         );
       }),
-    );
-  }
-
-  Widget _buildFab(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return FloatingActionButton(
-      heroTag: 'add_schedule_fab',
-      onPressed: () => Get.toNamed(AppRoutes.operatingScheduleForm),
-      tooltip: 'Buat Hari Operasional',
-      child: Icon(Icons.add_rounded, color: colorScheme.onPrimary),
     );
   }
 

@@ -67,7 +67,6 @@ class NotificationController extends GetxController {
 
       _calculateUnreadCount();
     } catch (e) {
-      print("[FETCH_NOTIFICATIONS_ERROR] $e");
       Get.snackbar(
         'Error',
         'Gagal memuat notifikasi. Silakan coba lagi.',
@@ -103,7 +102,6 @@ class NotificationController extends GetxController {
     try {
       await _repository.markNotificationAsRead(notificationId);
     } catch (e) {
-      print("[MARK_AS_READ_ERROR] Failed to mark as read on server: $e");
       // Rollback: Kembalikan ke state semula jika API gagal
       notifications[index] = oldNotification;
       _calculateUnreadCount();
@@ -141,7 +139,6 @@ class NotificationController extends GetxController {
     try {
       await _repository.markAllNotificationsAsRead();
     } catch (e) {
-      print("[MARK_ALL_AS_READ_ERROR] $e");
       // Jika gagal, sinkronkan ulang dengan data dari server
       fetchNotifications(isRefresh: true);
       Get.snackbar('Error', 'Gagal menandai semua notifikasi.');
@@ -155,7 +152,6 @@ class NotificationController extends GetxController {
 
   /// Menangani aksi saat push notification di-klik.
   void _handleNotificationClick(OSNotification notification) {
-    print('NOTIFICATION CLICKED: ${notification.jsonRepresentation()}');
     // Segarkan daftar notifikasi di background
     fetchNotifications(isRefresh: true);
 

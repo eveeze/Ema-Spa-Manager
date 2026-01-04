@@ -225,7 +225,7 @@ class _StaffEditViewState extends State<StaffEditView> {
       duration: const Duration(seconds: 3),
       margin: const EdgeInsets.all(14),
       borderRadius: 16,
-      backgroundColor: tone.withOpacity(0.14),
+      backgroundColor: tone.withValues(alpha: 0.14),
       colorText: tone,
       icon: Icon(
         isSuccess ? Icons.check_circle_rounded : Icons.error_rounded,
@@ -488,7 +488,9 @@ class _StaffEditViewState extends State<StaffEditView> {
                 topRight: Radius.circular(AppRadii.xl),
               ),
               boxShadow: AppShadows.soft(cs.shadow),
-              border: Border.all(color: cs.outlineVariant.withOpacity(0.65)),
+              border: Border.all(
+                color: cs.outlineVariant.withValues(alpha: 0.65),
+              ),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -497,7 +499,7 @@ class _StaffEditViewState extends State<StaffEditView> {
                   width: spacing.xxl,
                   height: spacing.xxs,
                   decoration: BoxDecoration(
-                    color: cs.outlineVariant.withOpacity(0.9),
+                    color: cs.outlineVariant.withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(AppRadii.lg),
                   ),
                 ),
@@ -650,7 +652,7 @@ class _HeroHeader extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.surface,
         borderRadius: BorderRadius.circular(AppRadii.xl),
-        border: Border.all(color: cs.outlineVariant.withOpacity(0.65)),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.65)),
         boxShadow: AppShadows.soft(cs.shadow),
       ),
       child: Column(
@@ -692,7 +694,7 @@ class _SectionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.surface,
         borderRadius: BorderRadius.circular(AppRadii.xl),
-        border: Border.all(color: cs.outlineVariant.withOpacity(0.65)),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.65)),
         boxShadow: AppShadows.soft(cs.shadow),
       ),
       child: child,
@@ -731,7 +733,7 @@ class _ProfilePickerCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.surface,
         borderRadius: BorderRadius.circular(AppRadii.xl),
-        border: Border.all(color: cs.outlineVariant.withOpacity(0.65)),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.65)),
         boxShadow: AppShadows.soft(cs.shadow),
       ),
       child: Column(
@@ -757,12 +759,14 @@ class _ProfilePickerCard extends StatelessWidget {
                   padding: EdgeInsets.all(ringPad),
                   decoration: ShapeDecoration(
                     shape: CircleBorder(
-                      side: BorderSide(color: cs.primary.withOpacity(0.24)),
+                      side: BorderSide(
+                        color: cs.primary.withValues(alpha: 0.24),
+                      ),
                     ),
                     gradient: LinearGradient(
                       colors: [
-                        cs.primary.withOpacity(0.16),
-                        cs.secondary.withOpacity(0.06),
+                        cs.primary.withValues(alpha: 0.16),
+                        cs.secondary.withValues(alpha: 0.06),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -774,7 +778,7 @@ class _ProfilePickerCard extends StatelessWidget {
                     height: avatar,
                     decoration: ShapeDecoration(
                       shape: const CircleBorder(),
-                      color: cs.surfaceVariant.withOpacity(0.35),
+                      color: cs.surfaceVariant.withValues(alpha: 0.35),
                       image:
                           img != null
                               ? DecorationImage(image: img, fit: BoxFit.cover)
@@ -856,7 +860,7 @@ class _StatusCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.surface,
         borderRadius: BorderRadius.circular(AppRadii.xl),
-        border: Border.all(color: cs.outlineVariant.withOpacity(0.65)),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.65)),
         boxShadow: AppShadows.soft(cs.shadow),
       ),
       child: Obx(() {
@@ -922,7 +926,7 @@ class _InfoBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.surface,
         borderRadius: BorderRadius.circular(AppRadii.xl),
-        border: Border.all(color: cs.outlineVariant.withOpacity(0.65)),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.65)),
         boxShadow: AppShadows.soft(cs.shadow),
       ),
       child: Row(
@@ -985,7 +989,9 @@ class _PickOptionCard extends StatelessWidget {
           padding: EdgeInsets.all(spacing.lg),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppRadii.xl),
-            border: Border.all(color: cs.outlineVariant.withOpacity(0.65)),
+            border: Border.all(
+              color: cs.outlineVariant.withValues(alpha: 0.65),
+            ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -993,9 +999,9 @@ class _PickOptionCard extends StatelessWidget {
               Container(
                 padding: EdgeInsets.all(spacing.md),
                 decoration: BoxDecoration(
-                  color: cs.primary.withOpacity(0.10),
+                  color: cs.primary.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(AppRadii.xl),
-                  border: Border.all(color: cs.primary.withOpacity(0.18)),
+                  border: Border.all(color: cs.primary.withValues(alpha: 0.18)),
                 ),
                 child: Icon(icon, color: cs.primary, size: spacing.xl),
               ),
