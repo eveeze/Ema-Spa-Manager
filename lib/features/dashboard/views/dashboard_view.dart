@@ -6,48 +6,53 @@ import 'package:emababyspa/common/layouts/main_layout.dart';
 import 'package:emababyspa/features/dashboard/controllers/dashboard_controller.dart';
 import 'package:emababyspa/data/models/reservation.dart';
 import 'package:emababyspa/utils/timezone_utils.dart';
-
-// ✅ add
 import 'package:emababyspa/common/theme/app_theme.dart';
 
 class DashboardView extends GetView<DashboardController> {
   const DashboardView({super.key});
 
+  // ✅ PERBAIKAN LOGIKA WAKTU DI SINI
   String _getFormattedDisplayTime(Reservation? reservation) {
     if (reservation == null) return 'N/A';
     try {
-      if (reservation.sessionDate != null) {
-        DateTime baseUtcTime = reservation.sessionDate!;
-        if (reservation.sessionTime != null &&
-            reservation.sessionTime!.isNotEmpty) {
-          String timeStr = reservation.sessionTime!;
-          if (timeStr.contains(' - ')) {
-            timeStr = timeStr.split(' - ')[0].trim();
-          }
-          final timeParts = timeStr.split(':');
-          if (timeParts.length >= 2) {
-            final hour = int.tryParse(timeParts[0]);
-            final minute = int.tryParse(timeParts[1]);
-            if (hour != null && minute != null) {
-              baseUtcTime = DateTime.utc(
-                baseUtcTime.year,
-                baseUtcTime.month,
-                baseUtcTime.day,
-                hour,
-                minute,
-              );
-            }
-          }
-        }
-        return TimeZoneUtil.formatIndonesiaTime(baseUtcTime, format: 'HH:mm');
-      }
+      // 1. Cek jika sessionTime ada isinya (ini prioritas utama)
       if (reservation.sessionTime != null &&
           reservation.sessionTime!.isNotEmpty) {
-        String rawTime = reservation.sessionTime!;
-        if (rawTime.contains(' - ')) {
-          rawTime = rawTime.split(' - ')[0].trim();
+        String timeStr = reservation.sessionTime!;
+
+        // Bersihkan format range, misal: "08:00 - 09:00" jadi "08:00"
+        if (timeStr.contains(' - ')) {
+          timeStr = timeStr.split(' - ')[0].trim();
         }
-        return TimeZoneUtil.formatISOToIndonesiaTime(rawTime, format: 'HH:mm');
+
+        // Ganti titik dengan titik dua jika ada (08.00 -> 08:00)
+        timeStr = timeStr.replaceAll('.', ':');
+
+        final timeParts = timeStr.split(':');
+
+        // Jika formatnya sudah HH:mm (bukan ISO string), langsung tampilkan
+        // Tidak perlu dimasukkan ke DateTime.utc karena akan kena konversi ganda (+7 jam)
+        if (timeParts.length == 2 ||
+            (timeParts.length == 3 && !timeStr.contains('T'))) {
+          final hour = int.tryParse(timeParts[0]);
+          final minute = int.tryParse(timeParts[1]);
+
+          if (hour != null && minute != null) {
+            // Langsung return string jam yang sudah diformat 2 digit
+            return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+          }
+        }
+
+        // Jika formatnya ISO (2023-01-01T...), gunakan util untuk convert
+        return TimeZoneUtil.formatISOToIndonesiaTime(timeStr, format: 'HH:mm');
+      }
+
+      // 2. Fallback ke sessionDate jika sessionTime kosong
+      if (reservation.sessionDate != null) {
+        return TimeZoneUtil.formatIndonesiaTime(
+          reservation.sessionDate!,
+          format: 'HH:mm',
+        );
       }
     } catch (e) {
       debugPrint('Error time parsing: $e');
@@ -383,6 +388,7 @@ class DashboardView extends GetView<DashboardController> {
           controller.currentReservationForCarousel.value;
       if (currentRes == null) return const SizedBox.shrink();
 
+      // ✅ Menggunakan fungsi yang sudah diperbaiki
       final String startTimeDisplay = _getFormattedDisplayTime(currentRes);
 
       return Container(
